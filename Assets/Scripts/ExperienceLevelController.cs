@@ -1,0 +1,107 @@
+using System.Collections;
+using System.Collections.Generic;
+using System.Security.Cryptography;
+using UnityEngine;
+
+public class ExperienceLevelController : MonoBehaviour
+{
+    public static ExperienceLevelController instance; // Create a singleton instance of the ExperienceLevelController. GK
+    public void Awake()
+    {
+        instance = this; // Set the instance to this object. GK
+    }
+
+    public int currentExperience; // The current experience of the player. GK 
+
+    public ExpPickup pickup; // The experience pickup. GK
+    public List<int> expLevels; // The list of experience levels. GK
+    public int currentLevel = 1, levelCount = 100; // The current level of the player. GK
+    public List<Weapon> weaponsToUpgrade; // The list of weapons to upgrade. GK
+    
+    // Start is called before the first frame update
+    void Start()
+    {
+        while (expLevels.Count < levelCount)    // While the experience levels are less than the level count. GK
+        {
+            expLevels.Add(Mathf.CeilToInt(expLevels[expLevels.Count-1]*1.1f)); // Add the experience levels to the list. GK
+        }
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+
+    public void GetExp(int amountToGet) // Function to get experience. GK
+    {
+        currentExperience += amountToGet; // Add the amount to the current experience. GK
+        if(currentExperience >= expLevels[currentLevel]) // If the current experience is greater than or equal to the experience levels. GK
+        {
+            LevelUp(); // Level up the player. GK
+        }
+        UIController.instance.UpdateExperience(currentExperience, expLevels[currentLevel], currentLevel); // Update the experience. GK
+        SFXManager.instance.PlaySFXPitched(2); // Play the sound effect. GK
+    }
+
+    public void SpawnExp(Vector3 position, int expValue) // Function to spawn experience into the world. GK
+    {
+        Instantiate(pickup, position, Quaternion.identity).expValue = expValue; // Instantiate the experience at the position. GK 
+    }
+    private void LevelUp() // Function to level up the player. GK
+    {
+        currentExperience -= expLevels[currentLevel]; // Subtract the experience levels from the current experience. GK         
+        currentLevel++; // Increase the current level. GK
+        if(currentLevel >= expLevels.Count) // If the current level is greater than or equal to the level count. GK
+        {
+            currentLevel = expLevels.Count-1; // Set the current level to the level count. GK
+        }
+        //PlayerController.instance.activeWeapon.LevelUp(); // Level up the player's weapon. GK
+        UIController.instance.levelUpPanel.SetActive(true); // Set the level up panel to active. GK
+        Time.timeScale = 0f; // Set the time scale to 0. GK
+        //UIController.instance.levelUpButtons[1].UpdateButtonDisplay(PlayerController.instance.activeWeapon); // Update the button display. GK
+        //UIController.instance.levelUpButtons[1].UpdateButtonDisplay(PlayerController.instance.unassignedWeapons[0]); // Update the button display. GK
+       //UIController.instance.levelUpButtons[2].UpdateButtonDisplay(PlayerController.instance.unassignedWeapons[1]); // Update the button display. GK
+       
+       weaponsToUpgrade.Clear(); // Clear the Weapons from the list. GK
+       List<Weapon> availableWeapons = new List<Weapon>(); // Create a new list of available weapons. GK
+       availableWeapons.AddRange(PlayerController.instance.assignedWeapons); // Add the assigned weapons to the available weapons. GK
+
+       if (availableWeapons.Count > 0)
+       {
+           int selected = Random.Range(0, availableWeapons.Count); // Select a random weapon. GK
+           weaponsToUpgrade.Add(availableWeapons[selected]); // Add the weapon to the list. GK
+           availableWeapons.RemoveAt(selected); // Remove the weapon from the list. GK
+       }
+       if(PlayerController.instance.assignedWeapons.Count + PlayerController.instance.fullyLevelledWeapons.Count < PlayerController.instance.maxWeapons) // If the unassigned weapons count is less than the maximum weapons. GK
+       {
+           availableWeapons.AddRange(PlayerController.instance.unassignedWeapons); // Add the unassigned weapons to the available weapons. GK
+       }
+       for(int i = weaponsToUpgrade.Count; i<3; i++) // For each weapon to upgrade. GK
+       {
+           if (availableWeapons.Count > 0) // If the available weapons count is greater than 0. GK
+           {
+               int selected = Random.Range(0, availableWeapons.Count); // Select a random weapon. GK
+               weaponsToUpgrade.Add(availableWeapons[selected]); // Add the weapon to the list. GK
+               availableWeapons.RemoveAt(selected); // Remove the weapon from the list. GK
+           }
+       }
+       for (int i =0; i < weaponsToUpgrade.Count; i++) // For each weapon to upgrade. GK
+       {
+           UIController.instance.levelUpButtons[i].UpdateButtonDisplay(weaponsToUpgrade[i]); // Update the button display. GK
+       }
+
+       for (int i = 0; i < UIController.instance.levelUpButtons.Length; i++) // For each button in the level up buttons. GK
+       {
+           if (i < weaponsToUpgrade.Count) // If the button is less than the weapons to upgrade count. GK
+           {
+               UIController.instance.levelUpButtons[i].gameObject.SetActive(true); // Set the button to active. GK
+           }
+           else // If the button is not less than the weapons to upgrade count. GK
+           {
+               UIController.instance.levelUpButtons[i].gameObject.SetActive(false); // Set the button to inactive. GK
+           }
+       }
+       PlayerStatController.instance.UpdateDisplay(); // Update the display. GK
+    }
+}
