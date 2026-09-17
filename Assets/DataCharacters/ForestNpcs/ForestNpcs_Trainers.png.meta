@@ -1,0 +1,548 @@
+fileFormatVersion: 2
+guid: 6c6e90657c2d2d745966e29c570b8027
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 6615993716194295379
+    second: ForestNpcs_Trainers_0
+  - first:
+      213: 1950065570837019647
+    second: ForestNpcs_Trainers_1
+  - first:
+      213: -8158916987268094139
+    second: ForestNpcs_Trainers_2
+  - first:
+      213: -6817627758535360205
+    second: ForestNpcs_Trainers_3
+  - first:
+      213: 4869390114071686179
+    second: ForestNpcs_Trainers_4
+  - first:
+      213: 8669536369273481092
+    second: ForestNpcs_Trainers_5
+  - first:
+      213: -2001051640596162430
+    second: ForestNpcs_Trainers_6
+  - first:
+      213: -330273877463372113
+    second: ForestNpcs_Trainers_7
+  - first:
+      213: 5588021242688006658
+    second: ForestNpcs_Trainers_8
+  - first:
+      213: 8705014466422683529
+    second: ForestNpcs_Trainers_9
+  - first:
+      213: -8477647138387059164
+    second: ForestNpcs_Trainers_10
+  - first:
+      213: 1454313770533813673
+    second: ForestNpcs_Trainers_11
+  - first:
+      213: -8844929935207464834
+    second: ForestNpcs_Trainers_12
+  - first:
+      213: -4524707988488197134
+    second: ForestNpcs_Trainers_13
+  - first:
+      213: 3802248457381193017
+    second: ForestNpcs_Trainers_14
+  - first:
+      213: 6902725178420524935
+    second: ForestNpcs_Trainers_15
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationMethod: 0
+  spriteTessellationDetail: -1
+  spriteGeometrySubdivision: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: ForestNpcs_Trainers_0
+      rect:
+        serializedVersion: 2
+        x: 9
+        y: 192
+        width: 44
+        height: 63
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 35e3af95b3bb0db50800000000000000
+      internalID: 6615993716194295379
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ForestNpcs_Trainers_1
+      rect:
+        serializedVersion: 2
+        x: 76
+        y: 194
+        width: 46
+        height: 57
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ffbb5760e46001b10800000000000000
+      internalID: 1950065570837019647
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ForestNpcs_Trainers_2
+      rect:
+        serializedVersion: 2
+        x: 143
+        y: 192
+        width: 42
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5472cf55a34b5ce80800000000000000
+      internalID: -8158916987268094139
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ForestNpcs_Trainers_3
+      rect:
+        serializedVersion: 2
+        x: 209
+        y: 192
+        width: 37
+        height: 63
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 33148a9ccabe261a0800000000000000
+      internalID: -6817627758535360205
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ForestNpcs_Trainers_4
+      rect:
+        serializedVersion: 2
+        x: 2
+        y: 128
+        width: 55
+        height: 61
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 32caa06728c839340800000000000000
+      internalID: 4869390114071686179
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ForestNpcs_Trainers_5
+      rect:
+        serializedVersion: 2
+        x: 11
+        y: 64
+        width: 38
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 48720e90561605870800000000000000
+      internalID: 8669536369273481092
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ForestNpcs_Trainers_6
+      rect:
+        serializedVersion: 2
+        x: 77
+        y: 127
+        width: 49
+        height: 63
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2889d098226da34e0800000000000000
+      internalID: -2001051640596162430
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ForestNpcs_Trainers_7
+      rect:
+        serializedVersion: 2
+        x: 137
+        y: 128
+        width: 45
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fae643788a1aa6bf0800000000000000
+      internalID: -330273877463372113
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ForestNpcs_Trainers_8
+      rect:
+        serializedVersion: 2
+        x: 195
+        y: 128
+        width: 48
+        height: 65
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 20a61cfa6b3ac8d40800000000000000
+      internalID: 5588021242688006658
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ForestNpcs_Trainers_9
+      rect:
+        serializedVersion: 2
+        x: 205
+        y: 64
+        width: 40
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 987b2cb398c6ec870800000000000000
+      internalID: 8705014466422683529
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ForestNpcs_Trainers_10
+      rect:
+        serializedVersion: 2
+        x: 73
+        y: 64
+        width: 42
+        height: 63
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 42e155918d8595a80800000000000000
+      internalID: -8477647138387059164
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ForestNpcs_Trainers_11
+      rect:
+        serializedVersion: 2
+        x: 138
+        y: 64
+        width: 43
+        height: 63
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9ad70a44ba2ce2410800000000000000
+      internalID: 1454313770533813673
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ForestNpcs_Trainers_12
+      rect:
+        serializedVersion: 2
+        x: 142
+        y: 0
+        width: 32
+        height: 65
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e708dbc161f704580800000000000000
+      internalID: -8844929935207464834
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ForestNpcs_Trainers_13
+      rect:
+        serializedVersion: 2
+        x: 204
+        y: 0
+        width: 34
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2fbe9c1be020531c0800000000000000
+      internalID: -4524707988488197134
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ForestNpcs_Trainers_14
+      rect:
+        serializedVersion: 2
+        x: 16
+        y: 0
+        width: 31
+        height: 56
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 935abf9a3dc44c430800000000000000
+      internalID: 3802248457381193017
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ForestNpcs_Trainers_15
+      rect:
+        serializedVersion: 2
+        x: 76
+        y: 0
+        width: 38
+        height: 56
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 78776e14af76bcf50800000000000000
+      internalID: 6902725178420524935
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      ForestNpcs_Trainers_0: 6615993716194295379
+      ForestNpcs_Trainers_1: 1950065570837019647
+      ForestNpcs_Trainers_10: -8477647138387059164
+      ForestNpcs_Trainers_11: 1454313770533813673
+      ForestNpcs_Trainers_12: -8844929935207464834
+      ForestNpcs_Trainers_13: -4524707988488197134
+      ForestNpcs_Trainers_14: 3802248457381193017
+      ForestNpcs_Trainers_15: 6902725178420524935
+      ForestNpcs_Trainers_2: -8158916987268094139
+      ForestNpcs_Trainers_3: -6817627758535360205
+      ForestNpcs_Trainers_4: 4869390114071686179
+      ForestNpcs_Trainers_5: 8669536369273481092
+      ForestNpcs_Trainers_6: -2001051640596162430
+      ForestNpcs_Trainers_7: -330273877463372113
+      ForestNpcs_Trainers_8: 5588021242688006658
+      ForestNpcs_Trainers_9: 8705014466422683529
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

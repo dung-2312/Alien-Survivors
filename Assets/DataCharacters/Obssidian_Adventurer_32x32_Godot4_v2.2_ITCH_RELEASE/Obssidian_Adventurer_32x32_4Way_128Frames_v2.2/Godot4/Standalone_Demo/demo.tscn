@@ -1,0 +1,40 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://demo.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://addons/obssidian_universal_pixel_ui/bonus_characters/obssidian_adventurer/adventurer.tscn" id="2_char"]
+
+[node name="Demo" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Background" type="ColorRect" parent="."]
+offset_right = 640.0
+offset_bottom = 360.0
+color = Color(0.035, 0.05, 0.08, 1)
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="."]
+offset_left = 18.0
+offset_top = 14.0
+offset_right = 610.0
+offset_bottom = 42.0
+text = "OBSSIDIAN ADVENTURER 2.2 — GODOT LIVE DEMO"
+theme_override_font_sizes/font_size = 20
+
+[node name="Help" type="Label" parent="."]
+offset_left = 18.0
+offset_top = 44.0
+offset_right = 620.0
+offset_bottom = 88.0
+text = "Arrows: Walk   Space: Jump   H: Hurt   C: Crouch   B: Blink   K: KO   R: Reset"
+
+[node name="Ground" type="Line2D" parent="."]
+points = PackedVector2Array(30, 286, 610, 286)
+width = 2.0
+default_color = Color(0.25, 0.55, 0.7, 0.7)
+
+[node name="Actor" type="Node2D" parent="."]
+position = Vector2(320, 270)
+
+[node name="Adventurer" parent="Actor" instance=ExtResource("2_char")]
+scale = Vector2(4, 4)
+position = Vector2(0, 0)

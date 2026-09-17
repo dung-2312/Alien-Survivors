@@ -1,18 +1,28 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class CameraController : MonoBehaviour
 {
-    private Transform target; // The target that the camera will follow. AK
+    private Transform target;
 
-    void Start()
+    void LateUpdate()
     {
-        target = FindObjectOfType<PlayerController>().transform; // Find the player and set it as the target. AK
-    }
+        // Nếu chưa tìm thấy target, liên tục tìm PlayerController vừa được sinh ra
+        if (target == null)
+        {
+            PlayerController player = FindAnyObjectByType<PlayerController>();
+            if (player != null)
+            {
+                target = player.transform;
+            }
+            return; // Chưa có target thì dừng frame này, không chạy dòng dưới để tránh lỗi
+        }
 
-    void LateUpdate() // LateUpdate is called after all Update functions have been called. AK
-    {
-        transform.position = new Vector3(target.position.x, target.position.y, transform.position.z); // Set the camera's position to the target's position. AK
+        // Đã có target: bám theo vị trí Player
+        transform.position = new Vector3(target.position.x, target.position.y, transform.position.z);
     }
 }
+
+
+
