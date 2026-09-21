@@ -12,7 +12,7 @@ public class Weapon : MonoBehaviour
     public Sprite   icon; // The icon of the weapon. GK
     public void LevelUp() // Function to level up the weapon. GK
     {
-        if(weaponLevel < stats.Count - 1) // If the weapon level is less than the stats count. GK
+        if(weaponLevel < stats.Count - 1) // If the weapon level is less than the stats count. 
         {
             weaponLevel++; // Increase the weapon level. GK
             statsUpdated= true; // Set the stats updated to true. GK
