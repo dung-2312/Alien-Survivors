@@ -4,18 +4,28 @@ using UnityEngine;
 
 public class EnemySpawner : MonoBehaviour
 {
+    public static EnemySpawner instance; // Singleton so pooled enemies can return themselves. AK
+
     public GameObject enemyToSpawn; // The enemy prefab. AK
     public float timeToSpawn; // The rate at which the enemies spawn. AK
     private float spawnCounter; // The counter for the spawn time. AK
     public Transform minSpawn, maxSpawn; // The minimum and maximum spawn positions. AK
     private Transform target; // The target that the enemy will follow. AK
     private float despawnDistance; // The distance at which the enemy will despawn. AK
+    private float despawnDistanceSqr; // The squared despawn distance, used to avoid sqrt in the per-frame check. AK
     private List<GameObject> spawnedEnemies = new List<GameObject>(); // The list of spawned enemies. AK
     public int checkPerFrame; // The number of enemies to check per frame. AK
     private int enemyToCheck; // The enemy to check. AK
     public List<WaveInfo> waves; // The list of waves. AK
     private int currentWave; // The current wave. AK
     private float waveCounter; // The counter for the wave. AK
+
+    private readonly Dictionary<GameObject, List<GameObject>> enemyPools = new Dictionary<GameObject, List<GameObject>>(); // A pool of inactive enemies per prefab, so waves don't Instantiate/Destroy constantly. AK
+
+    void Awake()
+    {
+        instance = this; // Set the instance to this. AK
+    }
 
     void Start()
     {
@@ -24,6 +34,7 @@ public class EnemySpawner : MonoBehaviour
         target = PlayerHealthController.instance.transform; // Find the player and set it as the target. AK
 
         despawnDistance = Vector3.Distance(transform.position, maxSpawn.position) + 4f; // Set the despawn distance to the distance between the spawner and the maximum spawn position plus 4. AK
+        despawnDistanceSqr = despawnDistance * despawnDistance; // Cache the squared despawn distance so the per-frame check can avoid a sqrt. AK
 
         currentWave = -1; // Set the current wave to -1. AK
         GoToNextWave(); // Go to the next wave. AK
@@ -57,7 +68,7 @@ public class EnemySpawner : MonoBehaviour
                 {
                     spawnCounter = waves[currentWave].timeBetweenSpawns; // Reset the spawn counter. AK
 
-                    GameObject newEnemy = Instantiate(waves[currentWave].enemyToSpawn, SelectSpawnPoint(), Quaternion.identity); // Spawn the enemy at the selected spawn point and Quaternion. AK
+                    GameObject newEnemy = SpawnEnemy(waves[currentWave].enemyToSpawn, SelectSpawnPoint()); // Spawn (or reuse a pooled) enemy at the selected spawn point. AK
 
                     spawnedEnemies.Add(newEnemy); // Add the new enemy to the list of spawned enemies. AK
                 }
@@ -74,9 +85,9 @@ public class EnemySpawner : MonoBehaviour
             {
                 if(spawnedEnemies[enemyToCheck] != null) // If the enemy to check is not null. AK
                 {
-                    if(Vector3.Distance(transform.position, spawnedEnemies[enemyToCheck].transform.position) > despawnDistance) // If the distance between the spawner and the enemy is greater than the despawn distance. AK
+                    if((transform.position - spawnedEnemies[enemyToCheck].transform.position).sqrMagnitude > despawnDistanceSqr) // If the distance between the spawner and the enemy is greater than the despawn distance. AK
                     {
-                        Destroy(spawnedEnemies[enemyToCheck]); // Destroy the enemy. AK
+                        spawnedEnemies[enemyToCheck].GetComponent<EnemyController>().DespawnToPool(); // Return the enemy to the pool instead of destroying it. AK
                         spawnedEnemies.RemoveAt(enemyToCheck); // Remove the enemy from the list of spawned enemies. AK
                         checkTarget--; // Decrease the check target. AK
                     }
@@ -97,6 +108,52 @@ public class EnemySpawner : MonoBehaviour
                 checkTarget = 0; // Set the check target to 0. AK
             }
         }
+    }
+
+    private GameObject SpawnEnemy(GameObject prefab, Vector3 position) // Get a pooled enemy of this type, or instantiate a new one if the pool is empty. AK
+    {
+        List<GameObject> pool = GetPoolFor(prefab); // The pool bucket for this enemy prefab. AK
+        GameObject enemyInstance; // The enemy instance to spawn. AK
+        EnemyController controller; // The enemy's controller component. AK
+
+        if(pool.Count > 0) // Reuse a pooled enemy if one is available. AK
+        {
+            enemyInstance = pool[pool.Count - 1]; // Take the last enemy from the pool. AK
+            pool.RemoveAt(pool.Count - 1); // Remove it from the pool. AK
+            enemyInstance.transform.SetPositionAndRotation(position, Quaternion.identity); // Move it to the spawn position. AK
+            enemyInstance.SetActive(true); // Reactivate it. AK
+            controller = enemyInstance.GetComponent<EnemyController>(); // Get its controller. AK
+        }
+        else // No pooled enemy available, so instantiate a new one. AK
+        {
+            enemyInstance = Instantiate(prefab, position, Quaternion.identity); // Instantiate the enemy at the position. AK
+            controller = enemyInstance.GetComponent<EnemyController>(); // Get its controller. AK
+            controller.sourcePrefab = prefab; // Remember which prefab (and therefore which pool) it belongs to. AK
+        }
+
+        controller.ResetForSpawn(); // Reset its runtime state (health, move speed, timers) for this spawn. AK
+        return enemyInstance; // Return the enemy. AK
+    }
+
+    private List<GameObject> GetPoolFor(GameObject prefab) // Get (or create) the pool bucket for a given enemy prefab. AK
+    {
+        if(!enemyPools.TryGetValue(prefab, out List<GameObject> pool)) // If there isn't a pool for this prefab yet. AK
+        {
+            pool = new List<GameObject>(); // Create one. AK
+            enemyPools[prefab] = pool; // Store it. AK
+        }
+        return pool; // Return the pool bucket. AK
+    }
+
+    public void ReturnEnemyToPool(GameObject prefab, GameObject enemyInstance) // Deactivate an enemy and add it back to its pool bucket. AK
+    {
+        enemyInstance.SetActive(false); // Deactivate it. AK
+        GetPoolFor(prefab).Add(enemyInstance); // Add it back to the pool for reuse. AK
+    }
+
+    public void RemoveFromTracking(GameObject enemyInstance) // Stop tracking an enemy that died before the despawn check reached it. AK
+    {
+        spawnedEnemies.Remove(enemyInstance); // Remove it from the list of spawned enemies. AK
     }
 
     public Vector3 SelectSpawnPoint()
