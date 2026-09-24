@@ -11,10 +11,9 @@ public class CameraController : MonoBehaviour
         // Nếu chưa tìm thấy target, liên tục tìm PlayerController vừa được sinh ra
         if (target == null)
         {
-            PlayerController player = FindAnyObjectByType<PlayerController>();
-            if (player != null)
+            if (PlayerController.instance != null)
             {
-                target = player.transform;
+                target = PlayerController.instance.transform;
             }
             return; // Chưa có target thì dừng frame này, không chạy dòng dưới để tránh lỗi
         }

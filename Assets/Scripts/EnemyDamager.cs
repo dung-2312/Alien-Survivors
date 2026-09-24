@@ -69,7 +69,7 @@ public class EnemyDamager : MonoBehaviour
     {
         if(damageOverTime == false) // If the damage is not over time. GK
         {
-            if(collision.tag == "Enemy") // If the enemy collides with the player. GK
+            if(collision.CompareTag("Enemy")) // If the enemy collides with the player. GK
             {
                 collision.GetComponent<EnemyController>().TakeDamage(damageAmount, shouldKnockBack); // Take damage. GK
                 if(destroyOnImpact) // If the enemy should be destroyed on impact. GK
@@ -80,7 +80,7 @@ public class EnemyDamager : MonoBehaviour
         }
         else // If the damage is over time. GK
         {
-            if(collision.tag == "Enemy") // If the enemy collides with the player. GK
+            if(collision.CompareTag("Enemy")) // If the enemy collides with the player. GK
             {
                 enemiesInRange.Add(collision.GetComponent<EnemyController>()); // Add the enemy to the list. GK
             }
@@ -90,7 +90,7 @@ public class EnemyDamager : MonoBehaviour
     {
         if(damageOverTime) // If the damage is over time. GK
         {
-            if(collision.tag == "Enemy") // If the enemy exits a collision. GK
+            if(collision.CompareTag("Enemy")) // If the enemy exits a collision. GK
             {
                 enemiesInRange.Remove(collision.GetComponent<EnemyController>()); // Remove the enemy from the list. GK
             }

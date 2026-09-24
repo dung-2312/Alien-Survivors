@@ -17,7 +17,9 @@ public class ExperienceLevelController : MonoBehaviour
     public List<int> expLevels; // The list of experience levels. GK
     public int currentLevel = 1, levelCount = 100; // The current level of the player. GK
     public List<Weapon> weaponsToUpgrade; // The list of weapons to upgrade. GK
-    
+
+    private readonly List<ExpPickup> pickupPool = new List<ExpPickup>(); // The pool of experience pickups, so kills don't Instantiate/Destroy constantly. GK
+
     // Start is called before the first frame update
     void Start()
     {
@@ -46,7 +48,27 @@ public class ExperienceLevelController : MonoBehaviour
 
     public void SpawnExp(Vector3 position, int expValue) // Function to spawn experience into the world. GK
     {
-        Instantiate(pickup, position, Quaternion.identity).expValue = expValue; // Instantiate the experience at the position. GK 
+        ExpPickup newPickup; // The pickup to spawn. GK
+
+        if (pickupPool.Count > 0) // Reuse a pooled pickup if one is available. GK
+        {
+            newPickup = pickupPool[pickupPool.Count - 1]; // Take the last pickup from the pool. GK
+            pickupPool.RemoveAt(pickupPool.Count - 1); // Remove it from the pool. GK
+            newPickup.transform.SetPositionAndRotation(position, Quaternion.identity); // Move it to the spawn position. GK
+        }
+        else // No pooled pickup available, so instantiate a new one. GK
+        {
+            newPickup = Instantiate(pickup, position, Quaternion.identity); // Instantiate the experience at the position. GK
+        }
+
+        newPickup.gameObject.SetActive(true); // Make sure it's active either way. GK
+        newPickup.ResetPickup(expValue); // Reset its state for this spawn. GK
+    }
+
+    public void ReturnToPool(ExpPickup pickupToReturn) // Function to return a picked-up experience orb to the pool instead of destroying it. GK
+    {
+        pickupToReturn.gameObject.SetActive(false); // Deactivate it. GK
+        pickupPool.Add(pickupToReturn); // Add it back to the pool for reuse. GK
     }
     private void LevelUp() // Function to level up the player. GK
     {

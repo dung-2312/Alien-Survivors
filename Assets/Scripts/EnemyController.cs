@@ -17,10 +17,31 @@ public class EnemyController : MonoBehaviour
     public int coinValue = 1; // The value of the coin. D
     public float coinDropRate = 0.5f; // The rate at which the coin drops. D
 
+    [HideInInspector]
+    public GameObject sourcePrefab; // The prefab this instance was spawned from, so it can be returned to the right pool. AK
+    private float baseMoveSpeed; // The move speed as configured on the prefab, restored each time this is reused from the pool. AK
+    private float baseHealth; // The health as configured on the prefab, restored each time this is reused from the pool. AK
+    private bool isReturnedToPool; // Guards against returning the same enemy to the pool twice in one frame. AK
+
+    void Awake()
+    {
+        baseMoveSpeed = Mathf.Abs(moveSpeed); // Remember the prefab's configured speed before knockback flips its sign. AK
+        baseHealth = health; // Remember the prefab's configured health. AK
+    }
+
     void Start()
     {
         //target = FindObjectOfType<PlayerController>().transform; // Find the player and set it as the target. AK
         target = PlayerHealthController.instance.transform; // Find the player and set it as the target. AK
+    }
+
+    public void ResetForSpawn() // Reset this pooled enemy so it looks and behaves like a freshly spawned one. AK
+    {
+        health = baseHealth; // Restore full health. AK
+        moveSpeed = baseMoveSpeed; // Restore the base move speed (knockback and death can leave it modified). AK
+        hitCounter = 0f; // Clear the player-hit cooldown. AK
+        knockBackCounter = 0f; // Clear any pending knockback. AK
+        isReturnedToPool = false; // It's active again, so it can be returned to the pool once more later. AK
     }
 
     void Update()
@@ -59,7 +80,7 @@ public class EnemyController : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision) // When the enemy collides with something. AK
     {
-        if (collision.gameObject.tag == "Player" && hitCounter <= 0f) // If the enemy collides with the player. AK
+        if (collision.gameObject.CompareTag("Player") && hitCounter <= 0f) // If the enemy collides with the player. AK
         {
             PlayerHealthController.instance.TakeDamage(damage); // Take 10 damage. AK
 
@@ -73,7 +94,7 @@ public class EnemyController : MonoBehaviour
 
         if (health <= 0) // If the health is less than or equal to 0. AK
         {
-            Destroy(gameObject); // Destroy the enemy. AK
+            ReturnToPool(); // Return the enemy to the pool instead of destroying it. AK
             ExperienceLevelController.instance.SpawnExp(transform.position,
                 expToGive); // Set the experience when the enemy is destroyed. GK
             if (Random.value <= coinDropRate) // If the random value is less than or equal to the coin drop rate. D
@@ -99,5 +120,26 @@ public class EnemyController : MonoBehaviour
         {
             knockBackCounter = knockBackTime; // Set the knock back counter to the knock back time. AK
         }
+    }
+
+    private void ReturnToPool() // Called when the enemy dies. AK
+    {
+        if (isReturnedToPool) // Already returned (e.g. hit by two sources of damage in the same frame). AK
+        {
+            return;
+        }
+        isReturnedToPool = true; // Mark it as returned so this can't happen twice. AK
+        EnemySpawner.instance.RemoveFromTracking(gameObject); // Stop the spawner's despawn check from tracking it. AK
+        EnemySpawner.instance.ReturnEnemyToPool(sourcePrefab, gameObject); // Deactivate it and add it back to its pool. AK
+    }
+
+    public void DespawnToPool() // Called by the spawner when the enemy wanders too far from the player. AK
+    {
+        if (isReturnedToPool) // Already returned. AK
+        {
+            return;
+        }
+        isReturnedToPool = true; // Mark it as returned so this can't happen twice. AK
+        EnemySpawner.instance.ReturnEnemyToPool(sourcePrefab, gameObject); // Deactivate it and add it back to its pool. AK
     }
 }
