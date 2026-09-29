@@ -20,6 +20,7 @@ public class CoinController : MonoBehaviour
     public void AddCoins(int coinsToAdd) // Add coins. D
     {
         currentCoins += coinsToAdd; // Add the coins. D
+        PlayerPrefs.SetInt("SavedCoins", currentCoins);
         UIController.instance.UpdateCoins(); // Update the coins. D
         SFXManager.instance.PlaySFXPitched(2); // Play the sound effect. GK
     }
@@ -51,11 +52,17 @@ public class CoinController : MonoBehaviour
     public void SpendCoins(int coinsToSpend) // Spend coins. GK
     {
         currentCoins -= coinsToSpend; // Subtract the coins. GK
+        PlayerPrefs.SetInt("SavedCoins", currentCoins);
         UIController.instance.UpdateCoins(); // Update the coins. GK
     }
     // Start is called before the first frame update
     void Start()
     {
+        currentCoins = PlayerPrefs.GetInt("SavedCoins", 0);
+        if (UIController.instance != null)
+        {
+            UIController.instance.UpdateCoins();
+        }
     }
 
     // Update is called once per frame

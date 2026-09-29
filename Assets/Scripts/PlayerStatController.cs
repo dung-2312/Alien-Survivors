@@ -33,10 +33,6 @@ public class PlayerStatController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(UIController.instance.levelUpPanel.activeSelf) // If the level up panel is active. GK
-        {
-            UpdateDisplay();
-        }
     }
 
     public void UpdateDisplay()

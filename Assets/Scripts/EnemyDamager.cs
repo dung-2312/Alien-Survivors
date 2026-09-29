@@ -14,6 +14,16 @@ public class EnemyDamager : MonoBehaviour
     private float damageCounter; // The counter for the damage. GK
     private List<EnemyController> enemiesInRange = new List<EnemyController>(); // The list of enemies in range. GK
     public bool destroyOnImpact; // Should the enemy be destroyed on impact. GK
+    private void Awake()
+    {
+        // Đảm bảo Collider gắn trên vũ khí luôn hoạt động dưới dạng Trigger để kích hoạt va chạm với quái
+        Collider2D col = GetComponent<Collider2D>();
+        if (col != null)
+        {
+            col.isTrigger = true;
+        }
+    }
+
     void Start()
     {
         //Destroy(gameObject, lifeTime); // Destroy the enemy after the lifetime. AK
@@ -51,11 +61,13 @@ public class EnemyDamager : MonoBehaviour
                 damageCounter = timeBetweenDamage; // Reset the damage counter. GK
                 for(int i = 0; i < enemiesInRange.Count; i++) // For each enemy in range. GK
                 {
-                    if (enemiesInRange[i] != null) // If the enemy is not null. GK
+                    EnemyController enemy = enemiesInRange[i];
+                    // Kiểm tra quái còn tồn tại, đang active và còn máu (tránh gây sát thương lên quái trong object pool)
+                    if (enemy != null && enemy.gameObject.activeInHierarchy && enemy.health > 0)
                     {
-                        enemiesInRange[i].TakeDamage(damageAmount, shouldKnockBack); // Take damage. GK
+                        enemy.TakeDamage(damageAmount, shouldKnockBack); // Take damage. GK
                     }
-                    else // If the enemy is null. GK
+                    else // If the enemy is null, inactive, or already dead
                     {
                         enemiesInRange.RemoveAt(i); // Remove the enemy from the list. GK
                         i--; // Decrease the counter. GK
@@ -65,34 +77,61 @@ public class EnemyDamager : MonoBehaviour
         }
     }
 
-    private void OnTriggerEnter2D(Collider2D collision) // When the enemy collides with something. GK
+    private void OnTriggerEnter2D(Collider2D collision)
     {
-        if(damageOverTime == false) // If the damage is not over time. GK
+        HandleCollisionEnter(collision);
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        HandleCollisionEnter(collision.collider);
+    }
+
+    private void HandleCollisionEnter(Collider2D collision)
+    {
+        if (collision == null) return;
+
+        if (collision.CompareTag("Enemy"))
         {
-            if(collision.CompareTag("Enemy")) // If the enemy collides with the player. GK
+            EnemyController enemy = collision.GetComponent<EnemyController>() ?? collision.GetComponentInParent<EnemyController>();
+            if (enemy == null) return;
+
+            if (damageOverTime == false)
             {
-                collision.GetComponent<EnemyController>().TakeDamage(damageAmount, shouldKnockBack); // Take damage. GK
-                if(destroyOnImpact) // If the enemy should be destroyed on impact. GK
+                enemy.TakeDamage(damageAmount, shouldKnockBack);
+                if (destroyOnImpact)
                 {
-                    Destroy(gameObject); // Destroy the enemy. GK
+                    Destroy(gameObject);
+                }
+            }
+            else
+            {
+                if (!enemiesInRange.Contains(enemy))
+                {
+                    enemiesInRange.Add(enemy);
                 }
             }
         }
-        else // If the damage is over time. GK
-        {
-            if(collision.CompareTag("Enemy")) // If the enemy collides with the player. GK
-            {
-                enemiesInRange.Add(collision.GetComponent<EnemyController>()); // Add the enemy to the list. GK
-            }
-        }
     }
-    private void OnTriggerExit2D(Collider2D collision) // When the enemy exits a collision. GK
+
+    private void OnTriggerExit2D(Collider2D collision)
     {
-        if(damageOverTime) // If the damage is over time. GK
+        HandleCollisionExit(collision);
+    }
+
+    private void OnCollisionExit2D(Collision2D collision)
+    {
+        HandleCollisionExit(collision.collider);
+    }
+
+    private void HandleCollisionExit(Collider2D collision)
+    {
+        if (damageOverTime && collision != null && collision.CompareTag("Enemy"))
         {
-            if(collision.CompareTag("Enemy")) // If the enemy exits a collision. GK
+            EnemyController enemy = collision.GetComponent<EnemyController>() ?? collision.GetComponentInParent<EnemyController>();
+            if (enemy != null)
             {
-                enemiesInRange.Remove(collision.GetComponent<EnemyController>()); // Remove the enemy from the list. GK
+                enemiesInRange.Remove(enemy);
             }
         }
     }

@@ -5,65 +5,163 @@ using UnityEngine;
 
 public class ExpPickup : MonoBehaviour
 {
-    public int expValue; // The value of the experience. GK
-    private bool movingToPlayer; // Whether the experience should move to the player. GK
+    [Header("Values")]
+    public int expValue = 1;
+    public float moveSpeed = 6f;
+    public float acceleration = 15f;
 
-    public float moveSpeed; // The speed at which the experience moves. GK
-    public float timeBetweenChecks; // The time between checks for the player. GK
+    [Header("Visual Tiers (Cấp bậc ngọc)")]
+    public Color tier1Color = new Color(0.35f, 0.85f, 1f, 1f);   // 1 - 5 exp (Cyan / Blue)
+    public Color tier2Color = new Color(0.3f, 1f, 0.45f, 1f);    // 6 - 25 exp (Emerald Green)
+    public Color tier3Color = new Color(1f, 0.25f, 0.25f, 1f);    // 26 - 99 exp (Ruby Red)
+    public Color tier4Color = new Color(1f, 0.85f, 0.15f, 1f);    // 100+ exp (Solar Gold)
 
-    private float checkCounter; // The counter for the checks. GK
-    private float baseMoveSpeed; // The move speed as configured on the prefab, restored each time this is reused from the pool. GK
+    public bool movingToPlayer { get; private set; }
 
-    private PlayerController player; // The variable to keep track of the player. GK
+    private float currentMoveSpeed;
+    private float baseMoveSpeed;
+    private Transform targetPlayerTransform;
+    private SpriteRenderer spriteRenderer;
+    private Vector3 baseScale;
+    private float punchTimer;
+    private float targetScaleMult = 1f;
 
-    void Awake()
+    private void Awake()
     {
-        baseMoveSpeed = moveSpeed; // Remember the prefab's configured speed before it gets modified at pickup time. GK
-    }
+        baseMoveSpeed = moveSpeed;
+        baseScale = transform.localScale;
+        if (baseScale == Vector3.zero) baseScale = Vector3.one;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        player = PlayerHealthController.instance.GetComponent<PlayerController>(); // Get the player controller. GK
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        if (movingToPlayer) // If the experience is moving to the player. GK
+        if (spriteRenderer == null)
         {
-            transform.position = Vector3.MoveTowards(transform.position, PlayerHealthController.instance.transform.position, moveSpeed * Time.deltaTime); // Move the experience towards the player. GK
+            spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        }
+    }
+
+    private void Update()
+    {
+        // 1. Hiệu ứng phóng to đàn hồi khi nhận gộp kinh nghiệm (Zero-GC Punch Scale)
+        if (punchTimer > 0f)
+        {
+            punchTimer -= Time.deltaTime;
+            float punch = 1f + (punchTimer / 0.15f) * 0.35f;
+            transform.localScale = baseScale * (targetScaleMult * punch);
+            if (punchTimer <= 0f && !movingToPlayer)
+            {
+                enabled = false; // Tắt Update khi hết hiệu ứng nảy để giải phóng CPU
+            }
+        }
+
+        // 2. Di chuyển nhanh dần đều về phía Player khi đã bị hút
+        if (movingToPlayer && targetPlayerTransform != null)
+        {
+            currentMoveSpeed += acceleration * Time.deltaTime;
+            transform.position = Vector3.MoveTowards(transform.position, targetPlayerTransform.position, currentMoveSpeed * Time.deltaTime);
+        }
+    }
+
+    /// <summary>
+    /// Thiết lập lại ngọc khi lấy ra từ Object Pool.
+    /// </summary>
+    public void ResetPickup(int newExpValue)
+    {
+        expValue = newExpValue;
+        movingToPlayer = false;
+        currentMoveSpeed = baseMoveSpeed;
+        targetPlayerTransform = null;
+        punchTimer = 0f;
+
+        UpdateVisuals();
+
+        // QUAN TRỌNG: Tắt Update() khi đang nằm yên trên sàn đấu để triệt tiêu tải CPU cho 200+ ngọc!
+        // ExpManager sẽ quản lý bán kính hút tập trung trong 1 vòng lặp duy nhất.
+        enabled = false;
+    }
+
+    /// <summary>
+    /// Gộp thêm điểm kinh nghiệm vào viên ngọc này và nâng cấp bậc hiển thị.
+    /// </summary>
+    public void AddExp(int amount)
+    {
+        expValue += amount;
+        UpdateVisuals();
+
+        // Kích hoạt hiệu ứng nảy to ngọc lên
+        punchTimer = 0.15f;
+        enabled = true; // Bật Update tạm thời để chạy hiệu ứng punch scale
+    }
+
+    /// <summary>
+    /// Bắt đầu bay về phía người chơi.
+    /// </summary>
+    public void StartMovingToPlayer(Transform playerTransform, float playerSpeed)
+    {
+        if (movingToPlayer) return;
+
+        movingToPlayer = true;
+        targetPlayerTransform = playerTransform;
+        currentMoveSpeed = baseMoveSpeed + playerSpeed;
+        enabled = true; // Bật Update để ngọc bay mượt mà
+    }
+
+    private void UpdateVisuals()
+    {
+        if (spriteRenderer == null)
+        {
+            spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        }
+
+        Color targetColor;
+        if (expValue <= 5)
+        {
+            targetColor = tier1Color;
+            targetScaleMult = 1f;
+        }
+        else if (expValue <= 25)
+        {
+            targetColor = tier2Color;
+            targetScaleMult = 1.25f;
+        }
+        else if (expValue <= 99)
+        {
+            targetColor = tier3Color;
+            targetScaleMult = 1.5f;
         }
         else
         {
-            checkCounter -= Time.deltaTime; // Decrement the check counter. GK
-            if (checkCounter <= 0f) // If the check counter is less than or equal to 0. GK
-            {
-                checkCounter = timeBetweenChecks; // Reset the check counter. GK
-                float pickupRangeSqr = player.pickupRange * player.pickupRange; // Compare squared distances to avoid a sqrt. GK
-                if ((transform.position - player.transform.position).sqrMagnitude < pickupRangeSqr) // If the distance between the experience and the player is less than the pickup range. GK
-                {
-                    movingToPlayer = true; // Set movingToPlayer to true. GK
-                    moveSpeed += player.moveSpeed; // Add the player's move speed to the experience's move speed. GK
-                }
-            }
+            targetColor = tier4Color;
+            targetScaleMult = 1.85f;
         }
-    }
 
-    public void ResetPickup(int newExpValue) // Reset this pooled pickup so it looks and behaves like a freshly spawned one. GK
-    {
-        expValue = newExpValue; // Set the experience value for this pickup. GK
-        movingToPlayer = false; // Not moving to the player yet. GK
-        checkCounter = 0f; // Check immediately on the next Update. GK
-        moveSpeed = baseMoveSpeed; // Restore the base move speed (it gets boosted once movingToPlayer kicks in). GK
-    }
-
-    public void OnTriggerEnter2D(Collider2D collision) // When the experience collides with the player. GK
-    {
-        if (collision.CompareTag("Player")) // If the player collides with the experience. GK
+        if (spriteRenderer != null)
         {
-            ExperienceLevelController.instance.GetExp(expValue); // Get the experience. GK
-            ExperienceLevelController.instance.ReturnToPool(this); // Return the pickup to the pool instead of destroying it. GK
+            spriteRenderer.color = targetColor;
+        }
+
+        transform.localScale = baseScale * targetScaleMult;
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Player"))
+        {
+            if (ExperienceLevelController.instance != null)
+            {
+                ExperienceLevelController.instance.GetExp(expValue);
+            }
+
+            if (ExpManager.instance != null)
+            {
+                ExpManager.instance.ReturnToPool(this);
+            }
+            else if (ExperienceLevelController.instance != null)
+            {
+                ExperienceLevelController.instance.ReturnToPool(this);
+            }
+            else
+            {
+                gameObject.SetActive(false);
+            }
         }
     }
 }

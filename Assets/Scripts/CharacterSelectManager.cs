@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
@@ -63,6 +63,7 @@ public class CharacterSelectManager : MonoBehaviour
         {
             characterPreview.sprite = data.characterSprite;
             characterPreview.color = Color.white;
+            characterPreview.preserveAspect = true;
         }
 
         // Cập nhật ảnh vũ khí
@@ -70,6 +71,7 @@ public class CharacterSelectManager : MonoBehaviour
         {
             weaponPreview.sprite = data.weaponSprite;
             weaponPreview.color = Color.white;
+            weaponPreview.preserveAspect = true;
         }
     }
 

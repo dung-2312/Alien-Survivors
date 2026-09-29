@@ -37,6 +37,60 @@ public class UIController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        ApplySciFiLevelUpTheme();
+    }
+
+    public void ApplySciFiLevelUpTheme()
+    {
+        if (levelUpPanel != null)
+        {
+            Image panelImg = levelUpPanel.GetComponent<Image>();
+            if (panelImg != null)
+            {
+                panelImg.color = new Color(0.031f, 0.051f, 0.102f, 0.94f); // #080D1A Dark Sci-Fi background
+            }
+
+            // Định dạng tiêu đề và nút Skip chuẩn Sci-Fi
+            TMP_Text[] allTexts = levelUpPanel.GetComponentsInChildren<TMP_Text>(true);
+            foreach (var t in allTexts)
+            {
+                if (t.name.Contains("Title") || t.text.Contains("Select An Upgrade") || t.text.Contains("SELECT AN UPGRADE"))
+                {
+                    t.text = "<color=#00FFA3>—</color>  <b>SELECT AN UPGRADE</b>  <color=#00FFA3>—</color>";
+                    t.fontSize = 38;
+                    t.alignment = TextAlignmentOptions.Center;
+                    t.color = Color.white;
+                }
+                else if (t.text.Contains("Skip Level Up") || t.text.Contains("SKIP"))
+                {
+                    t.text = "<color=#8EA5C8><b>SKIP >></b></color>";
+                }
+            }
+        }
+
+        // Ẩn 4 nút mua shop ở đáy bảng level-up để tập trung trọn vẹn vào 3 thẻ nâng cấp
+        if (moveSpeedUpgradeDisplay != null) moveSpeedUpgradeDisplay.gameObject.SetActive(false);
+        if (healthUpgradeDisplay != null) healthUpgradeDisplay.gameObject.SetActive(false);
+        if (pickupRangeUpgradeDisplay != null) pickupRangeUpgradeDisplay.gameObject.SetActive(false);
+        if (maxWeaponsUpgradeDisplay != null) maxWeaponsUpgradeDisplay.gameObject.SetActive(false);
+
+        // Định vị 3 thẻ ngang nhau cân đối, kích thước chuẩn 320x480px
+        if (levelUpButtons != null && levelUpButtons.Length >= 3)
+        {
+            float[] xOffsets = new float[] { -380f, 0f, 380f };
+            for (int i = 0; i < 3; i++)
+            {
+                if (levelUpButtons[i] != null)
+                {
+                    RectTransform rt = levelUpButtons[i].GetComponent<RectTransform>();
+                    if (rt != null)
+                    {
+                        rt.sizeDelta = new Vector2(320f, 480f);
+                        rt.anchoredPosition = new Vector2(xOffsets[i], -15f);
+                    }
+                }
+            }
+        }
     }
 
     // Update is called once per frame
@@ -57,8 +111,7 @@ public class UIController : MonoBehaviour
 
     public void SkipLevelUp() // Function to skip the level. GK
     {
-        levelUpPanel.SetActive(false); // Set the level up panel to false. GK
-        Time.timeScale = 1f; // Set the timescale to 1. GK
+        ExperienceLevelController.instance.FinishLevelUp();
     }
 
     public void UpdateCoins() // Function to update the coins. D
