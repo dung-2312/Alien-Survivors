@@ -40,7 +40,20 @@ public class LevelManager : MonoBehaviour
         yield return new WaitForSeconds(waitToShowEndScreen); // Wait for 1 second. GK
         float minutes = Mathf.FloorToInt(timer / 60); // The minutes. GK
         float seconds = Mathf.FloorToInt(timer % 60); // The seconds. GK
-        UIController.instance.endTimeText.text = minutes.ToString() + " mins " + seconds.ToString("00" + " secs"); // Set the end time text. GK
+
+        float bestTime = PlayerPrefs.GetFloat("BestSurvivalTime", 0f);
+        if (timer > bestTime)
+        {
+            bestTime = timer;
+            PlayerPrefs.SetFloat("BestSurvivalTime", bestTime);
+        }
+        PlayerPrefs.Save();
+
+        float bestMinutes = Mathf.FloorToInt(bestTime / 60);
+        float bestSeconds = Mathf.FloorToInt(bestTime % 60);
+
+        UIController.instance.endTimeText.text = minutes.ToString() + " mins " + seconds.ToString("00") + " secs" +
+            "\n<size=70%>Best: " + bestMinutes.ToString() + " mins " + bestSeconds.ToString("00") + " secs</size>"; // Set the end time text. GK
         UIController.instance.levelEndScreen.SetActive(true); // Set the end panel to active. GK
     }
 }

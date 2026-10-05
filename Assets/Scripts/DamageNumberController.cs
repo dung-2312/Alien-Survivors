@@ -4,65 +4,130 @@ using UnityEngine;
 
 public class DamageNumberController : MonoBehaviour
 {
-    public static DamageNumberController instance; // The instance of the damage number controller. AK
+    public static DamageNumberController instance;
 
-    private void Awake() // When the script is loaded. AK
+    [Header("References")]
+    public DamageNumber numberToSpawn;
+    public Transform numberCanvas;
+
+    [Header("Pool Settings")]
+    [SerializeField] private int initialPoolSize = 40;
+
+    [Header("Display Settings")]
+    [Tooltip("Khoảng cách jitter ngẫu nhiên để các số sát thương liên tiếp không bị đè khít lên nhau")]
+    [SerializeField] private float spawnJitterRadius = 0.25f;
+
+    [Tooltip("Gộp sát thương theo mục tiêu (Mặc định tắt để người chơi thấy rõ từng phát đánh)")]
+    [SerializeField] private bool aggregateDamage = false;
+
+    private readonly List<DamageNumber> numberPool = new List<DamageNumber>();
+    
+    // Lưu vết DamageNumber đang hoạt động theo từng Enemy để gộp sát thương (chỉ dùng khi bật aggregateDamage)
+    private readonly Dictionary<GameObject, DamageNumber> activeTargetNumbers = new Dictionary<GameObject, DamageNumber>();
+
+    private void Awake()
     {
-        instance = this; // Set the instance to this. AK
+        instance = this;
     }
 
-    public DamageNumber numberToSpawn; // The damage number to spawn. AK
-    public Transform numberCanvas; // The canvas to spawn the damage number on. AK
-
-    private List<DamageNumber> numberPool = new List<DamageNumber>(); // The pool of damage numbers. AK
-
-    void Start()
+    private void Start()
     {
-
+        PrewarmPool();
     }
 
-    void Update()
+    private void PrewarmPool()
     {
-        if(Input.GetKeyDown(KeyCode.U)) // If the U key is pressed. AK
+        if (numberToSpawn == null || numberCanvas == null) return;
+
+        for (int i = 0; i < initialPoolSize; i++)
         {
-            SpawnDamage(57f, new Vector3(4, 3, 0)); // Spawn damage. AK
+            DamageNumber newObj = Instantiate(numberToSpawn, numberCanvas);
+            newObj.gameObject.SetActive(false);
+            numberPool.Add(newObj);
         }
     }
 
-    public void SpawnDamage(float damageAmount, Vector3 location) // Function to spawn damage. AK
+    // Overload nhận target GameObject
+    public void SpawnDamage(float damageAmount, Vector3 location, GameObject target = null)
     {
-        int rounded = Mathf.RoundToInt(damageAmount); // Round the damage amount. AK
+        if (damageAmount <= 0f) return;
 
-        //DamageNumber newDamage = Instantiate(numberToSpawn, location, Quaternion.identity, numberCanvas); // Instantiate the damage number. AK
-
-        DamageNumber newDamage = GetFromPool(); //  Get the damage number from the pool. AK
-
-        newDamage.Setup(rounded); // Setup the damage number. AK
-        newDamage.gameObject.SetActive(true); // Set the damage number to active. AK
-
-        newDamage.transform.position = location; // Set the position of the damage number. AK
-    }
-
-    public DamageNumber GetFromPool() // Function to get a damage number from the pool. AK
-    {
-        DamageNumber numberToOutput = null; // The damage number to output. AK
-
-        if(numberPool.Count == 0) // If the pool is empty. AK
+        // 1. Kiểm tra Damage Aggregation (chỉ kích hoạt nếu aggregateDamage = true)
+        if (aggregateDamage && target != null && target.activeInHierarchy && activeTargetNumbers.TryGetValue(target, out DamageNumber activeNum))
         {
-            numberToOutput = Instantiate(numberToSpawn, numberCanvas); // Instantiate a new damage number. AK
-        }
-        else // If the pool is not empty. AK
-        {
-            numberToOutput = numberPool[0]; // Set the damage number to the first number in the pool. AK
-            numberPool.RemoveAt(0); // Remove the first number from the pool. AK
+            if (activeNum != null && activeNum.CanAggregate)
+            {
+                activeNum.AddDamage(damageAmount);
+                return;
+            }
+            else
+            {
+                activeTargetNumbers.Remove(target);
+            }
         }
 
-        return numberToOutput; // Return the damage number. AK
+        // 2. Lấy số hiển thị từ Object Pool
+        DamageNumber newDamage = GetFromPool();
+        if (newDamage == null) return;
+
+        // Thêm độ lệch jitter ngẫu nhiên nhẹ để mỗi hit đều có số bay lên tách biệt, rõ ràng
+        Vector3 jitter = new Vector3(
+            Random.Range(-spawnJitterRadius, spawnJitterRadius),
+            Random.Range(-spawnJitterRadius * 0.5f, spawnJitterRadius),
+            0f
+        );
+
+        newDamage.gameObject.SetActive(true);
+        newDamage.Setup(damageAmount, location + jitter, target);
+
+        // 3. Đăng ký vào từ điển nếu bật gộp sát thương
+        if (aggregateDamage && target != null)
+        {
+            activeTargetNumbers[target] = newDamage;
+        }
     }
 
-    public void PlaceInPool(DamageNumber numberToPlace) // Function to place a damage number in the pool. AK
+    // Hàm gốc tương thích với code cũ
+    public void SpawnDamage(float damageAmount, Vector3 location)
     {
-        numberToPlace.gameObject.SetActive(false); // Set the damage number to inactive. AK
-        numberPool.Add(numberToPlace); // Add the damage number to the pool. AK
+        SpawnDamage(damageAmount, location, null);
+    }
+
+    public DamageNumber GetFromPool()
+    {
+        DamageNumber numberToOutput = null;
+
+        if (numberPool.Count == 0)
+        {
+            if (numberToSpawn != null && numberCanvas != null)
+            {
+                numberToOutput = Instantiate(numberToSpawn, numberCanvas);
+            }
+        }
+        else
+        {
+            int lastIndex = numberPool.Count - 1;
+            numberToOutput = numberPool[lastIndex];
+            numberPool.RemoveAt(lastIndex); // Thao tác O(1) không dời mảng
+        }
+
+        return numberToOutput;
+    }
+
+    public void PlaceInPool(DamageNumber numberToPlace)
+    {
+        if (numberToPlace == null) return;
+
+        // Dọn dẹp liên kết khỏi danh sách gộp sát thương khi chữ mờ hết hoặc biến mất
+        if (numberToPlace.Target != null)
+        {
+            if (activeTargetNumbers.TryGetValue(numberToPlace.Target, out DamageNumber current) && current == numberToPlace)
+            {
+                activeTargetNumbers.Remove(numberToPlace.Target);
+            }
+        }
+
+        numberToPlace.gameObject.SetActive(false);
+        numberPool.Add(numberToPlace);
     }
 }

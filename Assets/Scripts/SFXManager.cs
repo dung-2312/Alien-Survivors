@@ -15,12 +15,17 @@ public class SFXManager : MonoBehaviour
 
     public void PlaySFX(int sfxToPlay) // Play the sound effect. GK
     {
-        soundEffects[sfxToPlay].Stop(); // Stop the sound effect. GK
-        soundEffects[sfxToPlay].Play(); // Play the sound effect. GK
+        if (sfxToPlay >= 0 && sfxToPlay < soundEffects.Length && soundEffects[sfxToPlay] != null)
+        {
+            soundEffects[sfxToPlay].PlayOneShot(soundEffects[sfxToPlay].clip); // Play smoothly without cutting off previous audio
+        }
     }
     public void PlaySFXPitched(int sfxToPlay) // Play the sound effect with pitch. GK
     {
-        soundEffects[sfxToPlay].pitch = Random.Range(.8f,1.2f); // Set the pitch. GK
-        PlaySFX(sfxToPlay); // Play the sound effect. GK
+        if (sfxToPlay >= 0 && sfxToPlay < soundEffects.Length && soundEffects[sfxToPlay] != null)
+        {
+            soundEffects[sfxToPlay].pitch = Random.Range(.8f, 1.2f); // Set the pitch. GK
+            soundEffects[sfxToPlay].PlayOneShot(soundEffects[sfxToPlay].clip);
+        }
     }
 }

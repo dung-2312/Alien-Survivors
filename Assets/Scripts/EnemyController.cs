@@ -82,18 +82,35 @@ public class EnemyController : MonoBehaviour
     {
         if (collision.gameObject.CompareTag("Player") && hitCounter <= 0f) // If the enemy collides with the player. AK
         {
-            PlayerHealthController.instance.TakeDamage(damage); // Take 10 damage. AK
+            PlayerHealthController.instance.TakeDamage(damage); // Take damage. AK
 
             hitCounter = hitWaitTime; // Set the hit counter to the hit wait time. AK
         }
     }
 
+    private void OnCollisionStay2D(Collision2D collision) // When the enemy stays in contact with the player.
+    {
+        if (collision.gameObject.CompareTag("Player") && hitCounter <= 0f)
+        {
+            PlayerHealthController.instance.TakeDamage(damage);
+
+            hitCounter = hitWaitTime;
+        }
+    }
+
     public void TakeDamage(float damageToTake) // Function to take damage. AK
     {
+        // Tránh nhận sát thương khi quái đã chết hoặc đã được thu hồi vào Object Pool
+        if (isReturnedToPool || !gameObject.activeInHierarchy || health <= 0f)
+        {
+            return;
+        }
+
         health -= damageToTake; // Decrease the health by the damage. AK
 
         if (health <= 0) // If the health is less than or equal to 0. AK
         {
+            health = 0f;
             ReturnToPool(); // Return the enemy to the pool instead of destroying it. AK
             ExperienceLevelController.instance.SpawnExp(transform.position,
                 expToGive); // Set the experience when the enemy is destroyed. GK
@@ -109,7 +126,10 @@ public class EnemyController : MonoBehaviour
             SFXManager.instance.PlaySFXPitched(1); // Play the sound effect. D
         }
 
-        DamageNumberController.instance.SpawnDamage(damageToTake, transform.position); // Spawn the damage number. AK
+        if (DamageNumberController.instance != null)
+        {
+            DamageNumberController.instance.SpawnDamage(damageToTake, transform.position, gameObject); // Spawn the damage number. AK
+        }
     }
 
     public void TakeDamage(float damageToTake, bool shouldKnockBack) // Function to take damage. AK

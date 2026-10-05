@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 964e6ec842124bc40886abdf1f914a39, type: 3}
+  m_Name: Evo_ThousandBlades
+  m_EditorClassIdentifier: AlienSurvivors.Upgrades::WeaponEvolutionUpgradeData
+  upgradeName: Thousand Blades
+  icon: {fileID: 21300000, guid: 0b15d6178cb245cfa925d3c90ba1c2cc, type: 3}
+  baseDescription: Combines max Dagger Throw + Wings of Swiftness into an unstoppable storm of golden blades!
+  upgradeType: 3
+  requiredWeaponName: Dagger Throw
+  requiredWeaponLevel: -1
+  requiredPassiveStat: {fileID: 11400000, guid: 3cf7a80551e1d0c4c8fed9fea7a64d49, type: 3}
+  requiredPassiveLevel: 1
+  evolvedWeaponName: Thousand Blades
+  evolvedWeaponPrefab: {fileID: 0}

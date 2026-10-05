@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 964e6ec842124bc40886abdf1f914a39, type: 3}
+  m_Name: Evo_SolarFlareRing
+  m_EditorClassIdentifier: AlienSurvivors.Upgrades::WeaponEvolutionUpgradeData
+  upgradeName: Solar Flare Ring
+  icon: {fileID: 21300000, guid: 8f2ceec28a9f4b94a0452beb0cf09b0d, type: 3}
+  baseDescription: Combines max Fireball + Magnet Orb into a cosmic solar vortex pulling and vaporizing enemies!
+  upgradeType: 3
+  requiredWeaponName: Orbitting Fireball
+  requiredWeaponLevel: -1
+  requiredPassiveStat: {fileID: 11400000, guid: a5040d3551ed08e4eb1ceaabee29adb0, type: 3}
+  requiredPassiveLevel: 1
+  evolvedWeaponName: Solar Flare Ring
+  evolvedWeaponPrefab: {fileID: 0}

@@ -4,52 +4,196 @@ using UnityEngine;
 
 public class ProjectileWeapon : Weapon
 {
-    public EnemyDamager damager; // The enemy damager. GK
+    [Header("Thành phần vũ khí")]
+    public EnemyDamager damager;
+    public Projectile projectile;
 
-    public Projectile projectile; // The projectile. GK
-    private float shotCounter; // The counter for the shot. GK
-    public float weaponRange; // The range of the weapon. GK
-    public LayerMask whatIsEnemy; // The layer mask for the enemy. GK
-    // Start is called before the first frame update
+    [Header("Thông số tầm đánh & Layer mục tiêu")]
+    public float weaponRange = 5f;
+    public LayerMask whatIsEnemy;
+
+    [Header("Tối ưu hóa hiệu năng (Performance Optimization)")]
+    [Tooltip("Khoảng cách thời gian giữa các lần quét mục tiêu mới (giây)")]
+    [SerializeField] private float targetScanInterval = 0.15f;
+
+    [Tooltip("Kích thước buffer khởi tạo trước cho mảng Collider (tránh GC Alloc)")]
+    [SerializeField] private int initialBufferSize = 32;
+
+    [Tooltip("Giới hạn kích thước buffer tối đa khi tự động mở rộng")]
+    [SerializeField] private int maxBufferSize = 256;
+
+    // 1. Buffer cấp phát trước để triệt tiêu hoàn toàn rác bộ nhớ (0 GC Alloc)
+    private Collider2D[] enemyBuffer;
+    private ContactFilter2D contactFilter;
+
+    // 2. Cache mục tiêu hiện tại và bộ đếm thời gian
+    private Transform currentTarget;
+    private float scanTimer;
+    private float shotCounter;
+
+    void Awake()
+    {
+        // Khởi tạo trước mảng Collider2D trong Awake để không cấp phát trong Update
+        enemyBuffer = new Collider2D[initialBufferSize];
+
+        // Khởi tạo ContactFilter2D chuẩn Unity 6
+        contactFilter = new ContactFilter2D();
+        contactFilter.SetLayerMask(whatIsEnemy);
+        contactFilter.useLayerMask = true;
+    }
+
     void Start()
     {
-        SetStats(); // Set the stats. GK
+        SetStats();
     }
 
-    // Update is called once per frame
     void Update()
     {
-        if (statsUpdated == true) // If the stats are updated. GK
+        if (statsUpdated)
         {
-            statsUpdated = false; // Set the stats updated to false. GK
-            SetStats(); // Set the stats. GK
+            statsUpdated = false;
+            SetStats();
         }
-        shotCounter -= Time.deltaTime; // Decrease the shot counter. GK
-        if (shotCounter <= 0) // If the shot counter is less than or equal to 0. GK
+
+        float currentRange = weaponRange * stats[weaponLevel].range;
+        // Tính trước bình phương tầm đánh để so sánh sqrMagnitude
+        float currentRangeSqr = currentRange * currentRange;
+
+        // Giảm các biến đếm thời gian
+        scanTimer -= Time.deltaTime;
+        shotCounter -= Time.deltaTime;
+
+        // 4. KIỂM TRA MỤC TIÊU CŨ (Target Caching):
+        // Nếu mục tiêu cũ vẫn hợp lệ (còn sống, active, trong tầm), ta tái sử dụng ngay mà không cần quét lại.
+        if (!IsTargetValid(currentTarget, currentRangeSqr))
         {
-            shotCounter = stats[weaponLevel].timeBetweenAttacks; // Reset the shot counter. GK
-            Collider2D[] enemies = Physics2D.OverlapCircleAll(transform.position, weaponRange * stats[weaponLevel].range, whatIsEnemy); // Get all the enemies in the range. GK
-            if(enemies.Length > 0) // If there are enemies in the range. GK
+            currentTarget = null;
+
+            // 3. NHỊP QUÉT ĐỊNH KỲ (Tick Rate / Scan Interval):
+            // Chỉ quét tìm mục tiêu mới khi đã hết thời gian scanTimer (thay vì quét mỗi frame)
+            if (scanTimer <= 0f)
             {
-                for (int i = 0; i < stats[weaponLevel].amount; i++) // For each enemy in the range. GK
-                {
-                   Vector3 targetPosition = enemies[Random.Range(0, enemies.Length)].transform.position; // Get the target position. GK
-                   Vector3 direction = targetPosition - transform.position; // Get the direction. GK
-                   float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg; // Get the angle. GK
-                   angle -= 90; // Subtract 90 from the angle. GK
-                   projectile.transform.rotation = Quaternion.AngleAxis(angle,Vector3.forward); // Set the rotation of the projectile. GK
-                   Instantiate(projectile, projectile.transform.position, projectile.transform.rotation).gameObject.SetActive(true); // Instantiate the projectile at the position and rotation. GK
-                }
-                SFXManager.instance.PlaySFXPitched(6); // Play the sound effect. GK
+                scanTimer = targetScanInterval;
+                currentTarget = FindClosestTarget(currentRange, currentRangeSqr);
             }
-         }
+        }
+        else if (scanTimer <= 0f)
+        {
+            // Mục tiêu cũ vẫn hợp lệ, chỉ cần reset timer nhịp quét
+            scanTimer = targetScanInterval;
+        }
+
+        // Bắn đạn khi đã hồi chiêu xong
+        if (shotCounter <= 0f)
+        {
+            shotCounter = stats[weaponLevel].timeBetweenAttacks;
+
+            // Nếu tại thời điểm bắn chưa có mục tiêu, thử tìm ngay một lần
+            if (currentTarget == null)
+            {
+                currentTarget = FindClosestTarget(currentRange, currentRangeSqr);
+            }
+
+            if (currentTarget != null)
+            {
+                FireProjectiles(currentTarget);
+            }
+        }
     }
-    void SetStats() // Function to set the stats of the weapon. GK
+
+    /// <summary>
+    /// Kiểm tra mục tiêu cũ còn hợp lệ không:
+    /// - Không null
+    /// - GameObject đang active trong hierarchy
+    /// - Quái còn máu (chưa chết)
+    /// - Vẫn nằm trong bán kính tầm đánh (dùng sqrMagnitude)
+    /// </summary>
+    private bool IsTargetValid(Transform target, float maxRangeSqr)
     {
-        damager.damageAmount = stats[weaponLevel].damage; // Set the damage amount of the damager to the damage of the weapon. GK
-        damager.lifeTime = stats[weaponLevel].duration; // Set the life time of the damager to the duration of the weapon. GK
-        damager.transform.localScale = Vector3.one * stats[weaponLevel].range; // Set the scale of the damager to the range of the weapon. GK
-        shotCounter = 0f; // Reset the shot counter. GK
-        projectile.moveSpeed = stats[weaponLevel].speed; // Set the move speed of the projectile to the speed of the weapon. GK
+        if (target == null) return false;
+        if (!target.gameObject.activeInHierarchy) return false;
+
+        // Kiểm tra máu quái vật
+        EnemyController enemy = target.GetComponent<EnemyController>();
+        if (enemy != null && enemy.health <= 0) return false;
+
+        // 2. So sánh khoảng cách bằng sqrMagnitude để tránh phép căn bậc hai (Mathf.Sqrt)
+        float distSqr = (target.position - transform.position).sqrMagnitude;
+        return distSqr <= maxRangeSqr;
+    }
+
+    /// <summary>
+    /// Tìm quái vật gần nhất bằng Physics NonAlloc và sqrMagnitude
+    /// </summary>
+    private Transform FindClosestTarget(float range, float rangeSqr)
+    {
+        contactFilter.SetLayerMask(whatIsEnemy);
+
+        // 1. Quét quái vào buffer đã cấp phát trước (Unity 6 OverlapCircle không sinh GC Alloc)
+        int hitCount = Physics2D.OverlapCircle(transform.position, range, contactFilter, enemyBuffer);
+
+        // XỬ LÝ KHI SỐ LƯỢNG QUÁI VƯỢT QUÁ KÍCH THƯỚC BUFFER:
+        // Nếu hitCount chạm ngưỡng tối đa của buffer hiện tại, tức là có thể còn quái ngoài rìa chưa đọc hết.
+        // Ta nhân đôi buffer (nếu chưa vượt quá maxBufferSize) và quét lại để không bỏ sót mục tiêu.
+        if (hitCount >= enemyBuffer.Length && enemyBuffer.Length < maxBufferSize)
+        {
+            int newSize = Mathf.Min(enemyBuffer.Length * 2, maxBufferSize);
+            System.Array.Resize(ref enemyBuffer, newSize);
+            hitCount = Physics2D.OverlapCircle(transform.position, range, contactFilter, enemyBuffer);
+        }
+
+        if (hitCount <= 0) return null;
+
+        // 2. Tìm quái gần nhất trong số các quái quét được bằng sqrMagnitude
+        Transform closest = null;
+        float minDistanceSqr = float.MaxValue;
+        Vector3 currentPos = transform.position;
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider2D col = enemyBuffer[i];
+            if (col == null || !col.gameObject.activeInHierarchy) continue;
+
+            EnemyController enemy = col.GetComponent<EnemyController>();
+            if (enemy != null && enemy.health <= 0) continue;
+
+            // So sánh khoảng cách bình phương (sqrMagnitude)
+            float distSqr = (col.transform.position - currentPos).sqrMagnitude;
+            if (distSqr < minDistanceSqr && distSqr <= rangeSqr)
+            {
+                minDistanceSqr = distSqr;
+                closest = col.transform;
+            }
+        }
+
+        return closest;
+    }
+
+    /// <summary>
+    /// Bắn đạn về phía mục tiêu đã được khóa
+    /// </summary>
+    private void FireProjectiles(Transform target)
+    {
+        Vector3 direction = target.position - transform.position;
+        float baseAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
+
+        for (int i = 0; i < stats[weaponLevel].amount; i++)
+        {
+            // Xòe góc nhẹ nếu có nhiều tia đạn
+            float spread = (i - (stats[weaponLevel].amount - 1) / 2f) * 8f;
+            Quaternion rot = Quaternion.AngleAxis(baseAngle + spread, Vector3.forward);
+            Instantiate(projectile, transform.position, rot).gameObject.SetActive(true);
+        }
+
+        SFXManager.instance.PlaySFXPitched(6);
+    }
+
+    void SetStats()
+    {
+        damager.damageAmount = stats[weaponLevel].damage;
+        damager.lifeTime = stats[weaponLevel].duration;
+        damager.transform.localScale = Vector3.one * stats[weaponLevel].range;
+        shotCounter = 0f;
+        projectile.moveSpeed = stats[weaponLevel].speed;
     }
 }

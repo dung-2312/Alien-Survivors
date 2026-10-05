@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using UnityEngine;
+using AlienSurvivors.Upgrades;
 
 public class ExperienceLevelController : MonoBehaviour
 {
@@ -20,12 +21,23 @@ public class ExperienceLevelController : MonoBehaviour
 
     private readonly List<ExpPickup> pickupPool = new List<ExpPickup>(); // The pool of experience pickups, so kills don't Instantiate/Destroy constantly. GK
 
+    [HideInInspector]
+    public int queuedLevels;
+
     // Start is called before the first frame update
     void Start()
     {
         while (expLevels.Count < levelCount)    // While the experience levels are less than the level count. GK
         {
             expLevels.Add(Mathf.CeilToInt(expLevels[expLevels.Count-1]*1.1f)); // Add the experience levels to the list. GK
+        }
+
+        // Tự động khởi tạo ExpManager nếu chưa có trong Scene
+        if (ExpManager.instance == null)
+        {
+            GameObject expMgrObj = new GameObject("ExpManager");
+            ExpManager expMgr = expMgrObj.AddComponent<ExpManager>();
+            expMgr.pickupPrefab = pickup;
         }
     }
 
@@ -38,9 +50,20 @@ public class ExperienceLevelController : MonoBehaviour
     public void GetExp(int amountToGet) // Function to get experience. GK
     {
         currentExperience += amountToGet; // Add the amount to the current experience. GK
-        if(currentExperience >= expLevels[currentLevel]) // If the current experience is greater than or equal to the experience levels. GK
+        while(currentLevel < expLevels.Count && currentExperience >= expLevels[currentLevel])
         {
-            LevelUp(); // Level up the player. GK
+            currentExperience -= expLevels[currentLevel];
+            currentLevel++;
+            queuedLevels++;
+            if(currentLevel >= expLevels.Count)
+            {
+                currentLevel = expLevels.Count - 1;
+                break;
+            }
+        }
+        if(queuedLevels > 0 && !UIController.instance.levelUpPanel.activeSelf)
+        {
+            ShowLevelUp();
         }
         UIController.instance.UpdateExperience(currentExperience, expLevels[currentLevel], currentLevel); // Update the experience. GK
         SFXManager.instance.PlaySFXPitched(2); // Play the sound effect. GK
@@ -48,82 +71,146 @@ public class ExperienceLevelController : MonoBehaviour
 
     public void SpawnExp(Vector3 position, int expValue) // Function to spawn experience into the world. GK
     {
-        ExpPickup newPickup; // The pickup to spawn. GK
-
-        if (pickupPool.Count > 0) // Reuse a pooled pickup if one is available. GK
+        // 1. Sử dụng ExpManager với cơ chế gom ngọc tự động (EXP Merging) & giới hạn số lượng
+        if (ExpManager.instance != null)
         {
-            newPickup = pickupPool[pickupPool.Count - 1]; // Take the last pickup from the pool. GK
-            pickupPool.RemoveAt(pickupPool.Count - 1); // Remove it from the pool. GK
-            newPickup.transform.SetPositionAndRotation(position, Quaternion.identity); // Move it to the spawn position. GK
-        }
-        else // No pooled pickup available, so instantiate a new one. GK
-        {
-            newPickup = Instantiate(pickup, position, Quaternion.identity); // Instantiate the experience at the position. GK
+            ExpManager.instance.SpawnExp(position, expValue);
+            return;
         }
 
-        newPickup.gameObject.SetActive(true); // Make sure it's active either way. GK
-        newPickup.ResetPickup(expValue); // Reset its state for this spawn. GK
+        // 2. Fallback sang logic cũ nếu không có ExpManager
+        ExpPickup newPickup;
+
+        if (pickupPool.Count > 0)
+        {
+            newPickup = pickupPool[pickupPool.Count - 1];
+            pickupPool.RemoveAt(pickupPool.Count - 1);
+            newPickup.transform.SetPositionAndRotation(position, Quaternion.identity);
+        }
+        else
+        {
+            newPickup = Instantiate(pickup, position, Quaternion.identity);
+        }
+
+        newPickup.gameObject.SetActive(true);
+        newPickup.ResetPickup(expValue);
     }
 
     public void ReturnToPool(ExpPickup pickupToReturn) // Function to return a picked-up experience orb to the pool instead of destroying it. GK
     {
-        pickupToReturn.gameObject.SetActive(false); // Deactivate it. GK
-        pickupPool.Add(pickupToReturn); // Add it back to the pool for reuse. GK
-    }
-    private void LevelUp() // Function to level up the player. GK
-    {
-        currentExperience -= expLevels[currentLevel]; // Subtract the experience levels from the current experience. GK         
-        currentLevel++; // Increase the current level. GK
-        if(currentLevel >= expLevels.Count) // If the current level is greater than or equal to the level count. GK
+        if (ExpManager.instance != null)
         {
-            currentLevel = expLevels.Count-1; // Set the current level to the level count. GK
+            ExpManager.instance.ReturnToPool(pickupToReturn);
+            return;
         }
-        //PlayerController.instance.activeWeapon.LevelUp(); // Level up the player's weapon. GK
-        UIController.instance.levelUpPanel.SetActive(true); // Set the level up panel to active. GK
+
+        pickupToReturn.gameObject.SetActive(false);
+        pickupPool.Add(pickupToReturn);
+    }
+
+    public void ShowLevelUp() // Function to show level up panel for the player. GK
+    {
+        // 1. Ưu tiên sử dụng LevelUpManager chuyên nghiệp với animation trượt mượt mà
+        if (LevelUpManager.instance != null)
+        {
+            LevelUpManager.instance.ShowLevelUp();
+            return;
+        }
+
+        if (UIController.instance != null)
+        {
+            UIController.instance.ApplySciFiLevelUpTheme();
+            UIController.instance.levelUpPanel.SetActive(true);
+        }
         Time.timeScale = 0f; // Set the time scale to 0. GK
-        //UIController.instance.levelUpButtons[1].UpdateButtonDisplay(PlayerController.instance.activeWeapon); // Update the button display. GK
-        //UIController.instance.levelUpButtons[1].UpdateButtonDisplay(PlayerController.instance.unassignedWeapons[0]); // Update the button display. GK
-       //UIController.instance.levelUpButtons[2].UpdateButtonDisplay(PlayerController.instance.unassignedWeapons[1]); // Update the button display. GK
-       
-       weaponsToUpgrade.Clear(); // Clear the Weapons from the list. GK
-       List<Weapon> availableWeapons = new List<Weapon>(); // Create a new list of available weapons. GK
-       availableWeapons.AddRange(PlayerController.instance.assignedWeapons); // Add the assigned weapons to the available weapons. GK
 
-       if (availableWeapons.Count > 0)
-       {
-           int selected = Random.Range(0, availableWeapons.Count); // Select a random weapon. GK
-           weaponsToUpgrade.Add(availableWeapons[selected]); // Add the weapon to the list. GK
-           availableWeapons.RemoveAt(selected); // Remove the weapon from the list. GK
-       }
-       if(PlayerController.instance.assignedWeapons.Count + PlayerController.instance.fullyLevelledWeapons.Count < PlayerController.instance.maxWeapons) // If the unassigned weapons count is less than the maximum weapons. GK
-       {
-           availableWeapons.AddRange(PlayerController.instance.unassignedWeapons); // Add the unassigned weapons to the available weapons. GK
-       }
-       for(int i = weaponsToUpgrade.Count; i<3; i++) // For each weapon to upgrade. GK
-       {
-           if (availableWeapons.Count > 0) // If the available weapons count is greater than 0. GK
-           {
-               int selected = Random.Range(0, availableWeapons.Count); // Select a random weapon. GK
-               weaponsToUpgrade.Add(availableWeapons[selected]); // Add the weapon to the list. GK
-               availableWeapons.RemoveAt(selected); // Remove the weapon from the list. GK
-           }
-       }
-       for (int i =0; i < weaponsToUpgrade.Count; i++) // For each weapon to upgrade. GK
-       {
-           UIController.instance.levelUpButtons[i].UpdateButtonDisplay(weaponsToUpgrade[i]); // Update the button display. GK
-       }
+        // Khởi tạo UpgradeManager tự động nếu chưa có trong scene
+        if (UpgradeManager.instance == null)
+        {
+            GameObject managerObj = new GameObject("UpgradeManager");
+            managerObj.AddComponent<UpgradeManager>();
+        }
 
-       for (int i = 0; i < UIController.instance.levelUpButtons.Length; i++) // For each button in the level up buttons. GK
-       {
-           if (i < weaponsToUpgrade.Count) // If the button is less than the weapons to upgrade count. GK
-           {
-               UIController.instance.levelUpButtons[i].gameObject.SetActive(true); // Set the button to active. GK
-           }
-           else // If the button is not less than the weapons to upgrade count. GK
-           {
-               UIController.instance.levelUpButtons[i].gameObject.SetActive(false); // Set the button to inactive. GK
-           }
-       }
-       PlayerStatController.instance.UpdateDisplay(); // Update the display. GK
+        int buttonCount = (UIController.instance != null && UIController.instance.levelUpButtons != null) ? UIController.instance.levelUpButtons.Length : 3;
+
+        // Sử dụng kiến trúc Data-Driven với UpgradeManager
+        if (UpgradeManager.instance != null)
+        {
+            List<UpgradeData> chosenUpgrades = UpgradeManager.instance.GetRandomUpgrades(buttonCount);
+
+            if (chosenUpgrades != null && chosenUpgrades.Count > 0)
+            {
+                for (int i = 0; i < buttonCount; i++)
+                {
+                    if (i < chosenUpgrades.Count)
+                    {
+                        UIController.instance.levelUpButtons[i].gameObject.SetActive(true);
+                        UIController.instance.levelUpButtons[i].UpdateButtonDisplay(chosenUpgrades[i]);
+                    }
+                    else
+                    {
+                        UIController.instance.levelUpButtons[i].gameObject.SetActive(false);
+                    }
+                }
+                return;
+            }
+        }
+
+        // FAILSAFE: Nếu danh sách thẻ Data-Driven chưa sẵn sàng, dùng hệ thống vũ khí cơ bản để 3 thẻ luôn hiển thị
+        weaponsToUpgrade.Clear();
+        List<Weapon> availableWeapons = new List<Weapon>();
+        if (PlayerController.instance != null)
+        {
+            availableWeapons.AddRange(PlayerController.instance.assignedWeapons);
+            if (PlayerController.instance.assignedWeapons.Count + PlayerController.instance.fullyLevelledWeapons.Count < PlayerController.instance.maxWeapons)
+            {
+                availableWeapons.AddRange(PlayerController.instance.unassignedWeapons);
+            }
+        }
+
+        for (int i = 0; i < buttonCount; i++)
+        {
+            if (availableWeapons.Count > 0)
+            {
+                int sel = Random.Range(0, availableWeapons.Count);
+                weaponsToUpgrade.Add(availableWeapons[sel]);
+                availableWeapons.RemoveAt(sel);
+            }
+        }
+
+        for (int i = 0; i < buttonCount; i++)
+        {
+            if (i < weaponsToUpgrade.Count)
+            {
+                UIController.instance.levelUpButtons[i].gameObject.SetActive(true);
+                UIController.instance.levelUpButtons[i].UpdateButtonDisplay(weaponsToUpgrade[i]);
+            }
+            else
+            {
+                UIController.instance.levelUpButtons[i].gameObject.SetActive(false);
+            }
+        }
+    }
+
+    public void FinishLevelUp()
+    {
+        queuedLevels--;
+        if (queuedLevels > 0)
+        {
+            ShowLevelUp();
+        }
+        else
+        {
+            queuedLevels = 0;
+            if (LevelUpManager.instance != null)
+            {
+                LevelUpManager.instance.ClosePanel();
+            }
+            else
+            {
+                UIController.instance.levelUpPanel.SetActive(false);
+                Time.timeScale = 1f;
+            }
+        }
     }
 }

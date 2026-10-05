@@ -5,9 +5,44 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     public static PlayerController instance; // Create a singleton instance of the PlayerController. GK
+    public Rigidbody2D theRB;
+    [Header("Sprite & Facing")]
+    public Transform spriteTransform; // Transform of the sprite to flip
+    private float originalScaleX = 1f;
+    private float originalScaleY = 1f;
+    [HideInInspector]
+    public float facingDirection = 1f; // 1 = right, -1 = left
+
     public void Awake()
     {
         instance = this; // Set the instance to this object. GK
+        if (theRB == null)
+        {
+            theRB = GetComponent<Rigidbody2D>();
+        }
+
+        if (spriteTransform == null)
+        {
+            Transform foundSprite = transform.Find("Sprite");
+            if (foundSprite != null)
+            {
+                spriteTransform = foundSprite;
+            }
+            else
+            {
+                SpriteRenderer sr = GetComponentInChildren<SpriteRenderer>();
+                if (sr != null)
+                {
+                    spriteTransform = sr.transform;
+                }
+            }
+        }
+
+        if (spriteTransform != null)
+        {
+            originalScaleX = Mathf.Abs(spriteTransform.localScale.x);
+            originalScaleY = spriteTransform.localScale.y;
+        }
     }
     public float moveSpeed; // The speed at which the player moves. AK
 
@@ -37,19 +72,60 @@ public class PlayerController : MonoBehaviour
         moveInput.x = Input.GetAxisRaw("Horizontal"); // Get the horizontal input. AK
         moveInput.y = Input.GetAxisRaw("Vertical"); // Get the vertical input. AK
 
-        //Debug.Log(moveInput); AK
-
         moveInput.Normalize(); // Normalize the vector so that the player moves at the same speed in all directions. AK
 
-        transform.position += moveInput * moveSpeed * Time.deltaTime; // Move the player in the direction of the input. AK
-
-        if(moveInput != Vector3.zero) // If the player is moving AK
+        // Facing direction flip
+        if (moveInput.x > 0.05f)
         {
-            anim.SetBool("isMoving", true); // Set the isMoving parameter in the animator to true. AK
+            facingDirection = 1f;
         }
-        else // If the player is not moving AK
+        else if (moveInput.x < -0.05f)
         {
-            anim.SetBool("isMoving", false); // Set the isMoving parameter in the animator to false. AK
+            facingDirection = -1f;
+        }
+
+        // Smooth physics-based movement (eliminates stiffness/hard snapping)
+        Vector2 targetVelocity = new Vector2(moveInput.x, moveInput.y) * moveSpeed;
+        if (theRB != null)
+        {
+            theRB.linearVelocity = Vector2.MoveTowards(theRB.linearVelocity, targetVelocity, moveSpeed * 15f * Time.deltaTime);
+        }
+        else
+        {
+            transform.position += (Vector3)targetVelocity * Time.deltaTime;
+        }
+
+        bool isMoving = moveInput != Vector3.zero;
+
+        // Dynamic visual animation & sprite flip
+        if (spriteTransform != null)
+        {
+            if (isMoving)
+            {
+                // Dynamic walk bounce
+                float walkBounce = 1f + Mathf.Sin(Time.time * 12f) * 0.05f;
+                spriteTransform.localScale = new Vector3(facingDirection * originalScaleX, originalScaleY * walkBounce, spriteTransform.localScale.z);
+            }
+            else
+            {
+                // Idle breathing effect so the character is never stiff/frozen
+                float idleBreath = 1f + Mathf.Sin(Time.time * 3f) * 0.025f;
+                spriteTransform.localScale = new Vector3(facingDirection * originalScaleX, originalScaleY * idleBreath, spriteTransform.localScale.z);
+            }
+        }
+
+        // Animator integration
+        if (anim != null)
+        {
+            anim.SetBool("isMoving", isMoving);
+            if (isMoving)
+            {
+                anim.speed = Mathf.Clamp(moveSpeed / 4f, 0.9f, 2.2f); // Scales walk animation speed with move speed
+            }
+            else
+            {
+                anim.speed = 1f;
+            }
         }
     }
     public void AddWeapon(int weaponNumber) // Function to add a weapon. GK

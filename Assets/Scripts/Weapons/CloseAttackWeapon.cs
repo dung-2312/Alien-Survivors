@@ -1,11 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Security.Cryptography.X509Certificates;
 using UnityEngine;
 
 public class CloseAttackWeapon : Weapon
 {
     public EnemyDamager damager; // The enemy damager. GK
+    public LayerMask whatIsEnemy; // The layer mask for enemies.
+    private readonly Collider2D[] enemyBuffer = new Collider2D[32];
     private float attackCounter, direction; // The counter for the attack and the direction. GK
     
     // Start is called before the first frame update
@@ -26,23 +27,60 @@ public class CloseAttackWeapon : Weapon
         if (attackCounter <= 0) // If the attack counter is less than or equal to 0. GK
         {
             attackCounter = stats[weaponLevel].timeBetweenAttacks; // Reset the attack counter. GK
-            direction =  Input.GetAxisRaw("Horizontal"); // Get the direction. GK
-            if(direction != 0) // If the horizontal axis is not 0. GK
+            
+            // Auto aim at the closest enemy within range
+            Transform closestEnemy = null;
+            float minDistanceSqr = float.MaxValue;
+            ContactFilter2D filter = new ContactFilter2D();
+            filter.SetLayerMask(whatIsEnemy.value != 0 ? whatIsEnemy : LayerMask.GetMask("Enemy", "Enemies", "Default"));
+            filter.useLayerMask = true;
+
+            int count = Physics2D.OverlapCircle(transform.position, stats[weaponLevel].range * 5f, filter, enemyBuffer);
+            for (int c = 0; c < count; c++)
             {
-                if (direction > 0) // If the horizontal axis is greater than 0. GK
+                if (enemyBuffer[c] != null && enemyBuffer[c].CompareTag("Enemy"))
                 {
-                    damager.transform.rotation = Quaternion.identity; // Set the rotation of the damager. GK
-                }
-                else // If the horizontal axis is less than 0. GK
-                {
-                    damager.transform.rotation = Quaternion.Euler(0f, 0f, 180f); // Set the rotation of the damager. GK
+                    float distSqr = (enemyBuffer[c].transform.position - transform.position).sqrMagnitude;
+                    if (distSqr < minDistanceSqr)
+                    {
+                        minDistanceSqr = distSqr;
+                        closestEnemy = enemyBuffer[c].transform;
+                    }
                 }
             }
-            Instantiate(damager, damager.transform.position, damager.transform.rotation,transform).gameObject.SetActive(true); // Instantiate the damager at the position and rotation. GK
-            for (int i=1; i< stats[weaponLevel].amount; i++) // For each attack. GK
+
+            // Determine base attack angle: exact angle towards closest enemy, or player movement/facing
+            float baseAngle = 0f;
+            if (closestEnemy != null)
             {
-                float rot = (360f / stats[weaponLevel].amount) * i; // Calculate the rotation. GK
-                Instantiate(damager, damager.transform.position, Quaternion.Euler(0f,0f,damager.transform.rotation.eulerAngles.z+rot), transform).gameObject.SetActive(true); // Instantiate the damager at the position and rotation. GK
+                Vector3 diff = closestEnemy.position - transform.position;
+                baseAngle = Mathf.Atan2(diff.y, diff.x) * Mathf.Rad2Deg;
+            }
+            else
+            {
+                Vector2 moveInput = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
+                if (moveInput.sqrMagnitude > 0.01f)
+                {
+                    baseAngle = Mathf.Atan2(moveInput.y, moveInput.x) * Mathf.Rad2Deg;
+                }
+                else
+                {
+                    float face = PlayerController.instance != null ? PlayerController.instance.facingDirection : 1f;
+                    baseAngle = face < 0 ? 180f : 0f;
+                }
+            }
+
+            // Tấn công xung quanh nhân vật (360 độ):
+            // Cấp 1 (amount = 1): chém 4 hướng (chữ thập 90°) bao quanh nhân vật
+            // Khi nâng cấp: chém 6, 8, 10, 12 hướng tạo thành vòng bão kiếm quét sạch mọi phía
+            int strikeCount = Mathf.Max(4, (int)stats[weaponLevel].amount * 2);
+            float angleStep = 360f / strikeCount;
+
+            for (int i = 0; i < strikeCount; i++)
+            {
+                float currentAngle = baseAngle + (angleStep * i);
+                Quaternion rot = Quaternion.Euler(0f, 0f, currentAngle);
+                Instantiate(damager, damager.transform.position, rot, transform).gameObject.SetActive(true);
             }
             SFXManager.instance.PlaySFXPitched(9); // Play the sound effect. GK
 

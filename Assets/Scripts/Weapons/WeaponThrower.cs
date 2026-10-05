@@ -10,7 +10,7 @@ public class WeaponThrower : Weapon
     // Start is called before the first frame update
     void Start()
     {
-        
+        SetStats();
     }
 
     // Update is called once per frame
