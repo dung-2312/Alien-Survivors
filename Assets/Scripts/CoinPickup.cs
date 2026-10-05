@@ -5,7 +5,7 @@ using UnityEngine;
 public class CoinPickup : MonoBehaviour
 {
     public int coinAmount = 1; // The value of the coin. D
-    private bool movingToPlayer; // Whether the experience should move to the player. GK
+    private bool movingToPlayer; // Whether the experience should move to the player. 
 
     public float moveSpeed; // The speed at which the experience moves. GK  
     public float timeBetweenChecks; // The time between checks for the player. GK
