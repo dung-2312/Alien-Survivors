@@ -996,7 +996,7 @@ MonoBehaviour:
       m_Calls: []
   m_text: Hero Name
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 34c5a0a2f29b1a541a882543896ef7ce, type: 2}
   m_sharedMaterial: {fileID: -5216796118450996084, guid: 34c5a0a2f29b1a541a882543896ef7ce, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
@@ -1213,23 +1213,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 802545637}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
+  m_Script: {fileID: 11500000, guid: 8a8695521f0d02e499659fee002a26c2, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.HorizontalLayoutGroup
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GridLayoutGroup
   m_Padding:
     m_Left: 0
     m_Right: 0
     m_Top: 0
     m_Bottom: 0
-  m_ChildAlignment: 0
-  m_Spacing: 20
-  m_ChildForceExpandWidth: 1
-  m_ChildForceExpandHeight: 1
-  m_ChildControlWidth: 0
-  m_ChildControlHeight: 0
-  m_ChildScaleWidth: 0
-  m_ChildScaleHeight: 0
-  m_ReverseArrangement: 0
+  m_ChildAlignment: 1
+  m_StartCorner: 0
+  m_StartAxis: 0
+  m_CellSize: {x: 168, y: 195}
+  m_Spacing: {x: 18, y: 16}
+  m_Constraint: 1
+  m_ConstraintCount: 4
 --- !u!1 &804605185
 GameObject:
   m_ObjectHideFlags: 0
@@ -1289,7 +1287,7 @@ MonoBehaviour:
       m_Calls: []
   m_text: "M\xF4 t\u1EA3 k\u1EF9 n\u0103ng"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 34c5a0a2f29b1a541a882543896ef7ce, type: 2}
   m_sharedMaterial: {fileID: -5216796118450996084, guid: 34c5a0a2f29b1a541a882543896ef7ce, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
@@ -3870,6 +3868,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterSelectManager
   characters:
+  - {fileID: 11400000, guid: 7537b7acfa9f4990b1445c0a2adb2694, type: 2}
+  - {fileID: 11400000, guid: 3d9828706e084fb6a15f83edb530881f, type: 2}
+  - {fileID: 11400000, guid: 4f7ef245567844b0adced2b1209a7cf6, type: 2}
+  - {fileID: 11400000, guid: 81f561ac2b7e43e7b47cd9279298886d, type: 2}
   - {fileID: 11400000, guid: 70e967a912cb9324b9314155208b9dea, type: 2}
   - {fileID: 11400000, guid: 1f08a1e65cdeb224885cbea1c98965c3, type: 2}
   nameText: {fileID: 654300074}
@@ -3879,6 +3881,19 @@ MonoBehaviour:
   confirmButton: {fileID: 2023908060}
   backButton: {fileID: 1373825262}
   mainMenuElements: {fileID: 0}
+  windowBox: {fileID: 1774619202}
+  gridTransform: {fileID: 802545638}
+  bottomDetailPanel: {fileID: 1718384641}
+  titleText: {fileID: 915665589}
+  windowFrameSprite: {fileID: 21300000, guid: a1b2c3d4000144448888000000000001, type: 3}
+  cardNormalSprite: {fileID: 21300000, guid: a1b2c3d4000244448888000000000002, type: 3}
+  cardSelectedSprite: {fileID: 21300000, guid: a1b2c3d4000344448888000000000003, type: 3}
+  confirmButtonSprite: {fileID: 21300000, guid: a1b2c3d4000444448888000000000004, type: 3}
+  backButtonSprite: {fileID: 21300000, guid: a1b2c3d4000544448888000000000005, type: 3}
+  subPanelSprite: {fileID: 21300000, guid: a1b2c3d4000744448888000000000007, type: 3}
+  coinBoxSprite: {fileID: 21300000, guid: a1b2c3d4000644448888000000000006, type: 3}
+  coinIconSprite: {fileID: 21300000, guid: a1b2c3d4000844448888000000000008, type: 3}
+  fontAsset: {fileID: 11400000, guid: 34c5a0a2f29b1a541a882543896ef7ce, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

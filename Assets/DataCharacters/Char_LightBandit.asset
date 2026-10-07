@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ebc29fae23ce8645b3f01e901cfbedc, type: 3}
+  m_Name: Char_LightBandit
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterData
+  characterName: Light Bandit
+  passiveDescription: "Shadow Assassin: +20% move speed and +15% critical chance. Rapid throwing daggers."
+  characterSprite: {fileID: 21300000, guid: f2ed27d6c1c3ccc48959bcca269d88f0, type: 3}
+  weaponSprite: {fileID: -1061488230, guid: 99f10abcf979e904b883da0c6922d74f, type: 3}
+  characterPrefab: {fileID: 135668588343800713, guid: e0d49022272e6064398f8b3a34069ca1, type: 3}
