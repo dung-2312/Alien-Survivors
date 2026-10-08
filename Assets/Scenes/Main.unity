@@ -5330,7 +5330,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1011957233
 Transform:
   m_ObjectHideFlags: 0
@@ -1170771,7 +1170771,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_BackGroundColor: {r: 0.05, g: 0.02, b: 0.08, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -1171986,6 +1171986,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterSpawner
   characters:
+  - {fileID: 11400000, guid: 7537b7acfa9f4990b1445c0a2adb2694, type: 2}
+  - {fileID: 11400000, guid: 3d9828706e084fb6a15f83edb530881f, type: 2}
+  - {fileID: 11400000, guid: 4f7ef245567844b0adced2b1209a7cf6, type: 2}
+  - {fileID: 11400000, guid: 81f561ac2b7e43e7b47cd9279298886d, type: 2}
   - {fileID: 11400000, guid: 70e967a912cb9324b9314155208b9dea, type: 2}
   - {fileID: 11400000, guid: 1f08a1e65cdeb224885cbea1c98965c3, type: 2}
   spawnPoint: {fileID: 0}
@@ -1171998,7 +1172002,7 @@ Transform:
   m_GameObject: {fileID: 1715174908}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1302.8428, y: 586.7851, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

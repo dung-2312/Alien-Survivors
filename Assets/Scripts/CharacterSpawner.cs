@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class CharacterSpawner : MonoBehaviour
 {
@@ -33,6 +33,30 @@ public class CharacterSpawner : MonoBehaviour
 
             GameObject spawnedPlayer = Instantiate(selectedData.characterPrefab, pos, rot);
             spawnedPlayer.name = "Player";
+
+            // Cập nhật Sprite hiển thị theo tướng đã chọn
+            if (selectedData.characterSprite != null)
+            {
+                Transform spriteChild = spawnedPlayer.transform.Find("Sprite");
+                if (spriteChild == null && spawnedPlayer.TryGetComponent<SpriteRenderer>(out _))
+                {
+                    spriteChild = spawnedPlayer.transform;
+                }
+
+                if (spriteChild != null && spriteChild.TryGetComponent<SpriteRenderer>(out var sr))
+                {
+                    sr.sprite = selectedData.characterSprite;
+
+                    // Chuẩn hóa kích thước nhân vật trong màn chơi để hiển thị to rõ ràng, cân đối
+                    float spriteHeight = sr.sprite.rect.height / sr.sprite.pixelsPerUnit;
+                    if (spriteHeight > 0.05f)
+                    {
+                        float targetHeight = 1.8f; // Chiều cao chuẩn nhân vật trong game
+                        float s = targetHeight / spriteHeight;
+                        spriteChild.localScale = new Vector3(s, s, 1f);
+                    }
+                }
+            }
         }
         else
         {
