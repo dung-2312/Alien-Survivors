@@ -1,6 +1,6 @@
 # Alien Survivors
 
-![Alien Survivors Logo](Assets/Image/MM.png)
+![Alien Survivors Logo](docs/alien-survivors-banner.png)
 
 "Alien Survivors" is a 2D survival arcade game built with Unity, where players must endure waves of extraterrestrial and supernatural enemies. In this action-packed game, players choose a character with unique abilities to survive against relentless hordes of alien invaders and monstrous creatures.
 
