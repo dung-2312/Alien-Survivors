@@ -26,7 +26,7 @@ public class CharacterSelectManager : MonoBehaviour
     [SerializeField] private RectTransform bottomDetailPanel;
     [SerializeField] private TMP_Text titleText;
 
-    [Header("Vampire Survivors Style Sprites")]
+    [Header("Alien Survivors Style Sprites")]
     [SerializeField] private Sprite windowFrameSprite;
     [SerializeField] private Sprite cardNormalSprite;
     [SerializeField] private Sprite cardSelectedSprite;
