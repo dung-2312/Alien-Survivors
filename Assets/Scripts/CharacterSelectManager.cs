@@ -188,9 +188,28 @@ public class CharacterSelectManager : MonoBehaviour
                 Transform t = bottomDetailPanel.Find("AvatarPreview");
                 if (t != null) characterPreview = t.GetComponent<Image>();
             }
+            Transform wpBox = bottomDetailPanel.Find("WeaponPreviewBox");
+            Transform directWp = bottomDetailPanel.Find("WeaponPreview");
+            if (wpBox != null && directWp != null && directWp.parent == bottomDetailPanel)
+            {
+                directWp.gameObject.SetActive(false);
+            }
+
             if (weaponPreview == null)
             {
-                Transform t = bottomDetailPanel.Find("WeaponPreview");
+                if (wpBox != null)
+                {
+                    Transform t = wpBox.Find("WeaponPreview");
+                    if (t != null) weaponPreview = t.GetComponent<Image>();
+                }
+                if (weaponPreview == null && directWp != null)
+                {
+                    weaponPreview = directWp.GetComponent<Image>();
+                }
+            }
+            else if (wpBox != null && weaponPreview.transform.parent == bottomDetailPanel)
+            {
+                Transform t = wpBox.Find("WeaponPreview");
                 if (t != null) weaponPreview = t.GetComponent<Image>();
             }
         }
@@ -257,14 +276,14 @@ public class CharacterSelectManager : MonoBehaviour
             bgImg.color = new Color(0.04f, 0.04f, 0.07f, 0.92f);
         }
 
-        // 2. Khung viền WindowBox tỷ lệ dọc 3:4 (720x940) phong cách Vampire Survivors
+        // 2. Khung viền WindowBox tỷ lệ landscape (880x960) phong cách Vampire Survivors
         if (windowBox != null)
         {
             windowBox.anchorMin = new Vector2(0.5f, 0.5f);
             windowBox.anchorMax = new Vector2(0.5f, 0.5f);
             windowBox.pivot = new Vector2(0.5f, 0.5f);
-            windowBox.sizeDelta = new Vector2(740f, 950f);
-            windowBox.anchoredPosition = new Vector2(0f, -25f);
+            windowBox.sizeDelta = new Vector2(880f, 960f);
+            windowBox.anchoredPosition = new Vector2(0f, -40f);
 
             Image wImg = windowBox.GetComponent<Image>();
             if (wImg != null)
@@ -282,11 +301,11 @@ public class CharacterSelectManager : MonoBehaviour
             tr.anchorMin = new Vector2(0.5f, 1f);
             tr.anchorMax = new Vector2(0.5f, 1f);
             tr.pivot = new Vector2(0.5f, 1f);
-            tr.anchoredPosition = new Vector2(0f, -22f);
-            tr.sizeDelta = new Vector2(600f, 40f);
+            tr.anchoredPosition = new Vector2(0f, -18f);
+            tr.sizeDelta = new Vector2(800f, 48f);
 
             titleText.text = "Character Selection";
-            titleText.fontSize = 32f;
+            titleText.fontSize = 36f;
             titleText.alignment = TextAlignmentOptions.Center;
             titleText.color = Color.white;
             ApplyFont(titleText);
@@ -301,8 +320,8 @@ public class CharacterSelectManager : MonoBehaviour
             bottomDetailPanel.anchorMin = new Vector2(0.5f, 0f);
             bottomDetailPanel.anchorMax = new Vector2(0.5f, 0f);
             bottomDetailPanel.pivot = new Vector2(0.5f, 0f);
-            bottomDetailPanel.sizeDelta = new Vector2(670f, 175f);
-            bottomDetailPanel.anchoredPosition = new Vector2(0f, 22f);
+            bottomDetailPanel.sizeDelta = new Vector2(830f, 220f);
+            bottomDetailPanel.anchoredPosition = new Vector2(0f, 18f);
 
             Image pImg = bottomDetailPanel.GetComponent<Image>();
             if (pImg != null)
@@ -319,10 +338,10 @@ public class CharacterSelectManager : MonoBehaviour
                 nTr.anchorMin = new Vector2(0f, 1f);
                 nTr.anchorMax = new Vector2(1f, 1f);
                 nTr.pivot = new Vector2(0f, 1f);
-                nTr.anchoredPosition = new Vector2(25f, -12f);
-                nTr.sizeDelta = new Vector2(-50f, 30f);
+                nTr.anchoredPosition = new Vector2(24f, -12f);
+                nTr.sizeDelta = new Vector2(500f, 44f);
 
-                nameText.fontSize = 24f;
+                nameText.fontSize = 32f;
                 nameText.fontStyle = FontStyles.Bold;
                 nameText.color = new Color(1f, 0.95f, 0.85f);
                 nameText.alignment = TextAlignmentOptions.Left;
@@ -336,20 +355,53 @@ public class CharacterSelectManager : MonoBehaviour
                 avTr.anchorMin = new Vector2(0f, 0.5f);
                 avTr.anchorMax = new Vector2(0f, 0.5f);
                 avTr.pivot = new Vector2(0.5f, 0.5f);
-                avTr.anchoredPosition = new Vector2(65f, -16f);
-                avTr.sizeDelta = new Vector2(80f, 80f);
+                avTr.anchoredPosition = new Vector2(65f, -14f);
+                avTr.sizeDelta = new Vector2(90f, 90f);
                 characterPreview.preserveAspect = true;
+            }
+
+            // Ô khung vũ khí xem trước
+            Transform wpBoxTr = bottomDetailPanel.Find("WeaponPreviewBox");
+            if (wpBoxTr != null)
+            {
+                RectTransform boxRt = wpBoxTr.GetComponent<RectTransform>();
+                if (boxRt != null)
+                {
+                    boxRt.anchorMin = new Vector2(0f, 0.5f);
+                    boxRt.anchorMax = new Vector2(0f, 0.5f);
+                    boxRt.pivot = new Vector2(0.5f, 0.5f);
+                    boxRt.anchoredPosition = new Vector2(145f, -14f);
+                    boxRt.sizeDelta = new Vector2(46f, 46f);
+                }
+                Image boxImg = wpBoxTr.GetComponent<Image>();
+                if (boxImg != null)
+                {
+                    boxImg.sprite = subPanelSprite;
+                    boxImg.type = Image.Type.Sliced;
+                    boxImg.color = Color.white;
+                }
             }
 
             // Ô vũ khí khởi đầu xem trước
             if (weaponPreview != null)
             {
                 RectTransform wpTr = weaponPreview.rectTransform;
-                wpTr.anchorMin = new Vector2(0f, 0.5f);
-                wpTr.anchorMax = new Vector2(0f, 0.5f);
-                wpTr.pivot = new Vector2(0.5f, 0.5f);
-                wpTr.anchoredPosition = new Vector2(135f, -16f);
-                wpTr.sizeDelta = new Vector2(40f, 40f);
+                if (weaponPreview.transform.parent != null && weaponPreview.transform.parent == bottomDetailPanel)
+                {
+                    wpTr.anchorMin = new Vector2(0f, 0.5f);
+                    wpTr.anchorMax = new Vector2(0f, 0.5f);
+                    wpTr.pivot = new Vector2(0.5f, 0.5f);
+                    wpTr.anchoredPosition = new Vector2(145f, -14f);
+                    wpTr.sizeDelta = new Vector2(46f, 46f);
+                }
+                else
+                {
+                    wpTr.anchorMin = Vector2.zero;
+                    wpTr.anchorMax = Vector2.one;
+                    wpTr.pivot = new Vector2(0.5f, 0.5f);
+                    wpTr.anchoredPosition = Vector2.zero;
+                    wpTr.sizeDelta = new Vector2(-8f, -8f);
+                }
                 weaponPreview.preserveAspect = true;
             }
 
@@ -360,10 +412,10 @@ public class CharacterSelectManager : MonoBehaviour
                 dTr.anchorMin = new Vector2(0f, 0.5f);
                 dTr.anchorMax = new Vector2(1f, 0.5f);
                 dTr.pivot = new Vector2(0f, 0.5f);
-                dTr.anchoredPosition = new Vector2(180f, -16f);
-                dTr.sizeDelta = new Vector2(-330f, 95f);
+                dTr.anchoredPosition = new Vector2(205f, -14f);
+                dTr.sizeDelta = new Vector2(-385f, 130f);
 
-                descriptionText.fontSize = 17f;
+                descriptionText.fontSize = 24f;
                 descriptionText.color = Color.white;
                 descriptionText.textWrappingMode = TextWrappingModes.Normal;
                 descriptionText.alignment = TextAlignmentOptions.MidlineLeft;
@@ -377,8 +429,8 @@ public class CharacterSelectManager : MonoBehaviour
                 cTr.anchorMin = new Vector2(1f, 0.5f);
                 cTr.anchorMax = new Vector2(1f, 0.5f);
                 cTr.pivot = new Vector2(1f, 0.5f);
-                cTr.anchoredPosition = new Vector2(-22f, -16f);
-                cTr.sizeDelta = new Vector2(130f, 48f);
+                cTr.anchoredPosition = new Vector2(-25f, -14f);
+                cTr.sizeDelta = new Vector2(145f, 56f);
 
                 Image cImg = confirmButton.GetComponent<Image>();
                 if (cImg != null)
@@ -392,7 +444,7 @@ public class CharacterSelectManager : MonoBehaviour
                 if (cTxt != null)
                 {
                     cTxt.text = "Confirm";
-                    cTxt.fontSize = 22f;
+                    cTxt.fontSize = 24f;
                     cTxt.fontStyle = FontStyles.Bold;
                     cTxt.color = Color.white;
                     ApplyFont(cTxt);
@@ -422,8 +474,8 @@ public class CharacterSelectManager : MonoBehaviour
         cbTr.anchorMin = new Vector2(0.5f, 0.5f);
         cbTr.anchorMax = new Vector2(0.5f, 0.5f);
         cbTr.pivot = new Vector2(0.5f, 0.5f);
-        cbTr.anchoredPosition = new Vector2(-190f, 490f);
-        cbTr.sizeDelta = new Vector2(230f, 52f);
+        cbTr.anchoredPosition = new Vector2(-40f, 478f);
+        cbTr.sizeDelta = new Vector2(240f, 58f);
 
         Image cbImg = coinBoxObj.GetComponent<Image>();
         cbImg.sprite = coinBoxSprite;
@@ -438,8 +490,8 @@ public class CharacterSelectManager : MonoBehaviour
         sackTr.anchorMin = new Vector2(0f, 0.5f);
         sackTr.anchorMax = new Vector2(0f, 0.5f);
         sackTr.pivot = new Vector2(0f, 0.5f);
-        sackTr.anchoredPosition = new Vector2(8f, 0f);
-        sackTr.sizeDelta = new Vector2(38f, 38f);
+        sackTr.anchoredPosition = new Vector2(10f, 0f);
+        sackTr.sizeDelta = new Vector2(42f, 42f);
 
         Image sackImg = sackObj.GetComponent<Image>();
         if (coinSackSprite != null)
@@ -478,8 +530,8 @@ public class CharacterSelectManager : MonoBehaviour
             bTr.anchorMin = new Vector2(0.5f, 0.5f);
             bTr.anchorMax = new Vector2(0.5f, 0.5f);
             bTr.pivot = new Vector2(0.5f, 0.5f);
-            bTr.anchoredPosition = new Vector2(250f, 490f);
-            bTr.sizeDelta = new Vector2(125f, 48f);
+            bTr.anchoredPosition = new Vector2(260f, 478f);
+            bTr.sizeDelta = new Vector2(150f, 56f);
 
             Image bImg = backButton.GetComponent<Image>();
             if (bImg != null)
@@ -493,7 +545,7 @@ public class CharacterSelectManager : MonoBehaviour
             if (bTxt != null)
             {
                 bTxt.text = "BACK";
-                bTxt.fontSize = 22f;
+                bTxt.fontSize = 24f;
                 bTxt.fontStyle = FontStyles.Bold;
                 bTxt.color = Color.white;
                 ApplyFont(bTxt);
@@ -510,6 +562,29 @@ public class CharacterSelectManager : MonoBehaviour
         }
     }
 
+    private static readonly string[] characterDisplayNames = new string[]
+    {
+        "Rowan",
+        "Kaelen",
+        "Valerius",
+        "Seraphina",
+        "Gorgon",
+        "Morvath"
+    };
+
+    public string GetCharacterDisplayName(int index)
+    {
+        if (index >= 0 && index < characterDisplayNames.Length)
+        {
+            return characterDisplayNames[index];
+        }
+        if (characters != null && index >= 0 && index < characters.Length && characters[index] != null)
+        {
+            return characters[index].characterName;
+        }
+        return $"CH {index + 1:D2}";
+    }
+
     public int GetCharacterCost(int index)
     {
         if (characters != null && index >= 0 && index < characters.Length && characters[index] != null)
@@ -518,21 +593,21 @@ public class CharacterSelectManager : MonoBehaviour
         }
 
         // Bảng giá chuẩn khớp 100% với giao diện mẫu của người dùng:
-        // Slot 1 (CH 01): 0 (UNLOCKED)
-        // Slot 2 (CH 02): 0 (UNLOCKED)
-        // Slot 3 (CH 03): 1,000 Coins
-        // Slot 4 (CH 04): 2,500 Coins
-        // Slot 5 (CH 05): 5,000 Coins
-        // Slot 6 (CH 06): 8,000 Coins
+        // Slot 1 (Rowan): 0 (UNLOCKED)
+        // Slot 2 (Kaelen): 0 (UNLOCKED)
+        // Slot 3 (Valerius): 100 Coins
+        // Slot 4 (Seraphina): 250 Coins
+        // Slot 5 (Gorgon): 500 Coins
+        // Slot 6 (Morvath): 800 Coins
         switch (index)
         {
             case 0: return 0;
             case 1: return 0;
-            case 2: return 1000;
-            case 3: return 2500;
-            case 4: return 5000;
-            case 5: return 8000;
-            default: return (index + 1) * 3000;
+            case 2: return 100;
+            case 3: return 250;
+            case 4: return 500;
+            case 5: return 800;
+            default: return (index + 1) * 300;
         }
     }
 
@@ -554,9 +629,9 @@ public class CharacterSelectManager : MonoBehaviour
         GridLayoutGroup glg = gridTransform.GetComponent<GridLayoutGroup>();
         if (glg == null) glg = gridTransform.gameObject.AddComponent<GridLayoutGroup>();
 
-        // Kích thước mỗi thẻ vuông vức 204 x 265, khoảng cách 16 x 20
-        glg.cellSize = new Vector2(204f, 265f);
-        glg.spacing = new Vector2(16f, 20f);
+        // Kích thước mỗi thẻ 250 x 280, khoảng cách 18 x 16
+        glg.cellSize = new Vector2(250f, 280f);
+        glg.spacing = new Vector2(18f, 16f);
         glg.childAlignment = TextAnchor.UpperCenter;
         glg.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
         glg.constraintCount = 3; // Đúng 3 cột x 2 hàng
@@ -565,7 +640,7 @@ public class CharacterSelectManager : MonoBehaviour
         gridTransform.anchorMax = new Vector2(0.5f, 1f);
         gridTransform.pivot = new Vector2(0.5f, 1f);
         gridTransform.anchoredPosition = new Vector2(0f, -70f);
-        gridTransform.sizeDelta = new Vector2(670f, 620f);
+        gridTransform.sizeDelta = new Vector2(820f, 600f);
 
         slotObjects.Clear();
 
@@ -619,7 +694,7 @@ public class CharacterSelectManager : MonoBehaviour
         btn.onClick.RemoveAllListeners();
         btn.onClick.AddListener(() => SelectCharacter(index));
 
-        // 2. Nhãn định danh trên cùng: "CH 01" đến "CH 06" chuẩn đối xứng theo thiết kế generic
+        // 2. Nhãn tên ở góc trên bên trái: Rowan, Kaelen, Valerius...
         Transform labelT = slot.transform.Find("NameLabel");
         GameObject labelObj = labelT != null ? labelT.gameObject : null;
         if (labelObj == null)
@@ -630,16 +705,17 @@ public class CharacterSelectManager : MonoBehaviour
 
         RectTransform lTr = labelObj.GetComponent<RectTransform>();
         lTr.anchorMin = new Vector2(0f, 1f);
-        lTr.anchorMax = new Vector2(1f, 1f);
-        lTr.pivot = new Vector2(0.5f, 1f);
-        lTr.anchoredPosition = new Vector2(0f, -8f);
-        lTr.sizeDelta = new Vector2(-16f, 24f);
+        lTr.anchorMax = new Vector2(0f, 1f);
+        lTr.pivot = new Vector2(0f, 1f);
+        lTr.anchoredPosition = new Vector2(12f, -8f);
+        lTr.sizeDelta = new Vector2(185f, 38f);
 
         TMP_Text lText = labelObj.GetComponent<TMP_Text>();
-        lText.text = $"CH {index + 1:D2}";
-        lText.fontSize = 20f;
+        lText.text = GetCharacterDisplayName(index);
+        lText.fontSize = 30f;
         lText.fontStyle = FontStyles.Bold;
-        lText.alignment = TextAlignmentOptions.Center;
+        lText.alignment = TextAlignmentOptions.TopLeft;
+        lText.textWrappingMode = TextWrappingModes.NoWrap;
         lText.color = Color.white;
         ApplyFont(lText);
 
@@ -655,8 +731,8 @@ public class CharacterSelectManager : MonoBehaviour
         lockTr.anchorMin = new Vector2(1f, 1f);
         lockTr.anchorMax = new Vector2(1f, 1f);
         lockTr.pivot = new Vector2(1f, 1f);
-        lockTr.anchoredPosition = new Vector2(-8f, -6f);
-        lockTr.sizeDelta = new Vector2(22f, 22f);
+        lockTr.anchoredPosition = new Vector2(-10f, -8f);
+        lockTr.sizeDelta = new Vector2(26f, 26f);
 
         Image lockImg = lockObj.GetComponent<Image>();
         if (padlockSprite != null) lockImg.sprite = padlockSprite;
@@ -677,13 +753,13 @@ public class CharacterSelectManager : MonoBehaviour
         avTr.anchorMin = new Vector2(0.5f, 0.5f);
         avTr.anchorMax = new Vector2(0.5f, 0.5f);
         avTr.pivot = new Vector2(0.5f, 0.5f);
-        avTr.anchoredPosition = new Vector2(-16f, 6f);
-        avTr.sizeDelta = new Vector2(88f, 88f);
+        avTr.anchoredPosition = new Vector2(-22f, 8f);
+        avTr.sizeDelta = new Vector2(96f, 96f);
 
         Image avImg = avatarObj.GetComponent<Image>();
         avImg.sprite = data.characterSprite;
         // Nếu đã mở khóa: hiển thị màu gốc rực rỡ; nếu chưa mở khóa: bóng đen bí ẩn (silhouette)
-        avImg.color = isUnlocked ? Color.white : new Color(0.12f, 0.14f, 0.18f, 1f);
+        avImg.color = isUnlocked ? Color.white : new Color(0.10f, 0.12f, 0.16f, 1f);
         avImg.preserveAspect = true;
 
         // 5. Khung ô vũ khí khởi đầu bên cạnh nhân vật
@@ -699,8 +775,8 @@ public class CharacterSelectManager : MonoBehaviour
         wpBoxTr.anchorMin = new Vector2(0.5f, 0.5f);
         wpBoxTr.anchorMax = new Vector2(0.5f, 0.5f);
         wpBoxTr.pivot = new Vector2(0f, 0.5f);
-        wpBoxTr.anchoredPosition = new Vector2(34f, 6f);
-        wpBoxTr.sizeDelta = new Vector2(38f, 38f);
+        wpBoxTr.anchoredPosition = new Vector2(42f, 8f);
+        wpBoxTr.sizeDelta = new Vector2(42f, 42f);
 
         Image wpBoxImg = wpBoxObj.GetComponent<Image>();
         wpBoxImg.sprite = subPanelSprite;
@@ -723,7 +799,7 @@ public class CharacterSelectManager : MonoBehaviour
 
         Image wpIconImg = wpIconObj.GetComponent<Image>();
         wpIconImg.sprite = data.weaponSprite;
-        wpIconImg.color = isUnlocked ? Color.white : new Color(0.12f, 0.14f, 0.18f, 0.9f);
+        wpIconImg.color = isUnlocked ? Color.white : new Color(0.10f, 0.12f, 0.16f, 0.9f);
         wpIconImg.preserveAspect = true;
 
         // 6. Thanh trạng thái ở đáy thẻ: Nhãn "UNLOCKED" xanh lá HOẶC Giá tiền "X,XXX" kèm đồng xu vàng
@@ -739,8 +815,8 @@ public class CharacterSelectManager : MonoBehaviour
         stTr.anchorMin = new Vector2(0.5f, 0f);
         stTr.anchorMax = new Vector2(0.5f, 0f);
         stTr.pivot = new Vector2(0.5f, 0f);
-        stTr.anchoredPosition = new Vector2(0f, 10f);
-        stTr.sizeDelta = new Vector2(150f, 28f);
+        stTr.anchoredPosition = new Vector2(0f, 12f);
+        stTr.sizeDelta = new Vector2(180f, 32f);
 
         Image stImg = statusObj.GetComponent<Image>();
 
@@ -843,12 +919,12 @@ public class CharacterSelectManager : MonoBehaviour
         {
             if (isUnlocked)
             {
-                nameText.text = data.characterName;
+                nameText.text = GetCharacterDisplayName(currentSelectedIndex);
                 nameText.color = new Color(1f, 0.95f, 0.85f);
             }
             else
             {
-                nameText.text = $"CH {currentSelectedIndex + 1:D2} (Locked)";
+                nameText.text = $"{GetCharacterDisplayName(currentSelectedIndex)} (Locked)";
                 nameText.color = new Color(0.8f, 0.8f, 0.85f);
             }
         }

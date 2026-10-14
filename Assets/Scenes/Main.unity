@@ -1171986,10 +1171986,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterSpawner
   characters:
-  - {fileID: 11400000, guid: 7537b7acfa9f4990b1445c0a2adb2694, type: 2}
-  - {fileID: 11400000, guid: 3d9828706e084fb6a15f83edb530881f, type: 2}
   - {fileID: 11400000, guid: 4f7ef245567844b0adced2b1209a7cf6, type: 2}
   - {fileID: 11400000, guid: 81f561ac2b7e43e7b47cd9279298886d, type: 2}
+  - {fileID: 11400000, guid: 7537b7acfa9f4990b1445c0a2adb2694, type: 2}
+  - {fileID: 11400000, guid: 3d9828706e084fb6a15f83edb530881f, type: 2}
   - {fileID: 11400000, guid: 70e967a912cb9324b9314155208b9dea, type: 2}
   - {fileID: 11400000, guid: 1f08a1e65cdeb224885cbea1c98965c3, type: 2}
   spawnPoint: {fileID: 0}
