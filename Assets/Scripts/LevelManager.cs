@@ -31,6 +31,7 @@ public class LevelManager : MonoBehaviour
     public void EndLevel() // End the level. GK
     {
         gameActive = false; // The game is not active. GK
+        RunSave.Clear(); // A finished run can't be continued.
         StartCoroutine(EndLevelCo()); // Start the coroutine. GK
 
     }
@@ -38,17 +39,26 @@ public class LevelManager : MonoBehaviour
     IEnumerator EndLevelCo() // Coroutine to end the level. GK
     {
         yield return new WaitForSeconds(waitToShowEndScreen); // Wait for 1 second. GK
-        float minutes = Mathf.FloorToInt(timer / 60); // The minutes. GK
-        float seconds = Mathf.FloorToInt(timer % 60); // The seconds. GK
 
         float bestTime = PlayerPrefs.GetFloat("BestSurvivalTime", 0f);
-        if (timer > bestTime)
+        bool isNewBest = timer > bestTime;
+        if (isNewBest)
         {
             bestTime = timer;
             PlayerPrefs.SetFloat("BestSurvivalTime", bestTime);
         }
         PlayerPrefs.Save();
 
+        GameOverScreen gameOverScreen = UIController.instance.levelEndScreen.GetComponent<GameOverScreen>();
+        if (gameOverScreen != null) // Retro Game Over screen built by the UI generator. GK
+        {
+            gameOverScreen.Show(timer, bestTime, isNewBest,
+                ExperienceLevelController.instance.currentLevel, CoinController.instance.coinsCollectedThisRun);
+            yield break;
+        }
+
+        float minutes = Mathf.FloorToInt(timer / 60); // The minutes. GK
+        float seconds = Mathf.FloorToInt(timer % 60); // The seconds. GK
         float bestMinutes = Mathf.FloorToInt(bestTime / 60);
         float bestSeconds = Mathf.FloorToInt(bestTime % 60);
 

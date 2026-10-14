@@ -16,10 +16,12 @@ public class LevelUpSellectionButton : MonoBehaviour, IPointerEnterHandler, IPoi
     public Image weaponIcon;          // The weapon icon. GK
 
     [Header("Sci-Fi Theme & Hover")]
-    public float hoverScale = 1.05f;
-    public Color normalBorderColor = new Color(0.12f, 0.22f, 0.35f, 0.8f);
-    public Color hoverBorderColor = new Color(0f, 1f, 0.64f, 1f); // Neon Mint #00FFA3
-    public Color cardBgColor = new Color(0.043f, 0.075f, 0.145f, 0.96f); // Dark Navy #0B1325
+    public float hoverScale = 1.03f;
+    public Color highlightColor = new Color(1f, 0.88f, 0.25f); // Gold, matches the Character Select / Game Over frames.
+    public Color nameColor = new Color(1f, 0.95f, 0.85f);
+    public Color descColor = Color.white;
+
+    private Sprite cardNormalSprite, cardSelectedSprite; // Gold-framed retro card sprites from Resources/UI.
 
     private UpgradeData assignedUpgrade;
     private Weapon assignedWeapon;
@@ -53,29 +55,23 @@ public class LevelUpSellectionButton : MonoBehaviour, IPointerEnterHandler, IPoi
 
         if (rectTransform != null)
         {
-            rectTransform.sizeDelta = new Vector2(320f, 480f);
+            rectTransform.sizeDelta = new Vector2(800f, 170f); // Wide row card: icon left, name + description right.
             initialScale = rectTransform.localScale != Vector3.zero ? rectTransform.localScale : Vector3.one;
             targetScale = initialScale;
             originalAnchoredPosition = rectTransform.anchoredPosition;
         }
 
-        // Tạo viền phát sáng (Outline) cho nút nếu chưa có
+        // The old flat Outline look is replaced by the gold pixel card frame.
         outline = GetComponent<Outline>();
-        if (outline == null)
-        {
-            outline = gameObject.AddComponent<Outline>();
-        }
+        if (outline != null) outline.enabled = false;
 
-        if (outline != null)
+        cardNormalSprite = Resources.Load<Sprite>("UI/UI_SubPanel_Gold");
+        cardSelectedSprite = Resources.Load<Sprite>("UI/UI_Card_Selected");
+        if (buttonImage != null && cardNormalSprite != null)
         {
-            outline.effectColor = normalBorderColor;
-            outline.effectDistance = new Vector2(3f, -3f);
-        }
-
-        // Đổi màu nền nút sang Dark Sci-Fi Navy
-        if (buttonImage != null)
-        {
-            buttonImage.color = cardBgColor;
+            buttonImage.sprite = cardNormalSprite;
+            buttonImage.type = Image.Type.Sliced;
+            buttonImage.color = Color.white;
         }
 
         // Căn chỉnh vị trí Header (Tên kỹ năng)
@@ -84,16 +80,17 @@ public class LevelUpSellectionButton : MonoBehaviour, IPointerEnterHandler, IPoi
             RectTransform nrt = nameLevelText.GetComponent<RectTransform>();
             if (nrt != null)
             {
-                nrt.anchorMin = new Vector2(0.04f, 0.74f);
-                nrt.anchorMax = new Vector2(0.96f, 0.96f);
+                nrt.anchorMin = new Vector2(0.19f, 0.56f);
+                nrt.anchorMax = new Vector2(0.97f, 0.95f);
                 nrt.offsetMin = Vector2.zero;
                 nrt.offsetMax = Vector2.zero;
             }
-            nameLevelText.alignment = TextAlignmentOptions.Center;
-            nameLevelText.color = Color.white;
+            nameLevelText.alignment = TextAlignmentOptions.MidlineLeft;
+            nameLevelText.color = nameColor;
             nameLevelText.enableAutoSizing = true;
-            nameLevelText.fontSizeMin = 14;
-            nameLevelText.fontSizeMax = 22;
+            nameLevelText.fontSizeMin = 24;
+            nameLevelText.fontSizeMax = 42;
+            nameLevelText.textWrappingMode = TextWrappingModes.NoWrap;
         }
 
         // Căn chỉnh Icon trung tâm
@@ -102,11 +99,14 @@ public class LevelUpSellectionButton : MonoBehaviour, IPointerEnterHandler, IPoi
             RectTransform irt = weaponIcon.GetComponent<RectTransform>();
             if (irt != null)
             {
-                irt.anchorMin = new Vector2(0.5f, 0.5f);
-                irt.anchorMax = new Vector2(0.5f, 0.5f);
-                irt.anchoredPosition = new Vector2(0f, 30f);
-                irt.sizeDelta = new Vector2(130f, 130f);
+                irt.anchorMin = new Vector2(0f, 0.5f);
+                irt.anchorMax = new Vector2(0f, 0.5f);
+                irt.pivot = new Vector2(0.5f, 0.5f);
+                irt.anchoredPosition = new Vector2(84f, 0f);
+                irt.sizeDelta = new Vector2(112f, 112f);
             }
+            weaponIcon.preserveAspect = true;
+            weaponIcon.raycastTarget = false;
         }
 
         // Căn chỉnh Body (Mô tả hiệu ứng)
@@ -115,19 +115,36 @@ public class LevelUpSellectionButton : MonoBehaviour, IPointerEnterHandler, IPoi
             RectTransform drt = upgradeDescText.GetComponent<RectTransform>();
             if (drt != null)
             {
-                drt.anchorMin = new Vector2(0.06f, 0.05f);
-                drt.anchorMax = new Vector2(0.94f, 0.40f);
+                drt.anchorMin = new Vector2(0.19f, 0.06f);
+                drt.anchorMax = new Vector2(0.97f, 0.57f);
                 drt.offsetMin = Vector2.zero;
                 drt.offsetMax = Vector2.zero;
             }
-            upgradeDescText.alignment = TextAlignmentOptions.Center;
-            upgradeDescText.color = new Color(0.85f, 0.92f, 1f, 0.95f);
+            upgradeDescText.alignment = TextAlignmentOptions.TopLeft;
+            upgradeDescText.color = descColor;
             upgradeDescText.enableAutoSizing = true;
-            upgradeDescText.fontSizeMin = 13;
-            upgradeDescText.fontSizeMax = 18;
+            upgradeDescText.fontSizeMin = 20;
+            upgradeDescText.fontSizeMax = 32;
+            upgradeDescText.textWrappingMode = TextWrappingModes.Normal;
+        }
+
+        // The pixel (Kenney) font turns to blocks at this size, so card text uses the smooth Liberation font.
+        TMP_FontAsset smooth = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+        if (smooth != null)
+        {
+            if (nameLevelText != null) { nameLevelText.font = smooth; nameLevelText.fontSharedMaterial = smooth.material; }
+            if (upgradeDescText != null) { upgradeDescText.font = smooth; upgradeDescText.fontSharedMaterial = smooth.material; }
         }
 
         isSetup = true;
+    }
+
+    public void SetLayout(Vector2 size, Vector2 position) // Called by UIController to place this row in the window.
+    {
+        SetupStyle();
+        rectTransform.sizeDelta = size;
+        rectTransform.anchoredPosition = position;
+        originalAnchoredPosition = position;
     }
 
     public void PlayIntroAnimation(float delay = 0f)
@@ -194,21 +211,21 @@ public class LevelUpSellectionButton : MonoBehaviour, IPointerEnterHandler, IPoi
         // 1. Tên nâng cấp (Màu vàng ánh kim hoặc xanh neon)
         if (nameLevelText != null)
         {
-            string prefix = upgrade.upgradeType switch
+            string suffix = upgrade.upgradeType switch
             {
-                UpgradeType.UnlockWeapon => "<color=#FFD700>[NEW]</color> ",
-                UpgradeType.UpgradeStat => "<color=#00FFA3>[PASSIVE]</color> ",
-                UpgradeType.WeaponEvolution => "<color=#FF3B30>[EVO]</color> ",
+                UpgradeType.UnlockWeapon => "  <color=#FFE040><size=65%>New!</size></color>",
+                UpgradeType.UpgradeStat => "  <color=#7CFF9B><size=65%>Passive</size></color>",
+                UpgradeType.WeaponEvolution => "  <color=#FF5A4A><size=65%>Evolve!</size></color>",
                 _ => ""
             };
-            nameLevelText.text = $"{prefix}<b>{upgrade.GetDisplayName().ToUpper()}</b>";
+            nameLevelText.text = $"{upgrade.GetDisplayName()}{suffix}";
         }
 
         // 2. Mô tả chỉ số tự động tô màu xanh Neon (#00FFA3) cho các con số
         if (upgradeDescText != null)
         {
             string rawDesc = upgrade.GetDescription();
-            string highlighted = Regex.Replace(rawDesc, @"(\+?\-?\d+(\.\d+)?%?|\b[xX]\d+(\.\d+)?)", "<color=#00FFA3><b>$1</b></color>");
+            string highlighted = Regex.Replace(rawDesc, @"(\+?\-?\d+(\.\d+)?%?|\b[xX]\d+(\.\d+)?)", "<color=#FFE040><b>$1</b></color>");
             upgradeDescText.text = highlighted;
         }
 
@@ -227,8 +244,7 @@ public class LevelUpSellectionButton : MonoBehaviour, IPointerEnterHandler, IPoi
             }
         }
 
-        // Khôi phục viền mặc định
-        if (outline != null) outline.effectColor = normalBorderColor;
+        SetFrame(false);
         targetScale = initialScale;
         if (rectTransform != null) rectTransform.localScale = initialScale;
 
@@ -253,16 +269,16 @@ public class LevelUpSellectionButton : MonoBehaviour, IPointerEnterHandler, IPoi
             string raw = theWeapon.stats[theWeapon.weaponLevel].upgradeText;
             if (upgradeDescText != null)
             {
-                upgradeDescText.text = Regex.Replace(raw, @"(\+?\-?\d+(\.\d+)?%?|\b[xX]\d+(\.\d+)?)", "<color=#00FFA3><b>$1</b></color>");
+                upgradeDescText.text = Regex.Replace(raw, @"(\+?\-?\d+(\.\d+)?%?|\b[xX]\d+(\.\d+)?)", "<color=#FFE040><b>$1</b></color>");
             }
             if (weaponIcon != null) weaponIcon.sprite = theWeapon.icon;
-            if (nameLevelText != null) nameLevelText.text = $"<b>{theWeapon.name.ToUpper()}</b> - <color=#FFD700>LV.{theWeapon.weaponLevel + 1}</color>";
+            if (nameLevelText != null) nameLevelText.text = $"{theWeapon.name}  <color=#FFE040><size=65%>Lv {theWeapon.weaponLevel + 1}</size></color>";
         }
         else
         {
-            if (upgradeDescText != null) upgradeDescText.text = $"Unlocks and equips <color=#00FFA3>{theWeapon.name}</color>.";
+            if (upgradeDescText != null) upgradeDescText.text = $"Unlocks and equips <color=#FFE040>{theWeapon.name}</color>.";
             if (weaponIcon != null) weaponIcon.sprite = theWeapon.icon;
-            if (nameLevelText != null) nameLevelText.text = $"<color=#FFD700>[NEW]</color> <b>{theWeapon.name.ToUpper()}</b>";
+            if (nameLevelText != null) nameLevelText.text = $"{theWeapon.name}  <color=#FFE040><size=65%>New!</size></color>";
         }
 
         if (weaponIcon != null) weaponIcon.gameObject.SetActive(weaponIcon.sprite != null);
@@ -275,7 +291,7 @@ public class LevelUpSellectionButton : MonoBehaviour, IPointerEnterHandler, IPoi
     public void OnPointerEnter(PointerEventData eventData)
     {
         targetScale = initialScale * hoverScale;
-        if (outline != null) outline.effectColor = hoverBorderColor;
+        SetFrame(true);
 
         if (SFXManager.instance != null)
         {
@@ -286,7 +302,14 @@ public class LevelUpSellectionButton : MonoBehaviour, IPointerEnterHandler, IPoi
     public void OnPointerExit(PointerEventData eventData)
     {
         targetScale = initialScale;
-        if (outline != null) outline.effectColor = normalBorderColor;
+        SetFrame(false);
+    }
+
+    private void SetFrame(bool selected) // Swap the card frame between normal and the brighter selected one.
+    {
+        if (buttonImage == null) return;
+        Sprite frame = selected ? cardSelectedSprite : cardNormalSprite;
+        if (frame != null) buttonImage.sprite = frame;
     }
 
     public void SelectUpgrade()

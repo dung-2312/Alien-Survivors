@@ -38,57 +38,111 @@ public class UIController : MonoBehaviour
     void Start()
     {
         ApplySciFiLevelUpTheme();
+
+        if (RunSave.continueRequested) // Came from the Main Menu's Continue button
+        {
+            RunSave.continueRequested = false;
+            RunSaveData saved = RunSave.Load();
+            if (saved != null) StartCoroutine(RunSave.Restore(saved));
+        }
     }
 
+    // Vampire-Survivors style level-up: a framed window with the title on top, three wide rows inside it
+    // and a red Skip button beside it. Built at runtime from the existing panel objects.
     public void ApplySciFiLevelUpTheme()
     {
         if (levelUpPanel != null)
         {
+            RectTransform panelRt = levelUpPanel.GetComponent<RectTransform>();
+            panelRt.anchorMin = Vector2.zero; // Backdrop covers the whole screen.
+            panelRt.anchorMax = Vector2.one;
+            panelRt.offsetMin = Vector2.zero;
+            panelRt.offsetMax = Vector2.zero;
+
             Image panelImg = levelUpPanel.GetComponent<Image>();
             if (panelImg != null)
             {
-                panelImg.color = new Color(0.031f, 0.051f, 0.102f, 0.94f); // #080D1A Dark Sci-Fi background
+                panelImg.sprite = null;
+                panelImg.color = new Color(0.02f, 0.03f, 0.07f, 0.7f); // Dim the game behind the window
             }
 
-            // Định dạng tiêu đề và nút Skip chuẩn Sci-Fi
+            // Gold-framed window behind everything
+            Transform windowT = levelUpPanel.transform.Find("Level Up Window");
+            if (windowT == null)
+            {
+                GameObject w = new GameObject("Level Up Window", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                w.transform.SetParent(levelUpPanel.transform, false);
+                windowT = w.transform;
+            }
+            windowT.SetAsFirstSibling();
+            RectTransform windowRt = (RectTransform)windowT;
+            windowRt.anchorMin = windowRt.anchorMax = windowRt.pivot = new Vector2(0.5f, 0.5f);
+            windowRt.anchoredPosition = Vector2.zero;
+            windowRt.sizeDelta = new Vector2(900f, 780f);
+            Image windowImg = windowT.GetComponent<Image>();
+            windowImg.sprite = Resources.Load<Sprite>("UI/UI_WindowFrame_Gold");
+            windowImg.type = Image.Type.Sliced;
+            windowImg.color = Color.white;
+
             TMP_Text[] allTexts = levelUpPanel.GetComponentsInChildren<TMP_Text>(true);
             foreach (var t in allTexts)
             {
-                if (t.name.Contains("Title") || t.text.Contains("Select An Upgrade") || t.text.Contains("SELECT AN UPGRADE"))
+                if (t.name == "Upgrade Text")
                 {
-                    t.text = "<color=#00FFA3>—</color>  <b>SELECT AN UPGRADE</b>  <color=#00FFA3>—</color>";
-                    t.fontSize = 38;
+                    t.text = "Level Up!";
+                    t.fontStyle = FontStyles.Bold;
+                    t.enableAutoSizing = false;
+                    t.fontSize = 72;
+                    t.characterSpacing = 4f;
+                    t.textWrappingMode = TextWrappingModes.NoWrap;
                     t.alignment = TextAlignmentOptions.Center;
+                    t.color = new Color(1f, 0.88f, 0.25f);
+                    t.rectTransform.anchorMin = t.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+                    t.rectTransform.sizeDelta = new Vector2(800f, 100f);
+                    t.rectTransform.anchoredPosition = new Vector2(0f, 320f);
+                }
+                else if (t.transform.parent != null && t.transform.parent.name == "Skip Level Up")
+                {
+                    t.text = "SKIP";
+                    t.fontStyle = FontStyles.Bold;
+                    t.enableAutoSizing = false;
+                    t.fontSize = 48;
                     t.color = Color.white;
                 }
-                else if (t.text.Contains("Skip Level Up") || t.text.Contains("SKIP"))
+            }
+
+            // Red Skip button on the right of the window
+            Transform skip = levelUpPanel.transform.Find("Skip Level Up");
+            if (skip != null)
+            {
+                RectTransform skipRt = (RectTransform)skip;
+                skipRt.anchorMin = skipRt.anchorMax = skipRt.pivot = new Vector2(0.5f, 0.5f);
+                skipRt.sizeDelta = new Vector2(280f, 92f);
+                skipRt.anchoredPosition = new Vector2(640f, 140f);
+                Image skipImg = skip.GetComponent<Image>();
+                Sprite redButton = Resources.Load<Sprite>("UI/UI_Button_Back");
+                if (skipImg != null && redButton != null)
                 {
-                    t.text = "<color=#8EA5C8><b>SKIP >></b></color>";
+                    skipImg.sprite = redButton;
+                    skipImg.type = Image.Type.Sliced;
+                    skipImg.color = Color.white;
                 }
             }
         }
 
-        // Ẩn 4 nút mua shop ở đáy bảng level-up để tập trung trọn vẹn vào 3 thẻ nâng cấp
+        // The old stat shop buttons are not part of this screen
         if (moveSpeedUpgradeDisplay != null) moveSpeedUpgradeDisplay.gameObject.SetActive(false);
         if (healthUpgradeDisplay != null) healthUpgradeDisplay.gameObject.SetActive(false);
         if (pickupRangeUpgradeDisplay != null) pickupRangeUpgradeDisplay.gameObject.SetActive(false);
         if (maxWeaponsUpgradeDisplay != null) maxWeaponsUpgradeDisplay.gameObject.SetActive(false);
 
-        // Định vị 3 thẻ ngang nhau cân đối, kích thước chuẩn 320x480px
-        if (levelUpButtons != null && levelUpButtons.Length >= 3)
+        // Three wide rows stacked inside the window
+        if (levelUpButtons != null)
         {
-            float[] xOffsets = new float[] { -380f, 0f, 380f };
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < levelUpButtons.Length && i < 3; i++)
             {
                 if (levelUpButtons[i] != null)
-                {
-                    RectTransform rt = levelUpButtons[i].GetComponent<RectTransform>();
-                    if (rt != null)
-                    {
-                        rt.sizeDelta = new Vector2(320f, 480f);
-                        rt.anchoredPosition = new Vector2(xOffsets[i], -15f);
-                    }
-                }
+                    levelUpButtons[i].SetLayout(new Vector2(820f, 178f), new Vector2(0f, 135f - i * 192f));
             }
         }
     }
@@ -96,7 +150,7 @@ public class UIController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Escape)) // If the escape key is pressed. GK
+        if (Input.GetKeyDown(KeyCode.Escape) && !levelEndScreen.activeSelf) // If the escape key is pressed and the player isn't dead. GK
         {
             PauseUnpause(); // Pause and unpause the game. GK
         }
@@ -155,6 +209,12 @@ public class UIController : MonoBehaviour
     {
         SceneManager.LoadScene(mainMenuName); // Load the main menu. GK
         Time.timeScale = 1f; // Set the time scale to 1. GK 
+    }
+
+    public void SaveAndExit() // Save the run exactly as it is right now, then go back to the main menu.
+    {
+        RunSave.Save();
+        GoToMainMenu();
     }
 
     public void Restart()
