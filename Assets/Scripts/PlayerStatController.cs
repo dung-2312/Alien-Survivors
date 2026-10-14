@@ -89,6 +89,7 @@ public class PlayerStatController : MonoBehaviour
         PlayerHealthController.instance.maxHealth = health[healthLevel].value; // Set the player health. GK
         PlayerHealthController.instance.currentHealth +=
             health[healthLevel].value - health[healthLevel - 1].value; // Set the player health. GK
+        PlayerHealthController.instance.UpdateHealthUI();
     }
     public void PurchasePickupRange() // Function to purchase the pickup range. GK
     {

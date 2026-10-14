@@ -119,6 +119,11 @@ public class EnemyController : MonoBehaviour
                 CoinController.instance.DropCoin(transform.position, coinValue); // Drop the coin. D
             }
 
+            if (UIController.instance != null)
+            {
+                UIController.instance.RegisterKill();
+            }
+
             SFXManager.instance.PlaySFXPitched(0); // Play the sound effect. D
         }
         else
