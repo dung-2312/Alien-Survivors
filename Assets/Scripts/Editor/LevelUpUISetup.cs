@@ -12,7 +12,7 @@ namespace AlienSurvivors.EditorTools
         [MenuItem("Tools/Survivors/Setup Sci-Fi Level Up UI")]
         public static void SetupSciFiUI()
         {
-            UIController ui = Object.FindFirstObjectByType<UIController>();
+            UIController ui = Object.FindAnyObjectByType<UIController>();
             if (ui == null)
             {
                 EditorUtility.DisplayDialog("Error", "UIController not found in current scene!", "OK");
