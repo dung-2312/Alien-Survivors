@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: a1b2c3d4000344448888000000000003
+guid: 9ff031476ff74b74b5baad69068b4c03
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -49,7 +49,7 @@ TextureImporter:
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 100
-  spriteBorder: {x: 10, y: 10, z: 10, w: 10}
+  spriteBorder: {x: 12, y: 12, z: 12, w: 12}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
   alphaIsTransparency: 1
@@ -117,3 +117,4 @@ TextureImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
+

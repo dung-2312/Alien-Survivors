@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 [CreateAssetMenu(fileName = "NewCharacter", menuName = "Survivors/Character Data")]
 public class CharacterData : ScriptableObject
@@ -9,4 +9,7 @@ public class CharacterData : ScriptableObject
     public Sprite characterSprite;
     public Sprite weaponSprite;
     public GameObject characterPrefab; // Prefab nhân vật sẽ xuất hiện trong game
+
+    [Header("Mở khóa tướng")]
+    public int unlockCost = 0; // 0 = mặc định đã mở khóa
 }
