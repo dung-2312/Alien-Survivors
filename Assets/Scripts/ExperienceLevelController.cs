@@ -39,6 +39,11 @@ public class ExperienceLevelController : MonoBehaviour
             ExpManager expMgr = expMgrObj.AddComponent<ExpManager>();
             expMgr.pickupPrefab = pickup;
         }
+
+        if (UIController.instance != null && expLevels.Count > currentLevel)
+        {
+            UIController.instance.UpdateExperience(currentExperience, expLevels[currentLevel], currentLevel);
+        }
     }
 
     // Update is called once per frame
