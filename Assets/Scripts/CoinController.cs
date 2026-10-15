@@ -13,6 +13,8 @@ public class CoinController : MonoBehaviour
     }
 
     public int currentCoins;
+    [HideInInspector]
+    public int coinsCollectedThisRun; // Coins picked up this run, shown on the Game Over screen. GK
     public CoinPickup coin;
 
     private readonly List<CoinPickup> coinPool = new List<CoinPickup>(); // The pool of coin pickups, so kills don't Instantiate/Destroy constantly. GK
@@ -20,6 +22,7 @@ public class CoinController : MonoBehaviour
     public void AddCoins(int coinsToAdd) // Add coins. D
     {
         currentCoins += coinsToAdd; // Add the coins. D
+        coinsCollectedThisRun += coinsToAdd;
         PlayerPrefs.SetInt("SavedCoins", currentCoins);
         UIController.instance.UpdateCoins(); // Update the coins. D
         SFXManager.instance.PlaySFXPitched(2); // Play the sound effect. GK
