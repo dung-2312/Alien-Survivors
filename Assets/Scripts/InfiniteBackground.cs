@@ -80,7 +80,7 @@ public class InfiniteBackground : MonoBehaviour
         if (backgroundSprite == null)
         {
             // Prefer the dark readable alien floor for optimal gameplay contrast
-            backgroundSprite = Resources.Load<Sprite>("Alien_Floor_Dark_Readable");
+            backgroundSprite = Resources.Load<Sprite>("VS_Grass_Seamless");
             if (backgroundSprite == null)
             {
                 backgroundSprite = Resources.Load<Sprite>("Alien_Floor_Seamless");

@@ -22,8 +22,52 @@ public class PlayerHealthController : MonoBehaviour
         maxHealth = PlayerStatController.instance.health[0].value; // Set the max health to the health value. GK
         currentHealth = maxHealth; // Set the current health to the max health at the start of the game. AK
 
-        healthSlider.maxValue = maxHealth; // Set the max value of the health slider to the max health. AK
-        healthSlider.value = currentHealth; // Set the value of the health slider to the current health.AK
+        SetupHealthBarStyle();
+        UpdateHealthUI();
+    }
+
+    public void SetupHealthBarStyle()
+    {
+        if (healthSlider != null)
+        {
+            RectTransform rt = healthSlider.GetComponent<RectTransform>();
+            if (rt != null)
+            {
+                // Position below character feet matching Vampire Survivors (Image 2)
+                rt.anchoredPosition = new Vector2(0f, -48f);
+                rt.sizeDelta = new Vector2(85f, 6.5f);
+            }
+
+            // Dark background for retro contrast
+            Transform bgT = healthSlider.transform.Find("Background");
+            if (bgT != null)
+            {
+                Image bgImg = bgT.GetComponent<Image>();
+                if (bgImg != null)
+                {
+                    bgImg.color = new Color(0.12f, 0.12f, 0.12f, 0.9f);
+                }
+            }
+
+            // Clean vibrant red fill
+            if (healthSlider.fillRect != null)
+            {
+                Image fillImg = healthSlider.fillRect.GetComponent<Image>();
+                if (fillImg != null)
+                {
+                    fillImg.color = new Color(0.88f, 0.15f, 0.15f, 1f);
+                }
+            }
+        }
+    }
+
+    public void UpdateHealthUI()
+    {
+        if (healthSlider != null)
+        {
+            healthSlider.maxValue = maxHealth;
+            healthSlider.value = currentHealth;
+        }
     }
 
     void Update()
@@ -47,6 +91,6 @@ public class PlayerHealthController : MonoBehaviour
             SFXManager.instance.PlaySFX(3); // Play the sound effect. GK
         }
 
-        healthSlider.value = currentHealth; // Set the value of the health slider to the current health. AK
+        UpdateHealthUI();
     }
 }

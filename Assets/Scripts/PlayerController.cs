@@ -135,6 +135,10 @@ public class PlayerController : MonoBehaviour
             assignedWeapons.Add(unassignedWeapons[weaponNumber]); // Add the weapon to the assigned weapons. GK
             unassignedWeapons[weaponNumber].gameObject.SetActive(true); // Set the weapon to active. GK
             unassignedWeapons.RemoveAt(weaponNumber); // Remove the weapon from the unassigned weapons. GK
+            if (UIController.instance != null)
+            {
+                UIController.instance.UpdateWeaponSlots();
+            }
         }
     }
     public void AddWeapon(Weapon weaponToAdd) // Function to add the weapon. GK
@@ -142,5 +146,9 @@ public class PlayerController : MonoBehaviour
         weaponToAdd.gameObject.SetActive(true); // Set the weapon to active. GK
         assignedWeapons.Add(weaponToAdd); // Add the weapon to the assigned weapons. GK
         unassignedWeapons.Remove(weaponToAdd); // Remove the weapon from the unassigned weapons. GK
+        if (UIController.instance != null)
+        {
+            UIController.instance.UpdateWeaponSlots();
+        }
     }
 }
