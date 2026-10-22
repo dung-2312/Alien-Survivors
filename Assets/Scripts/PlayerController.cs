@@ -12,6 +12,7 @@ public class PlayerController : MonoBehaviour
     private float originalScaleY = 1f;
     [HideInInspector]
     public float facingDirection = 1f; // 1 = right, -1 = left
+    private Vector2 lastMoveDirection = Vector2.down; // Stores last facing direction for Idle Blend Tree
 
     public void Awake()
     {
@@ -114,10 +115,22 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        // Animator integration
+        // Update last move direction when moving
+        if (isMoving)
+        {
+            lastMoveDirection = new Vector2(moveInput.x, moveInput.y);
+        }
+
+        // Animator integration (Blend Tree 2D Simple Directional & Legacy support)
         if (anim != null)
         {
+            anim.SetFloat("MoveX", moveInput.x);
+            anim.SetFloat("MoveY", moveInput.y);
+            anim.SetFloat("LastMoveX", lastMoveDirection.x);
+            anim.SetFloat("LastMoveY", lastMoveDirection.y);
+            anim.SetFloat("Speed", moveInput.sqrMagnitude);
             anim.SetBool("isMoving", isMoving);
+
             if (isMoving)
             {
                 anim.speed = Mathf.Clamp(moveSpeed / 4f, 0.9f, 2.2f); // Scales walk animation speed with move speed

@@ -254,8 +254,16 @@ public class ExpManager : MonoBehaviour
         {
             if (activeGems[i] != null && !activeGems[i].movingToPlayer)
             {
-                activeGems[i].StartMovingToPlayer(playerTransform, playerController.moveSpeed);
+                activeGems[i].StartMovingToPlayer(playerTransform, playerController.moveSpeed * 1.5f);
             }
         }
+    }
+
+    /// <summary>
+    /// Alias gọi nhanh hiệu ứng hút ngọc toàn map cho SpecialPickup / Magnet.
+    /// </summary>
+    public void AttractAllGems()
+    {
+        TriggerGlobalVacuum();
     }
 }

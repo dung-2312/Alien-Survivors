@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -689,5 +689,74 @@ public class UIController : MonoBehaviour
 
             }
         }
+    }
+
+    [Header("Warning Banner")]
+    private TMP_Text warningBannerText;
+    private Coroutine warningBannerCo;
+
+    /// <summary>
+    /// Hiển thị thanh cảnh báo chớp nháy phong cách retro (ví dụ khi Mini-Boss xuất hiện).
+    /// </summary>
+    public void ShowWarning(string message, float duration = 2.5f)
+    {
+        if (warningBannerText == null)
+        {
+            CreateWarningBanner();
+        }
+
+        if (warningBannerText != null)
+        {
+            if (warningBannerCo != null) StopCoroutine(warningBannerCo);
+            warningBannerCo = StartCoroutine(WarningBannerRoutine(message, duration));
+        }
+    }
+
+    private void CreateWarningBanner()
+    {
+        Transform canvasT = explvlSlider != null ? explvlSlider.transform.parent : transform;
+        GameObject bannerObj = new GameObject("BossWarningBanner", typeof(RectTransform));
+        bannerObj.transform.SetParent(canvasT, false);
+
+        RectTransform rt = bannerObj.GetComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0.5f, 0.5f);
+        rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = new Vector2(0f, 160f);
+        rt.sizeDelta = new Vector2(900f, 90f);
+
+        warningBannerText = bannerObj.AddComponent<TextMeshProUGUI>();
+        if (retroFont != null) warningBannerText.font = retroFont;
+        warningBannerText.fontSize = 42f;
+        warningBannerText.alignment = TextAlignmentOptions.Center;
+        warningBannerText.color = new Color(1f, 0.2f, 0.2f, 1f);
+        warningBannerText.raycastTarget = false;
+        warningBannerText.enableAutoSizing = false;
+
+        bannerObj.SetActive(false);
+    }
+
+    private IEnumerator WarningBannerRoutine(string message, float duration)
+    {
+        if (warningBannerText == null) yield break;
+
+        warningBannerText.gameObject.SetActive(true);
+        warningBannerText.text = message;
+
+        if (SFXManager.instance != null)
+        {
+            SFXManager.instance.PlaySFXPitched(0);
+        }
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.PingPong(elapsed * 6f, 1f);
+            warningBannerText.color = Color.Lerp(new Color(1f, 0.15f, 0.15f, 1f), new Color(1f, 0.95f, 0.2f, 1f), t);
+            yield return null;
+        }
+
+        warningBannerText.gameObject.SetActive(false);
     }
 }
