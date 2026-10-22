@@ -32,6 +32,13 @@ public class EnemyController : MonoBehaviour
     private float baseCoinDropRate;
     private bool isReturnedToPool; // Guards against returning the same enemy to the pool twice in one frame. AK
 
+    [HideInInspector]
+    public bool movementOverridden; // Set by a BossController, which drives the rigidbody itself.
+    [HideInInspector]
+    public bool invulnerable; // Ignores all damage while true (e.g. a boss mid phase-change).
+    public event System.Action<EnemyController> Died; // Raised once when health reaches 0, before the enemy is removed.
+    public float MaxHealth => baseHealth; // The health this enemy spawned with.
+
     void Awake()
     {
         baseMoveSpeed = Mathf.Abs(moveSpeed); // Remember the prefab's configured speed before knockback flips its sign. AK
@@ -106,15 +113,18 @@ public class EnemyController : MonoBehaviour
                 }
             }
 
-            theRB.linearVelocity =
-                (target.position - transform.position).normalized * moveSpeed; // Move the enemy towards the target. AK
+            if (!movementOverridden)
+            {
+                theRB.linearVelocity =
+                    (target.position - transform.position).normalized * moveSpeed; // Move the enemy towards the target. AK
+            }
 
             if (hitCounter > 0) // If the hit counter is greater than 0. AK
             {
                 hitCounter -= Time.deltaTime; // Decrease the hit counter. AK
             }
         }
-        else
+        else if (!movementOverridden)
         {
             theRB.linearVelocity = Vector2.zero; // Set the velocity to 0. GK
         }
@@ -143,7 +153,7 @@ public class EnemyController : MonoBehaviour
     public void TakeDamage(float damageToTake) // Function to take damage. AK
     {
         // Tránh nhận sát thương khi quái đã chết hoặc đã được thu hồi vào Object Pool
-        if (isReturnedToPool || !gameObject.activeInHierarchy || health <= 0f)
+        if (isReturnedToPool || !gameObject.activeInHierarchy || health <= 0f || invulnerable)
         {
             return;
         }
@@ -153,6 +163,7 @@ public class EnemyController : MonoBehaviour
         if (health <= 0) // If the health is less than or equal to 0. AK
         {
             health = 0f;
+            Died?.Invoke(this);
             ReturnToPool(); // Return the enemy to the pool instead of destroying it. AK
             ExperienceLevelController.instance.SpawnExp(transform.position,
                 expToGive); // Set the experience when the enemy is destroyed. GK
@@ -209,6 +220,11 @@ public class EnemyController : MonoBehaviour
             return;
         }
         isReturnedToPool = true; // Mark it as returned so this can't happen twice. AK
+        if (sourcePrefab == null) // Not spawned through the pool (e.g. a boss), so just destroy it.
+        {
+            Destroy(gameObject);
+            return;
+        }
         EnemySpawner.instance.RemoveFromTracking(gameObject); // Stop the spawner's despawn check from tracking it. AK
         EnemySpawner.instance.ReturnEnemyToPool(sourcePrefab, gameObject); // Deactivate it and add it back to its pool. AK
     }
@@ -220,6 +236,11 @@ public class EnemyController : MonoBehaviour
             return;
         }
         isReturnedToPool = true; // Mark it as returned so this can't happen twice. AK
+        if (sourcePrefab == null)
+        {
+            Destroy(gameObject);
+            return;
+        }
         EnemySpawner.instance.ReturnEnemyToPool(sourcePrefab, gameObject); // Deactivate it and add it back to its pool. AK
     }
 }
