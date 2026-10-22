@@ -18,6 +18,7 @@ public class RunSaveData
     public int maxWeapons;
     public int level, experience, queuedLevels;
     public int runCoins; // Coins picked up during this run.
+    public bool bossDefeated;
     public List<WeaponSave> weapons = new List<WeaponSave>();
     public List<CardSave> cards = new List<CardSave>();
 }
@@ -109,6 +110,7 @@ public static class RunSave
             d.queuedLevels = ExperienceLevelController.instance.queuedLevels;
         }
         if (CoinController.instance != null) d.runCoins = CoinController.instance.coinsCollectedThisRun;
+        if (EnemySpawner.instance != null) d.bossDefeated = EnemySpawner.instance.bossDefeated;
 
         AddWeapons(d, player.unassignedWeapons, 0);
         AddWeapons(d, player.assignedWeapons, 1);
@@ -185,6 +187,7 @@ public static class RunSave
         exp.currentExperience = d.experience;
         UIController.instance.UpdateExperience(exp.currentExperience, exp.expLevels[exp.currentLevel], exp.currentLevel);
 
+        if (EnemySpawner.instance != null) EnemySpawner.instance.bossDefeated = d.bossDefeated;
         LevelManager.instance.timer = d.timer;
         UIController.instance.UpdateTimer(d.timer);
         if (CoinController.instance != null) CoinController.instance.coinsCollectedThisRun = d.runCoins;
