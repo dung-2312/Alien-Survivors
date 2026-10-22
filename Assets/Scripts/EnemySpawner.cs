@@ -20,6 +20,15 @@ public class EnemySpawner : MonoBehaviour
     private int currentWave; // The current wave. AK
     private float waveCounter; // The counter for the wave. AK
 
+    [Header("Boss")]
+    public GameObject bossPrefab; // Needs an EnemyController and a BossController. Empty = build the Brood Queen from the first wave's enemy.
+    public float bossSpawnTime = 30f; // Run time (seconds) at which the boss arrives. Low for testing; 180 for the real run.
+    public bool spawnBoss = true; // Untick for no boss at all.
+    public bool pauseWavesDuringBoss = true; // The boss summons its own minions, so regular waves stop while it lives.
+    [HideInInspector]
+    public bool bossDefeated; // Saved with the run so Continue doesn't bring a beaten boss back.
+    private BossController activeBoss;
+
     private readonly Dictionary<GameObject, List<GameObject>> enemyPools = new Dictionary<GameObject, List<GameObject>>(); // A pool of inactive enemies per prefab, so waves don't Instantiate/Destroy constantly. AK
 
     void Awake()
@@ -56,7 +65,13 @@ public class EnemySpawner : MonoBehaviour
 
         if(PlayerHealthController.instance.gameObject.activeSelf) // If the player is active. AK
         {
-            if(currentWave < waves.Count) // If the current wave is less than the number of waves. AK
+            if(spawnBoss && !bossDefeated && activeBoss == null && LevelManager.instance.timer >= bossSpawnTime)
+            {
+                SpawnBoss();
+            }
+
+            bool wavesPaused = pauseWavesDuringBoss && activeBoss != null;
+            if(!wavesPaused && currentWave < waves.Count) // If the current wave is less than the number of waves. AK
             {
                 waveCounter -= Time.deltaTime; // Decrease the wave counter. AK
                 if(waveCounter <= 0) // If the wave counter is less than or equal to 0. AK
@@ -108,6 +123,43 @@ public class EnemySpawner : MonoBehaviour
                 checkTarget = 0; // Set the check target to 0. AK
             }
         }
+    }
+
+    private void SpawnBoss() // Not pooled, and not distance-despawned.
+    {
+        if(bossPrefab != null)
+        {
+            activeBoss = Instantiate(bossPrefab, SelectSpawnPoint(), Quaternion.identity).GetComponent<BossController>();
+        }
+        else if(waves.Count > 0 && waves[0].enemyToSpawn != null)
+        {
+            // Build it under an inactive holder so the enemy's Awake runs after the boss stats are applied.
+            GameObject holder = new GameObject("Boss Builder");
+            holder.SetActive(false);
+            GameObject boss = Instantiate(waves[0].enemyToSpawn, SelectSpawnPoint(), Quaternion.identity, holder.transform);
+            activeBoss = BossController.ConfigureAsBroodQueen(boss, waves[0].enemyToSpawn);
+            boss.transform.SetParent(null, true);
+            Destroy(holder);
+        }
+
+        if(activeBoss == null)
+        {
+            Debug.LogWarning("EnemySpawner: couldn't spawn a boss (no Boss Prefab and no first-wave enemy).", this);
+            spawnBoss = false;
+        }
+    }
+
+    public void OnBossDefeated() // Called by the BossController when it dies.
+    {
+        bossDefeated = true;
+        activeBoss = null;
+    }
+
+    public GameObject SpawnMinion(GameObject prefab, Vector3 position) // Lets a boss summon regular, pooled enemies.
+    {
+        GameObject minion = SpawnEnemy(prefab, position);
+        spawnedEnemies.Add(minion);
+        return minion;
     }
 
     private GameObject SpawnEnemy(GameObject prefab, Vector3 position) // Get a pooled enemy of this type, or instantiate a new one if the pool is empty. AK
