@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -18,7 +18,7 @@ public class PlayerHealthController : MonoBehaviour
     public GameObject deathEffect; // The death effect. GK
 
     [Header("I-Frames & Feedback")]
-    [Tooltip("Khoảng thời gian bất tử (giây) sau khi dính đòn để tránh bị quái cắn liên tục")]
+    [Tooltip("Khoáº£ng thá»i gian báº¥t tá»­ (giÃ¢y) sau khi dÃ­nh Ä‘Ã²n Ä‘á»ƒ trÃ¡nh bá»‹ quÃ¡i cáº¯n liÃªn tá»¥c")]
     public float invincibilityDuration = 0.4f;
     private float invincibilityCounter = 0f;
     private SpriteRenderer[] playerSprites;
@@ -47,24 +47,30 @@ public class PlayerHealthController : MonoBehaviour
                 rt.sizeDelta = new Vector2(85f, 6.5f);
             }
 
-            // Dark background for retro contrast
+            // Dark background with ornate slot border for retro contrast
             Transform bgT = healthSlider.transform.Find("Background");
             if (bgT != null)
             {
                 Image bgImg = bgT.GetComponent<Image>();
                 if (bgImg != null)
                 {
-                    bgImg.color = new Color(0.12f, 0.12f, 0.12f, 0.9f);
+                    Sprite slotSprite = Resources.Load<Sprite>("UI/VS_HUD_Slot");
+                    if (slotSprite != null)
+                    {
+                        bgImg.sprite = slotSprite;
+                        bgImg.type = Image.Type.Sliced;
+                    }
+                    bgImg.color = new Color(0.12f, 0.10f, 0.14f, 0.95f);
                 }
             }
 
-            // Clean vibrant red fill
+            // Clean vibrant ruby red fill
             if (healthSlider.fillRect != null)
             {
                 Image fillImg = healthSlider.fillRect.GetComponent<Image>();
                 if (fillImg != null)
                 {
-                    fillImg.color = new Color(0.88f, 0.15f, 0.15f, 1f);
+                    fillImg.color = new Color(0.96f, 0.18f, 0.22f, 1f);
                 }
             }
         }
@@ -89,22 +95,28 @@ public class PlayerHealthController : MonoBehaviour
 
     public void TakeDamage(float damageToTake) // Function to take damage. AK
     {
-        // 1. Kiểm tra khung bất tử (I-Frames)
+        // 1. Kiá»ƒm tra khung báº¥t tá»­ (I-Frames)
         if (invincibilityCounter > 0f)
         {
-            return; // Đang trong thời gian bất tử -> Bỏ qua sát thương
+            return; // Äang trong thá»i gian báº¥t tá»­ -> Bá» qua sÃ¡t thÆ°Æ¡ng
+        }
+
+                // Tác động qua nội tại nhân vật (Giảm sát thương Hero Knight, kích hoạt phản đòn...)
+        if (PlayerController.instance != null)
+        {
+            PlayerController.instance.OnTakeDamage(ref damageToTake);
         }
 
         currentHealth -= damageToTake; // Decrease the current health by the damage. AK
         invincibilityCounter = invincibilityDuration;
 
-        // 2. Kích hoạt hiệu ứng Rung màn hình (Screen Shake)
+        // 2. KÃ­ch hoáº¡t hiá»‡u á»©ng Rung mÃ n hÃ¬nh (Screen Shake)
         if (CameraController.instance != null)
         {
             CameraController.instance.Shake(0.18f, 0.22f);
         }
 
-        // 3. Hiệu ứng nhấp nháy nhân vật (I-Frames Flash)
+        // 3. Hiá»‡u á»©ng nháº¥p nhÃ¡y nhÃ¢n váº­t (I-Frames Flash)
         if (gameObject.activeInHierarchy)
         {
             if (flashCoroutine != null)
@@ -127,7 +139,20 @@ public class PlayerHealthController : MonoBehaviour
     }
 
     /// <summary>
-    /// Hồi máu cho Player và cập nhật thanh hiển thị.
+    /// KÃ­ch hoáº¡t khung báº¥t tá»­ cÆ°á»¡ng bá»©c (vÃ­ dá»¥ khi lÆ°á»›t nÃ© Ä‘Ã²n Dash).
+    /// </summary>
+    public void TriggerInvincibility(float duration)
+    {
+        invincibilityCounter = Mathf.Max(invincibilityCounter, duration);
+        if (gameObject.activeInHierarchy)
+        {
+            if (flashCoroutine != null) StopCoroutine(flashCoroutine);
+            flashCoroutine = StartCoroutine(FlashIFrameCo());
+        }
+    }
+
+    /// <summary>
+    /// Há»“i mÃ¡u cho Player vÃ  cáº­p nháº­t thanh hiá»ƒn thá»‹.
     /// </summary>
     public void Heal(float amount)
     {

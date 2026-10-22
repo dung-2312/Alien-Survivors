@@ -58,16 +58,17 @@ public class BossController : MonoBehaviour
     public static BossController ConfigureAsBroodQueen(GameObject go, GameObject minion)
     {
         go.name = "Boss - Brood Queen";
-        go.transform.localScale = Vector3.one * 3.5f; // Scales the collider with it.
+        go.transform.localScale = Vector3.one * 3.2f; // Scales the collider with it.
 
         EnemyController ec = go.GetComponent<EnemyController>();
-        ec.health = 750f;
-        ec.damage = 20f;
+        // Giảm máu con boss đầu lại theo yêu cầu người dùng (từ 750f xuống 220f để nhịp độ game vừa sức, hào hứng)
+        ec.health = 220f;
+        ec.damage = 14f;
         ec.moveSpeed = 1.6f;
         ec.hitWaitTime = 0.8f;
         ec.knockBackTime = 0f; // Bosses don't get pushed around.
         ec.expToGive = 60;
-        ec.coinValue = 5;
+        ec.coinValue = 10;
         ec.coinDropRate = 1f;
 
         Rigidbody2D body = go.GetComponent<Rigidbody2D>();
@@ -372,6 +373,7 @@ public class BossController : MonoBehaviour
 
         if (healthBarRoot != null) Destroy(healthBarRoot.gameObject);
         ShowBanner("BOSS DEFEATED", new Color(1f, 0.85f, 0.3f));
+        TreasureChest.SpawnChest(transform.position, 2);
         if (EnemySpawner.instance != null) EnemySpawner.instance.OnBossDefeated();
     }
 

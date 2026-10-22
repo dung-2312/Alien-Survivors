@@ -10,7 +10,10 @@ public class ThrowWeapon : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        theRB.linearVelocity = new Vector2(Random.Range(-throwPower,throwPower), throwPower); // Set the velocity of the rigidbody. GK
+        // Ném rìu theo hướng nhìn của nhân vật tạo đường bay vòng cung tự nhiên
+        float facing = PlayerController.instance != null ? PlayerController.instance.facingDirection : 1f;
+        float hPower = facing * Random.Range(throwPower * 0.45f, throwPower * 1.05f);
+        theRB.linearVelocity = new Vector2(hPower, throwPower * Random.Range(0.85f, 1.25f));
     }
 
     // Update is called once per frame

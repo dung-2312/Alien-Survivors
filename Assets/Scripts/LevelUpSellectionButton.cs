@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -65,8 +65,8 @@ public class LevelUpSellectionButton : MonoBehaviour, IPointerEnterHandler, IPoi
         outline = GetComponent<Outline>();
         if (outline != null) outline.enabled = false;
 
-        cardNormalSprite = Resources.Load<Sprite>("UI/UI_SubPanel_Gold");
-        cardSelectedSprite = Resources.Load<Sprite>("UI/UI_Card_Selected");
+        cardNormalSprite = Resources.Load<Sprite>("UI/VS_Card_Stone_Slot") ?? Resources.Load<Sprite>("UI/UI_SubPanel_Gold");
+        cardSelectedSprite = Resources.Load<Sprite>("UI/VS_Card_Selected_Brackets") ?? Resources.Load<Sprite>("UI/UI_Card_Selected");
         if (buttonImage != null && cardNormalSprite != null)
         {
             buttonImage.sprite = cardNormalSprite;
@@ -213,9 +213,9 @@ public class LevelUpSellectionButton : MonoBehaviour, IPointerEnterHandler, IPoi
         {
             string suffix = upgrade.upgradeType switch
             {
-                UpgradeType.UnlockWeapon => "  <color=#FFE040><size=65%>New!</size></color>",
-                UpgradeType.UpgradeStat => "  <color=#7CFF9B><size=65%>Passive</size></color>",
-                UpgradeType.WeaponEvolution => "  <color=#FF5A4A><size=65%>Evolve!</size></color>",
+                UpgradeType.UnlockWeapon => "  <color=#FFD700><size=65%>* NEW ARTIFACT</size></color>",
+                UpgradeType.UpgradeStat => "  <color=#66FFAA><size=65%>* PASSIVE BLESSING</size></color>",
+                UpgradeType.WeaponEvolution => "  <color=#FF3344><size=65%>* FORBIDDEN EVOLUTION</size></color>",
                 _ => ""
             };
             nameLevelText.text = $"{upgrade.GetDisplayName()}{suffix}";

@@ -76,6 +76,10 @@ public class ExperienceLevelController : MonoBehaviour
 
     public void SpawnExp(Vector3 position, int expValue) // Function to spawn experience into the world. GK
     {
+        if (ComboManager.instance != null && ComboManager.instance.ExpBonusMultiplier > 1f)
+        {
+            expValue = Mathf.RoundToInt(expValue * ComboManager.instance.ExpBonusMultiplier);
+        }
         // 1. Sử dụng ExpManager với cơ chế gom ngọc tự động (EXP Merging) & giới hạn số lượng
         if (ExpManager.instance != null)
         {

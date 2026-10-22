@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -9,11 +9,51 @@ public class MainMenu : MonoBehaviour
 {
     public string firstLevelName; // The first level name. GK
 
+    private TMP_FontAsset retroPixelFont;
+
     void Start()
     {
+        CacheRetroFont();
+        CreateGothicAtmosphereOverlay();
         ShowMainMenuFirst();
         SetupTitle();
         SetupMenuButtons();
+    }
+
+    private void CacheRetroFont()
+    {
+        Transform title = transform.Find("Title");
+        if (title != null)
+        {
+            TMP_Text tmp = title.GetComponent<TMP_Text>();
+            if (tmp != null && tmp.font != null)
+            {
+                retroPixelFont = tmp.font;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Tạo hiệu ứng viền tối ma mị (Eerie Gothic Vignette) bao quanh màn hình
+    /// </summary>
+    private void CreateGothicAtmosphereOverlay()
+    {
+        Transform existingVignette = transform.Find("Gothic Vignette");
+        if (existingVignette != null) return;
+
+        GameObject vignetteGO = new GameObject("Gothic Vignette", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        vignetteGO.transform.SetParent(transform, false);
+        vignetteGO.transform.SetAsFirstSibling();
+
+        RectTransform rt = vignetteGO.GetComponent<RectTransform>();
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
+
+        Image img = vignetteGO.GetComponent<Image>();
+        img.color = new Color(0.04f, 0.02f, 0.06f, 0.45f); // Lớp sương mù ma mị
+        img.raycastTarget = false;
     }
 
     // The scene is saved with the Character Selection panel switched on, so every load (including coming back from
@@ -23,14 +63,14 @@ public class MainMenu : MonoBehaviour
         Transform panel = transform.Find("CharacterSelectionPanel");
         if (panel != null) panel.gameObject.SetActive(false);
 
-        foreach (string buttonName in new[] { "Start Game", "Quit Game" })
+        foreach (string buttonName in new[] { "Start Game", "Quit Game", "Continue Button" })
         {
             Transform t = transform.Find(buttonName);
             if (t != null) t.gameObject.SetActive(true); // Character select hid them when it enabled
         }
     }
 
-    // The old logo image has "VAMPIRE SURVIVORS" baked into it, so it is replaced by a text title in the game's name.
+    // Title: Phong cách Gothic cổ điển với sắc Đỏ Huyết Dụ ma mị và Vàng Cổ Hoàng Gia
     void SetupTitle()
     {
         Transform logo = transform.Find("VS_Image");
@@ -45,9 +85,37 @@ public class MainMenu : MonoBehaviour
             shadow = Instantiate(title.gameObject, title.parent).transform;
             shadow.name = "Title Shadow";
         }
-        ConfigureTitle(shadow, "<color=#14081F>ALIEN\nSURVIVORS</color>", new Vector2(6f, -6f));
-        ConfigureTitle(title, "<color=#7CFF5A>ALIEN</color>\n<color=#FFE040>SURVIVORS</color>", new Vector2(0f, 0f));
+
+        // Bóng đen hắc ám sâu thẳm
+        ConfigureTitle(shadow, "<color=#070104>ALIEN\nSURVIVORS</color>", new Vector2(8f, -8f));
+
+        // Tiêu đề: Đỏ thẫm máu ma mị kết hợp vàng hoàng kim cổ kính
+        ConfigureTitle(title, "<color=#C41E3A>ALIEN</color>\n<color=#D4AF37>SURVIVORS</color>", new Vector2(0f, 0f));
         shadow.SetSiblingIndex(title.GetSiblingIndex()); // Shadow draws behind the title
+
+        // Phụ đề Gothic huyền bí
+        Transform subtitle = transform.Find("Title Subtitle");
+        if (subtitle == null)
+        {
+            GameObject subGO = new GameObject("Title Subtitle", typeof(RectTransform), typeof(TextMeshProUGUI));
+            subGO.transform.SetParent(transform, false);
+            subtitle = subGO.transform;
+        }
+
+        RectTransform srt = (RectTransform)subtitle;
+        srt.anchorMin = srt.anchorMax = srt.pivot = new Vector2(0.5f, 0.5f);
+        srt.sizeDelta = new Vector2(900f, 50f);
+        srt.anchoredPosition = new Vector2(0f, 65f);
+
+        TextMeshProUGUI stmp = subtitle.GetComponent<TextMeshProUGUI>();
+        if (retroPixelFont != null) stmp.font = retroPixelFont;
+        stmp.enableAutoSizing = false;
+        stmp.fontSize = 28f;
+        stmp.alignment = TextAlignmentOptions.Center;
+        stmp.characterSpacing = 4f;
+        stmp.color = new Color(0.85f, 0.76f, 0.52f, 0.9f);
+        stmp.text = "* A GOTHIC SURVIVAL NIGHTMARE *";
+        stmp.raycastTarget = false;
     }
 
     static void ConfigureTitle(Transform t, string text, Vector2 position)
@@ -70,8 +138,6 @@ public class MainMenu : MonoBehaviour
         tmp.color = Color.white;
         tmp.text = text;
 
-        // Centre on the glyphs that are actually drawn (the font's side spacing otherwise pulls the text left),
-        // then apply the offset (used to push the shadow copy down and right).
         tmp.ForceMeshUpdate();
         TMP_TextInfo info = tmp.textInfo;
         float left = float.MaxValue, right = float.MinValue;
@@ -107,7 +173,7 @@ public class MainMenu : MonoBehaviour
         Debug.Log("I'm Quitting");
     }
 
-    // Gold-framed retro buttons, with a CONTINUE button on top when there is a saved run.
+    // Nút bấm phong cách Gothic Retro cổ kính với viền đá vàng son
     void SetupMenuButtons()
     {
         Transform start = transform.Find("Start Game");
@@ -121,28 +187,28 @@ public class MainMenu : MonoBehaviour
         if (canContinue && cont == null)
         {
             cont = Instantiate(start.gameObject, start.parent).transform;
-            cont.name = "Continue Button"; // Contains "Button", so Character Select hides it together with the other menu buttons.
+            cont.name = "Continue Button";
             cont.SetSiblingIndex(start.GetSiblingIndex() + 1);
             Button b = cont.GetComponent<Button>();
-            b.onClick = new Button.ButtonClickedEvent(); // Drops the copied Start Game wiring
+            b.onClick = new Button.ButtonClickedEvent();
             b.onClick.AddListener(ContinueGame);
         }
         if (cont != null) cont.gameObject.SetActive(canContinue);
 
-        Sprite green = Resources.Load<Sprite>("UI/UI_Button_Confirm");
-        Sprite navy = Resources.Load<Sprite>("UI/UI_SubPanel_Gold");
-        Sprite red = Resources.Load<Sprite>("UI/UI_Button_Back");
+        Sprite green = Resources.Load<Sprite>("UI/VS_Button_PowerUp_Green") ?? Resources.Load<Sprite>("UI/UI_Button_Confirm");
+        Sprite gothicNavy = Resources.Load<Sprite>("UI/VS_Button_Start_Blue") ?? Resources.Load<Sprite>("UI/UI_SubPanel_Gold");
+        Sprite red = Resources.Load<Sprite>("UI/VS_Button_Quit_Red") ?? Resources.Load<Sprite>("UI/UI_Button_Back");
 
-        float[] y = canContinue ? new[] { -110f, -235f, -360f } : new[] { 0f, -150f, -275f };
-        if (canContinue) StyleButton(cont, green, "CONTINUE\n<size=55%>" + RunSave.Describe(saved) + "</size>", y[0]);
-        StyleButton(start, navy, canContinue ? "NEW GAME" : "START GAME", y[1]);
-        StyleButton(quit, red, "QUIT", y[2]);
+        float[] y = canContinue ? new[] { -100f, -225f, -350f } : new[] { -10f, -145f, -270f };
+        if (canContinue) StyleButton(cont, green, "CONTINUE\n<size=50%>" + RunSave.Describe(saved) + "</size>", y[0], new Color(0.9f, 1f, 0.9f));
+        StyleButton(start, gothicNavy, canContinue ? "NEW GAME" : "START GAME", y[1], new Color(1f, 0.92f, 0.55f));
+        StyleButton(quit, red, "QUIT", y[2], new Color(1f, 0.85f, 0.85f));
     }
 
-    static void StyleButton(Transform t, Sprite sprite, string label, float y)
+    private void StyleButton(Transform t, Sprite sprite, string label, float y, Color textColor)
     {
         RectTransform rt = (RectTransform)t;
-        rt.sizeDelta = new Vector2(480f, 110f);
+        rt.sizeDelta = new Vector2(490f, 105f);
         rt.anchoredPosition = new Vector2(0f, y);
 
         Image img = t.GetComponent<Image>();
@@ -155,18 +221,22 @@ public class MainMenu : MonoBehaviour
 
         TMP_Text text = t.GetComponentInChildren<TMP_Text>(true);
         if (text == null) return;
-        TMP_FontAsset smooth = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
-        if (smooth != null)
+
+        if (retroPixelFont != null)
         {
-            text.font = smooth;
-            text.fontSharedMaterial = smooth.material;
+            text.font = retroPixelFont;
+            if (retroPixelFont.material != null)
+            {
+                text.fontSharedMaterial = retroPixelFont.material;
+            }
         }
+
         text.enableAutoSizing = false;
-        text.fontSize = 52f;
+        text.fontSize = 46f;
         text.fontStyle = FontStyles.Bold;
-        text.characterSpacing = 3f;
+        text.characterSpacing = 4f;
         text.alignment = TextAlignmentOptions.Center;
-        text.color = Color.white;
+        text.color = textColor;
         text.text = label;
     }
 }

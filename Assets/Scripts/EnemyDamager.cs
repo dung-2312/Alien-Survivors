@@ -16,7 +16,7 @@ public class EnemyDamager : MonoBehaviour
     public bool destroyOnImpact; // Should the enemy be destroyed on impact. GK
     private void Awake()
     {
-        // Đảm bảo Collider gắn trên vũ khí luôn hoạt động dưới dạng Trigger để kích hoạt va chạm với quái
+        // Äáº£m báº£o Collider gáº¯n trÃªn vÅ© khÃ­ luÃ´n hoáº¡t Ä‘á»™ng dÆ°á»›i dáº¡ng Trigger Ä‘á»ƒ kÃ­ch hoáº¡t va cháº¡m vá»›i quÃ¡i
         Collider2D col = GetComponent<Collider2D>();
         if (col != null)
         {
@@ -62,10 +62,10 @@ public class EnemyDamager : MonoBehaviour
                 for(int i = 0; i < enemiesInRange.Count; i++) // For each enemy in range. GK
                 {
                     EnemyController enemy = enemiesInRange[i];
-                    // Kiểm tra quái còn tồn tại, đang active và còn máu (tránh gây sát thương lên quái trong object pool)
+                    // Kiá»ƒm tra quÃ¡i cÃ²n tá»“n táº¡i, Ä‘ang active vÃ  cÃ²n mÃ¡u (trÃ¡nh gÃ¢y sÃ¡t thÆ°Æ¡ng lÃªn quÃ¡i trong object pool)
                     if (enemy != null && enemy.gameObject.activeInHierarchy && enemy.health > 0)
                     {
-                        enemy.TakeDamage(damageAmount, shouldKnockBack); // Take damage. GK
+                        DealDamageToEnemy(enemy, enemy.transform.position);
                     }
                     else // If the enemy is null, inactive, or already dead
                     {
@@ -98,7 +98,7 @@ public class EnemyDamager : MonoBehaviour
 
             if (damageOverTime == false)
             {
-                enemy.TakeDamage(damageAmount, shouldKnockBack);
+                DealDamageToEnemy(enemy, collision.bounds.center);
                 if (destroyOnImpact)
                 {
                     Destroy(gameObject);
@@ -109,6 +109,19 @@ public class EnemyDamager : MonoBehaviour
                 if (!enemiesInRange.Contains(enemy))
                 {
                     enemiesInRange.Add(enemy);
+                }
+            }
+        }
+        else
+        {
+            // Kiểm tra va chạm với vật cản có thể phá hủy (hòm gỗ, bình gốm, bia mộ)
+            ObstacleProp obs = collision.GetComponent<ObstacleProp>() ?? collision.GetComponentInParent<ObstacleProp>();
+            if (obs != null)
+            {
+                obs.TakeDamage(damageAmount);
+                if (destroyOnImpact)
+                {
+                    Destroy(gameObject);
                 }
             }
         }
@@ -133,6 +146,76 @@ public class EnemyDamager : MonoBehaviour
             {
                 enemiesInRange.Remove(enemy);
             }
+        }
+    }
+
+    private void DealDamageToEnemy(EnemyController enemy, Vector3 hitPos)
+    {
+        float critChance = 0.12f;
+        float critMultiplier = 2.0f;
+        if (PlayerController.instance != null)
+        {
+            critChance = PlayerController.instance.GetCriticalStrikeChance();
+            critMultiplier = PlayerController.instance.GetCriticalStrikeMultiplier();
+        }
+
+        bool isCrit = Random.value < critChance;
+        float finalDmg = isCrit ? damageAmount * critMultiplier : damageAmount;
+
+        enemy.TakeDamage(finalDmg, shouldKnockBack, isCrit);
+
+        // Hiệu ứng tia lửa va chạm (Hit Sparks)
+        SpawnHitSparks(hitPos, isCrit);
+    }
+
+    private static void SpawnHitSparks(Vector3 pos, bool isCrit)
+    {
+        GameObject sparksObj = new GameObject("HitSparks");
+        sparksObj.transform.position = pos;
+
+        int sparkCount = isCrit ? 6 : 3;
+        Color sparkColor = isCrit ? new Color(1f, 0.85f, 0.2f, 1f) : new Color(1f, 0.95f, 0.85f, 0.9f);
+
+        for (int i = 0; i < sparkCount; i++)
+        {
+            GameObject spark = new GameObject("Spark", typeof(SpriteRenderer));
+            spark.transform.SetParent(sparksObj.transform, false);
+            spark.transform.localScale = Vector3.one * (isCrit ? 0.22f : 0.14f);
+
+            SpriteRenderer sr = spark.GetComponent<SpriteRenderer>();
+            sr.sprite = EnvironmentDecorManager.GetOrCreateSoftShadowSprite();
+            sr.color = sparkColor;
+            sr.sortingLayerName = "Default";
+            sr.sortingOrder = 25;
+
+            float angle = Random.Range(0f, 360f);
+            Vector2 dir = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
+            float speed = Random.Range(3.5f, 7.0f);
+
+            sparksObj.AddComponent<HitSparkMover>().Init(spark, dir * speed);
+        }
+
+        Destroy(sparksObj, 0.16f);
+    }
+}
+
+public class HitSparkMover : MonoBehaviour
+{
+    private GameObject sparkGO;
+    private Vector2 velocity;
+
+    public void Init(GameObject go, Vector2 vel)
+    {
+        sparkGO = go;
+        velocity = vel;
+    }
+
+    void Update()
+    {
+        if (sparkGO != null)
+        {
+            sparkGO.transform.position += (Vector3)(velocity * Time.deltaTime);
+            sparkGO.transform.localScale = Vector3.MoveTowards(sparkGO.transform.localScale, Vector3.zero, 1.4f * Time.deltaTime);
         }
     }
 }

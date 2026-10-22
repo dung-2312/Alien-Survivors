@@ -109,14 +109,17 @@ public class DamageNumber : MonoBehaviour
         }
     }
 
-    public void Setup(float damage, Vector3 position, GameObject target = null)
+    public bool isCritical = false;
+
+    public void Setup(float damage, Vector3 position, bool isCrit, GameObject target = null)
     {
         InitIfNeeded();
 
         currentTarget = target;
         totalDamage = damage;
-        lifeCounter = lifeTime > 0f ? lifeTime : 0.8f;
-        isAggregating = true;
+        isCritical = isCrit;
+        lifeCounter = lifeTime > 0f ? lifeTime : (isCrit ? 1.0f : 0.8f);
+        isAggregating = !isCrit; // Crits tách biệt rõ ràng để người chơi nhìn rõ cú đánh chí mạng
         aggregationTimer = aggregationWindow;
 
         transform.position = position;
@@ -124,11 +127,24 @@ public class DamageNumber : MonoBehaviour
 
         if (damageText != null)
         {
-            damageText.color = baseColor;
-            damageText.text = Mathf.RoundToInt(totalDamage).ToString();
+            if (isCrit)
+            {
+                damageText.color = new Color(1f, 0.84f, 0.12f, 1f); // Màu vàng kim hoàng kim rực rỡ
+                damageText.text = $"CRIT! {Mathf.RoundToInt(totalDamage)}";
+            }
+            else
+            {
+                damageText.color = baseColor;
+                damageText.text = Mathf.RoundToInt(totalDamage).ToString();
+            }
         }
 
-        PunchScale(punchScaleMultiplier);
+        PunchScale(isCrit ? punchScaleMultiplier * 1.6f : punchScaleMultiplier);
+    }
+
+    public void Setup(float damage, Vector3 position, GameObject target = null)
+    {
+        Setup(damage, position, false, target);
     }
 
     // Tương thích ngược với các lệnh gọi cũ: Setup(int)

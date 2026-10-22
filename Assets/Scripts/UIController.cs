@@ -42,6 +42,9 @@ public class UIController : MonoBehaviour
     public Image killImage;
     [HideInInspector]
     public int killCount = 0;
+    private TMP_Text dashStatusText;
+    private TMP_Text ultStatusText;
+    private Image ultWidgetBg;
 
     private List<Image> weaponSlotIcons = new List<Image>();
     private int lastWeaponCount = -1;
@@ -51,6 +54,10 @@ public class UIController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        if (GetComponent<TreasureChestUI>() == null) gameObject.AddComponent<TreasureChestUI>();
+        if (ComboManager.instance == null) new GameObject("ComboManager", typeof(ComboManager));
+        if (ShrineManager.instance == null) new GameObject("ShrineManager", typeof(ShrineManager));
+        if (EnvironmentDecorManager.instance == null) new GameObject("EnvironmentDecorManager", typeof(EnvironmentDecorManager));
         ApplySciFiLevelUpTheme();
 
         if (RunSave.continueRequested) // Came from the Main Menu's Continue button
@@ -94,7 +101,7 @@ public class UIController : MonoBehaviour
             windowRt.anchoredPosition = Vector2.zero;
             windowRt.sizeDelta = new Vector2(900f, 780f);
             Image windowImg = windowT.GetComponent<Image>();
-            windowImg.sprite = Resources.Load<Sprite>("UI/UI_WindowFrame_Gold");
+            windowImg.sprite = Resources.Load<Sprite>("UI/VS_Window_Gold_Frame") ?? Resources.Load<Sprite>("UI/UI_WindowFrame_Gold");
             windowImg.type = Image.Type.Sliced;
             windowImg.color = Color.white;
 
@@ -103,7 +110,7 @@ public class UIController : MonoBehaviour
             {
                 if (t.name == "Upgrade Text")
                 {
-                    t.text = "Level Up!";
+                    t.text = "- -  GRIMOIRE OF POWER -  -"; t.fontSize = 58;
                     t.fontStyle = FontStyles.Bold;
                     t.enableAutoSizing = false;
                     t.fontSize = 72;
@@ -117,7 +124,7 @@ public class UIController : MonoBehaviour
                 }
                 else if (t.transform.parent != null && t.transform.parent.name == "Skip Level Up")
                 {
-                    t.text = "SKIP";
+                    t.text = "BANISH (SKIP)"; t.fontSize = 38;
                     t.fontStyle = FontStyles.Bold;
                     t.enableAutoSizing = false;
                     t.fontSize = 48;
@@ -134,7 +141,7 @@ public class UIController : MonoBehaviour
                 skipRt.sizeDelta = new Vector2(280f, 92f);
                 skipRt.anchoredPosition = new Vector2(640f, 140f);
                 Image skipImg = skip.GetComponent<Image>();
-                Sprite redButton = Resources.Load<Sprite>("UI/UI_Button_Back");
+                Sprite redButton = Resources.Load<Sprite>("UI/VS_Button_Quit_Red") ?? Resources.Load<Sprite>("UI/UI_Button_Back");
                 if (skipImg != null && redButton != null)
                 {
                     skipImg.sprite = redButton;
@@ -235,7 +242,7 @@ public class UIController : MonoBehaviour
                 {
                     if (expFill != null) fillImg.sprite = expFill;
                     fillImg.type = Image.Type.Sliced;
-                    fillImg.color = Color.white;
+                    fillImg.color = new Color(0.15f, 0.95f, 0.85f, 1f); // Thanh EXP xanh neon ngọc bích rực sáng
                 }
                 Transform fillAreaT = explvlSlider.fillRect.parent;
                 if (fillAreaT != null)
@@ -260,32 +267,49 @@ public class UIController : MonoBehaviour
             lvlRT.anchorMax = new Vector2(1f, 0.5f);
             lvlRT.pivot = new Vector2(1f, 0.5f);
             lvlRT.anchoredPosition = new Vector2(-10f, 0f);
-            lvlRT.sizeDelta = new Vector2(100f, 22f);
+            lvlRT.sizeDelta = new Vector2(110f, 22f);
 
             if (retroFont != null) explvlText.font = retroFont;
-            explvlText.fontSize = 22;
+            explvlText.fontSize = 24;
             explvlText.alignment = TextAlignmentOptions.Right;
-            explvlText.color = Color.white;
+            explvlText.color = new Color(1f, 0.92f, 0.35f); // Hoàng kim óng ánh
             explvlText.fontStyle = FontStyles.Bold;
             explvlText.enableAutoSizing = false;
             explvlText.margin = Vector4.zero;
             explvlText.text = "LV " + (ExperienceLevelController.instance != null ? ExperienceLevelController.instance.currentLevel : 1);
         }
 
-        // 5. Timer Text ("0:05" centered on HUD row)
+        // 5. Timer Text ("0:05" centered on HUD row with Ornate Placard)
+        Transform existingPlacard = canvasT.Find("HUD Timer Placard");
+        GameObject placardGO = existingPlacard != null ? existingPlacard.gameObject : new GameObject("HUD Timer Placard", typeof(RectTransform), typeof(Image));
+        if (existingPlacard == null) placardGO.transform.SetParent(canvasT, false);
+
+        RectTransform plRT = placardGO.GetComponent<RectTransform>();
+        plRT.anchorMin = new Vector2(0.5f, 1f);
+        plRT.anchorMax = new Vector2(0.5f, 1f);
+        plRT.pivot = new Vector2(0.5f, 0.5f);
+        plRT.anchoredPosition = new Vector2(0f, -54f);
+        plRT.sizeDelta = new Vector2(170f, 42f);
+
+        Image plImg = placardGO.GetComponent<Image>();
+        plImg.sprite = Resources.Load<Sprite>("UI/UI_SubPanel_Gold") ?? hudSlot;
+        plImg.type = Image.Type.Sliced;
+        plImg.color = new Color(0.08f, 0.08f, 0.14f, 0.88f);
+
         if (timeText != null)
         {
+            placardGO.transform.SetSiblingIndex(Mathf.Max(0, timeText.transform.GetSiblingIndex()));
             RectTransform timeRT = timeText.GetComponent<RectTransform>();
             timeRT.anchorMin = new Vector2(0.5f, 1f);
             timeRT.anchorMax = new Vector2(0.5f, 1f);
             timeRT.pivot = new Vector2(0.5f, 0.5f);
             timeRT.anchoredPosition = new Vector2(0f, -54f);
-            timeRT.sizeDelta = new Vector2(180f, 38f);
+            timeRT.sizeDelta = new Vector2(160f, 38f);
 
             if (retroFont != null) timeText.font = retroFont;
             timeText.fontSize = 42;
             timeText.alignment = TextAlignmentOptions.Center;
-            timeText.color = Color.white;
+            timeText.color = new Color(1f, 0.96f, 0.70f); // Ánh kim ấm áp
             timeText.fontStyle = FontStyles.Bold;
             timeText.enableAutoSizing = false;
             timeText.margin = Vector4.zero;
@@ -338,21 +362,38 @@ public class UIController : MonoBehaviour
         pbtRT.offsetMin = Vector2.zero;
         pbtRT.offsetMax = Vector2.zero;
 
-        // 7. Coin Display (Icon + Number to the left of Pause Button)
+        // 7. Coin Display (Icon + Number to the left of Pause Button with Golden Capsule)
         if (coinImage == null && coinText != null)
         {
             Transform imgT = coinText.transform.parent.Find("Coin Image");
             if (imgT != null) coinImage = imgT.GetComponent<Image>();
         }
 
+        Transform existingCoinCap = canvasT.Find("HUD Coin Capsule");
+        GameObject coinCapGO = existingCoinCap != null ? existingCoinCap.gameObject : new GameObject("HUD Coin Capsule", typeof(RectTransform), typeof(Image));
+        if (existingCoinCap == null) coinCapGO.transform.SetParent(canvasT, false);
+
+        RectTransform ccRT = coinCapGO.GetComponent<RectTransform>();
+        ccRT.anchorMin = new Vector2(1f, 1f);
+        ccRT.anchorMax = new Vector2(1f, 1f);
+        ccRT.pivot = new Vector2(1f, 0.5f);
+        ccRT.anchoredPosition = new Vector2(-46f, -54f);
+        ccRT.sizeDelta = new Vector2(125f, 36f);
+
+        Image ccImg = coinCapGO.GetComponent<Image>();
+        ccImg.sprite = Resources.Load<Sprite>("UI/VS_Coin_Capsule_Bar") ?? Resources.Load<Sprite>("UI/UI_Coin_Box");
+        ccImg.type = Image.Type.Sliced;
+        ccImg.color = new Color(0.95f, 0.75f, 0.15f, 0.92f); // Thỏi vàng hoàng gia
+
         if (coinImage != null)
         {
+            coinCapGO.transform.SetSiblingIndex(Mathf.Max(0, coinImage.transform.GetSiblingIndex()));
             RectTransform cImgRT = coinImage.GetComponent<RectTransform>();
             cImgRT.anchorMin = new Vector2(1f, 1f);
             cImgRT.anchorMax = new Vector2(1f, 1f);
             cImgRT.pivot = new Vector2(1f, 0.5f);
-            cImgRT.anchoredPosition = new Vector2(-48f, -54f);
-            cImgRT.sizeDelta = new Vector2(20f, 20f);
+            cImgRT.anchoredPosition = new Vector2(-52f, -54f);
+            cImgRT.sizeDelta = new Vector2(22f, 22f);
 
             if (coinIcon != null) coinImage.sprite = coinIcon;
             coinImage.preserveAspect = true;
@@ -365,25 +406,25 @@ public class UIController : MonoBehaviour
             cTextRT.anchorMin = new Vector2(1f, 1f);
             cTextRT.anchorMax = new Vector2(1f, 1f);
             cTextRT.pivot = new Vector2(1f, 0.5f);
-            cTextRT.anchoredPosition = new Vector2(-74f, -54f);
+            cTextRT.anchoredPosition = new Vector2(-80f, -54f);
             cTextRT.sizeDelta = new Vector2(85f, 30f);
 
             if (retroFont != null) coinText.font = retroFont;
             coinText.fontSize = 30;
             coinText.alignment = TextAlignmentOptions.Right;
-            coinText.color = Color.white;
+            coinText.color = new Color(1f, 0.98f, 0.55f);
             coinText.fontStyle = FontStyles.Bold;
             coinText.enableAutoSizing = false;
             coinText.margin = Vector4.zero;
             coinText.text = CoinController.instance != null ? CoinController.instance.currentCoins.ToString() : "0";
         }
 
-        // 8. Monster Kill Counter (Skull Icon + Number to the left of Coins)
+        // 8. Monster Kill Counter (Skull Icon + Number with Crimson Gem Capsule)
         Transform existingKillCounter = canvasT.Find("Kill Counter Container");
         GameObject killContainer;
         if (existingKillCounter == null)
         {
-            killContainer = new GameObject("Kill Counter Container", typeof(RectTransform));
+            killContainer = new GameObject("Kill Counter Container", typeof(RectTransform), typeof(Image));
             killContainer.transform.SetParent(canvasT, false);
         }
         else
@@ -395,8 +436,14 @@ public class UIController : MonoBehaviour
         kcRT.anchorMin = new Vector2(1f, 1f);
         kcRT.anchorMax = new Vector2(1f, 1f);
         kcRT.pivot = new Vector2(1f, 0.5f);
-        kcRT.anchoredPosition = new Vector2(-172f, -54f);
-        kcRT.sizeDelta = new Vector2(115f, 30f);
+        kcRT.anchoredPosition = new Vector2(-180f, -54f);
+        kcRT.sizeDelta = new Vector2(125f, 36f);
+
+        Image kcImg = killContainer.GetComponent<Image>();
+        if (kcImg == null) kcImg = killContainer.AddComponent<Image>();
+        kcImg.sprite = Resources.Load<Sprite>("UI/VS_Coin_Capsule_Bar") ?? Resources.Load<Sprite>("UI/UI_SubPanel_Gold");
+        kcImg.type = Image.Type.Sliced;
+        kcImg.color = new Color(0.70f, 0.12f, 0.20f, 0.92f); // Huyết ngọc đỏ thắm
 
         Transform skullChild = killContainer.transform.Find("Skull Icon");
         GameObject skullGO = skullChild != null ? skullChild.gameObject : new GameObject("Skull Icon", typeof(RectTransform), typeof(Image));
@@ -405,12 +452,13 @@ public class UIController : MonoBehaviour
         killImage = skullGO.GetComponent<Image>();
         if (skullIcon != null) killImage.sprite = skullIcon;
         killImage.preserveAspect = true;
+        killImage.color = new Color(1f, 0.95f, 0.95f);
         RectTransform skullRT = skullGO.GetComponent<RectTransform>();
         skullRT.anchorMin = new Vector2(1f, 0.5f);
         skullRT.anchorMax = new Vector2(1f, 0.5f);
         skullRT.pivot = new Vector2(1f, 0.5f);
-        skullRT.anchoredPosition = Vector2.zero;
-        skullRT.sizeDelta = new Vector2(20f, 20f);
+        skullRT.anchoredPosition = new Vector2(-6f, 0f);
+        skullRT.sizeDelta = new Vector2(22f, 22f);
 
         Transform killTextChild = killContainer.transform.Find("Kill Text");
         GameObject killTextGO = killTextChild != null ? killTextChild.gameObject : new GameObject("Kill Text", typeof(RectTransform), typeof(TextMeshProUGUI));
@@ -420,7 +468,7 @@ public class UIController : MonoBehaviour
         if (retroFont != null) killText.font = retroFont;
         killText.fontSize = 30;
         killText.alignment = TextAlignmentOptions.Right;
-        killText.color = Color.white;
+        killText.color = new Color(1f, 0.85f, 0.85f);
         killText.fontStyle = FontStyles.Bold;
         killText.enableAutoSizing = false;
         killText.margin = Vector4.zero;
@@ -430,7 +478,7 @@ public class UIController : MonoBehaviour
         killTextRT.anchorMin = Vector2.zero;
         killTextRT.anchorMax = Vector2.one;
         killTextRT.offsetMin = Vector2.zero;
-        killTextRT.offsetMax = new Vector2(-26f, 0f);
+        killTextRT.offsetMax = new Vector2(-32f, 0f);
 
         // 9. Weapon / Item Inventory Slots (Top-Left under top bar)
         Transform existingSlotsContainer = canvasT.Find("Weapon Slots Container");
@@ -510,7 +558,101 @@ public class UIController : MonoBehaviour
             weaponSlotIcons.Add(iconImg);
         }
 
-        // 10. Bring popups (LevelUp, Pause, End) on top of HUD
+        // 10. Dash Skill Cooldown Widget
+        Transform existingDashWidget = canvasT.Find("HUD Dash Widget");
+        GameObject dashWidgetGO;
+        if (existingDashWidget == null)
+        {
+            dashWidgetGO = new GameObject("HUD Dash Widget", typeof(RectTransform), typeof(Image));
+            dashWidgetGO.transform.SetParent(canvasT, false);
+        }
+        else
+        {
+            dashWidgetGO = existingDashWidget.gameObject;
+        }
+
+        RectTransform dwRT = dashWidgetGO.GetComponent<RectTransform>();
+        dwRT.anchorMin = new Vector2(0f, 1f);
+        dwRT.anchorMax = new Vector2(0f, 1f);
+        dwRT.pivot = new Vector2(0f, 0.5f);
+        dwRT.anchoredPosition = new Vector2(12f, -92f);
+        dwRT.sizeDelta = new Vector2(380f, 26f);
+
+        Image dwImg = dashWidgetGO.GetComponent<Image>();
+        if (hudSlot != null) dwImg.sprite = hudSlot;
+        dwImg.type = Image.Type.Sliced;
+        dwImg.color = new Color(0.12f, 0.15f, 0.22f, 0.75f);
+
+        Transform dwTextChild = dashWidgetGO.transform.Find("Dash Text");
+        GameObject dwTextGO = dwTextChild != null ? dwTextChild.gameObject : new GameObject("Dash Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+        if (dwTextChild == null) dwTextGO.transform.SetParent(dashWidgetGO.transform, false);
+
+        dashStatusText = dwTextGO.GetComponent<TextMeshProUGUI>();
+        if (retroFont != null) dashStatusText.font = retroFont;
+        dashStatusText.fontSize = 17;
+        dashStatusText.alignment = TextAlignmentOptions.Center;
+        dashStatusText.color = new Color(0.2f, 1f, 0.6f);
+        dashStatusText.text = "SPACE: READY";
+
+        RectTransform dwtRT = dwTextGO.GetComponent<RectTransform>();
+        dwtRT.anchorMin = Vector2.zero;
+        dwtRT.anchorMax = Vector2.one;
+        dwtRT.offsetMin = Vector2.zero;
+        dwtRT.offsetMax = Vector2.zero;
+
+        // 10B. Ultimate Skill Action Widget
+        Transform existingUltWidget = canvasT.Find("HUD Ultimate Widget");
+        GameObject ultWidgetGO;
+        if (existingUltWidget == null)
+        {
+            ultWidgetGO = new GameObject("HUD Ultimate Widget", typeof(RectTransform), typeof(Image), typeof(UnityEngine.UI.Button));
+            ultWidgetGO.transform.SetParent(canvasT, false);
+        }
+        else
+        {
+            ultWidgetGO = existingUltWidget.gameObject;
+        }
+
+        RectTransform uwRT = ultWidgetGO.GetComponent<RectTransform>();
+        uwRT.anchorMin = new Vector2(0f, 1f);
+        uwRT.anchorMax = new Vector2(0f, 1f);
+        uwRT.pivot = new Vector2(0f, 0.5f);
+        uwRT.anchoredPosition = new Vector2(12f, -122f);
+        uwRT.sizeDelta = new Vector2(380f, 28f);
+
+        ultWidgetBg = ultWidgetGO.GetComponent<Image>();
+        if (hudSlot != null) ultWidgetBg.sprite = hudSlot;
+        ultWidgetBg.type = Image.Type.Sliced;
+        ultWidgetBg.color = new Color(0.18f, 0.12f, 0.16f, 0.85f);
+
+        UnityEngine.UI.Button ultBtn = ultWidgetGO.GetComponent<UnityEngine.UI.Button>();
+        ultBtn.onClick.RemoveAllListeners();
+        ultBtn.onClick.AddListener(() =>
+        {
+            if (PlayerUltimateController.instance != null && PlayerUltimateController.instance.IsUltimateReady)
+            {
+                PlayerUltimateController.instance.ActivateUltimate();
+            }
+        });
+
+        Transform uwTextChild = ultWidgetGO.transform.Find("Ult Text");
+        GameObject uwTextGO = uwTextChild != null ? uwTextChild.gameObject : new GameObject("Ult Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+        if (uwTextChild == null) uwTextGO.transform.SetParent(ultWidgetGO.transform, false);
+
+        ultStatusText = uwTextGO.GetComponent<TextMeshProUGUI>();
+        if (retroFont != null) ultStatusText.font = retroFont;
+        ultStatusText.fontSize = 17;
+        ultStatusText.alignment = TextAlignmentOptions.Center;
+        ultStatusText.color = new Color(1f, 0.8f, 0.2f);
+        ultStatusText.text = "[E / CLICK] ULTIMATE: 0%";
+
+        RectTransform uwtRT = uwTextGO.GetComponent<RectTransform>();
+        uwtRT.anchorMin = Vector2.zero;
+        uwtRT.anchorMax = Vector2.one;
+        uwtRT.offsetMin = Vector2.zero;
+        uwtRT.offsetMax = Vector2.zero;
+
+        // 11. Bring popups (LevelUp, Pause, End) on top of HUD
         if (levelUpPanel != null) levelUpPanel.transform.SetAsLastSibling();
         if (pauseScreen != null) pauseScreen.transform.SetAsLastSibling();
         if (levelEndScreen != null) levelEndScreen.transform.SetAsLastSibling();
@@ -554,6 +696,59 @@ public class UIController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Escape) && !levelEndScreen.activeSelf) // If the escape key is pressed and the player isn't dead. GK
         {
             PauseUnpause(); // Pause and unpause the game. GK
+        }
+
+        // Cập nhật hiển thị trạng thái Dash & Combo
+        if (dashStatusText != null && PlayerController.instance != null)
+        {
+            string dashPart = "";
+            if (PlayerController.instance.isDashing)
+            {
+                dashPart = "<color=#FFFF00><b>[ SPACE: DASHING! ]</b></color>";
+            }
+            else if (PlayerController.instance.IsDashReady)
+            {
+                dashPart = "<color=#00FFAA><b>[ SPACE: DASH READY ]</b></color>";
+            }
+            else
+            {
+                float rem = PlayerController.instance.dashCooldown * PlayerController.instance.DashCooldownProgress;
+                dashPart = $"<color=#88A0B8>[ SPACE: DASH {rem:0.0}s ]</color>";
+            }
+
+            string comboPart = "";
+            if (ComboManager.instance != null && ComboManager.instance.currentCombo >= 5)
+            {
+                string colHex = ComboManager.instance.currentCombo >= 50 ? "#FF2244" : 
+                               (ComboManager.instance.currentCombo >= 25 ? "#FFAA00" : "#FFEA00");
+                comboPart = $"  |  <color={colHex}><b>x{ComboManager.instance.currentCombo} COMBO!</b></color>";
+            }
+
+            dashStatusText.text = dashPart + comboPart;
+        }
+
+        // Cập nhật nút bấm Chiêu Cuối (Ultimate Widget)
+        if (ultStatusText != null && PlayerUltimateController.instance != null)
+        {
+            string ultName = PlayerUltimateController.instance.GetUltimateName();
+            if (PlayerUltimateController.instance.isCasting)
+            {
+                ultStatusText.text = $"<color=#FF5500><b>CASTING {ultName}!</b></color>";
+                if (ultWidgetBg != null) ultWidgetBg.color = new Color(0.6f, 0.2f, 0.1f, 0.9f);
+            }
+            else if (PlayerUltimateController.instance.IsUltimateReady)
+            {
+                float pulse = Mathf.PingPong(Time.unscaledTime * 4f, 1f);
+                string glowCol = ColorUtility.ToHtmlStringRGB(Color.Lerp(new Color(1f, 0.85f, 0.1f), new Color(1f, 0.4f, 0.1f), pulse));
+                ultStatusText.text = $"<color=#{glowCol}><b>★ [E / CLICK] {ultName}: READY! ★</b></color>";
+                if (ultWidgetBg != null) ultWidgetBg.color = Color.Lerp(new Color(0.35f, 0.25f, 0.05f, 0.9f), new Color(0.55f, 0.4f, 0.1f, 0.95f), pulse);
+            }
+            else
+            {
+                int pct = Mathf.FloorToInt(PlayerUltimateController.instance.RagePercent * 100f);
+                ultStatusText.text = $"<color=#FFAA33>[E / CLICK] {ultName}: {pct}%</color>";
+                if (ultWidgetBg != null) ultWidgetBg.color = new Color(0.18f, 0.12f, 0.16f, 0.85f);
+            }
         }
 
         // Smooth EXP bar interpolation
@@ -696,7 +891,7 @@ public class UIController : MonoBehaviour
     private Coroutine warningBannerCo;
 
     /// <summary>
-    /// Hiển thị thanh cảnh báo chớp nháy phong cách retro (ví dụ khi Mini-Boss xuất hiện).
+    /// Hiá»ƒn thá»‹ thanh cáº£nh bÃ¡o chá»›p nhÃ¡y phong cÃ¡ch retro (vÃ­ dá»¥ khi Mini-Boss xuáº¥t hiá»‡n).
     /// </summary>
     public void ShowWarning(string message, float duration = 2.5f)
     {

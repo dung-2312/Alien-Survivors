@@ -25,7 +25,10 @@ public class ZoneWeapon : Weapon
         if (spawnCounter <= 0) // If the spawn counter is less than or equal to 0. GK
         {
             spawnCounter = spawnTime; // Reset the spawn counter. GK
-            Instantiate(damager, damager.transform.position, Quaternion.identity, transform).gameObject.SetActive(true); // Instantiate the damager at the position. GK
+            Vector3 centerPos = PlayerController.instance != null
+                ? PlayerController.instance.transform.position + Vector3.up * 0.2f
+                : damager.transform.position;
+            Instantiate(damager, centerPos, Quaternion.identity, transform).gameObject.SetActive(true); // Instantiate the damager at the position. GK
             SFXManager.instance.PlaySFXPitched(10); // Play the sound effect. GK
 
         }

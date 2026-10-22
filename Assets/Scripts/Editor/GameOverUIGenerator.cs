@@ -114,7 +114,7 @@ namespace AlienSurvivors.EditorTools
 
             GameObject subtitle = Ensure(root, win, "Subtitle", typeof(TextMeshProUGUI));
             Place(subtitle, TopCenter, TopCenter, new Vector2(0f, -30f), new Vector2(700f, 40f));
-            Text(subtitle, "THE HORDE HAS CLAIMED YOU", 34f, Muted, true);
+            Text(subtitle, "✦ THE DARKNESS HAS CLAIMED YOUR SOUL ✦", 30f, Gold, true);
 
             GameObject divider = Ensure(root, win, "Divider", typeof(Image));
             Place(divider, TopCenter, TopCenter, new Vector2(0f, -86f), new Vector2(640f, 4f));
@@ -205,7 +205,7 @@ namespace AlienSurvivors.EditorTools
 
             GameObject title = Ensure(root, win, "Title", null);
             Place(title, TopCenter, TopCenter, new Vector2(0f, -22f), new Vector2(480f, 96f));
-            ShadowedText(root, title, "PAUSED", 88f, Gold, GoldShadow, 0f); // No shadow: it left a stray glyph at this size
+            ShadowedText(root, title, "— PAUSED —", 88f, Gold, GoldShadow, 0f); // No shadow: it left a stray glyph at this size
 
             GameObject divider = Ensure(root, win, "Divider", typeof(Image));
             Place(divider, TopCenter, TopCenter, new Vector2(0f, -124f), new Vector2(420f, 4f));
