@@ -47,13 +47,12 @@ public class DamageNumberController : MonoBehaviour
         }
     }
 
-    // Overload nhận target GameObject
-    public void SpawnDamage(float damageAmount, Vector3 location, GameObject target = null)
+    public void SpawnDamage(float damageAmount, Vector3 location, bool isCrit, GameObject target = null)
     {
         if (damageAmount <= 0f) return;
 
-        // 1. Kiểm tra Damage Aggregation (chỉ kích hoạt nếu aggregateDamage = true)
-        if (aggregateDamage && target != null && target.activeInHierarchy && activeTargetNumbers.TryGetValue(target, out DamageNumber activeNum))
+        // 1. Kiểm tra Damage Aggregation (chỉ kích hoạt nếu aggregateDamage = true và KHÔNG phải đòn Crit)
+        if (!isCrit && aggregateDamage && target != null && target.activeInHierarchy && activeTargetNumbers.TryGetValue(target, out DamageNumber activeNum))
         {
             if (activeNum != null && activeNum.CanAggregate)
             {
@@ -78,13 +77,19 @@ public class DamageNumberController : MonoBehaviour
         );
 
         newDamage.gameObject.SetActive(true);
-        newDamage.Setup(damageAmount, location + jitter, target);
+        newDamage.Setup(damageAmount, location + jitter, isCrit, target);
 
         // 3. Đăng ký vào từ điển nếu bật gộp sát thương
-        if (aggregateDamage && target != null)
+        if (!isCrit && aggregateDamage && target != null)
         {
             activeTargetNumbers[target] = newDamage;
         }
+    }
+
+    // Overload nhận target GameObject
+    public void SpawnDamage(float damageAmount, Vector3 location, GameObject target = null)
+    {
+        SpawnDamage(damageAmount, location, false, target);
     }
 
     // Hàm gốc tương thích với code cũ

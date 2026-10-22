@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -304,10 +304,10 @@ public class CharacterSelectManager : MonoBehaviour
             tr.anchoredPosition = new Vector2(0f, -18f);
             tr.sizeDelta = new Vector2(800f, 48f);
 
-            titleText.text = "Character Selection";
+            titleText.text = "- - CHOOSE YOUR SURVIVOR - -"; titleText.color = new Color(1f, 0.88f, 0.35f);
             titleText.fontSize = 36f;
             titleText.alignment = TextAlignmentOptions.Center;
-            titleText.color = Color.white;
+            titleText.color = new Color(1f, 0.88f, 0.35f);
             ApplyFont(titleText);
         }
 

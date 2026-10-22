@@ -25,10 +25,16 @@ public class WeaponThrower : Weapon
         if (throwCounter <= 0)
         {
             throwCounter = stats[weaponLevel].timeBetweenAttacks; // Reset the throw counter. GK
+
+            // Xuất chiêu trực tiếp từ tay nhân vật (ngang ngực/tay, không bao giờ ở dưới chân)
+            Vector3 spawnPos = PlayerController.instance != null
+                ? PlayerController.instance.transform.position + new Vector3(PlayerController.instance.facingDirection * 0.35f, 0.3f, 0f)
+                : transform.position;
+
             for (int i = 0; i < stats[weaponLevel].amount; i++)
             {
-                Instantiate(damager, damager.transform.position, damager.transform.rotation).gameObject.SetActive(true); // Instantiate the damager at the position and rotation. GK
-
+                GameObject axe = Instantiate(damager, spawnPos, damager.transform.rotation).gameObject;
+                axe.SetActive(true);
             }
 
             SFXManager.instance.PlaySFXPitched(4); // Play the sound effect. GK

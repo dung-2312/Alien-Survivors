@@ -13,7 +13,18 @@ MonoBehaviour:
   m_Name: Char_ForestRed
   m_EditorClassIdentifier: Assembly-CSharp::CharacterData
   characterName: Red Archer
-  passiveDescription: "Pinpoint Precision: +30% projectile speed and +10% extra attack area."
+  passiveDescription: 'Elven Ranger: Piercing high-speed Forest Bow arrows penetrate enemy hordes.'
   characterSprite: {fileID: 4487698022172851686, guid: f1ecc08355ad2eb469e033b290071fc8, type: 3}
-  weaponSprite: {fileID: -196789849, guid: 99f10abcf979e904b883da0c6922d74f, type: 3}
+  weaponSprite: {fileID: 1495497679, guid: 99f10abcf979e904b883da0c6922d74f, type: 3}
   characterPrefab: {fileID: 1221152227746878321, guid: fb6a78d577e4e844aa7c4354bbe8f7d9, type: 3}
+  unlockCost: 0
+  walkFrames:
+  - {fileID: 4301551928187519032, guid: 3214dcc26cb0c5e4b83c73931a76dbd4, type: 3}
+  - {fileID: 5025726928028434011, guid: 3214dcc26cb0c5e4b83c73931a76dbd4, type: 3}
+  - {fileID: -3108521143289239182, guid: 3214dcc26cb0c5e4b83c73931a76dbd4, type: 3}
+  - {fileID: 3889439748450317200, guid: 3214dcc26cb0c5e4b83c73931a76dbd4, type: 3}
+  idleFrames: []
+  walkFrameRate: 8
+  idleFrameRate: 5
+  customScaleMultiplier: 1
+  signatureWeaponName: Forest Bow

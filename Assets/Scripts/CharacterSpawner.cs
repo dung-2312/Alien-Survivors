@@ -46,16 +46,14 @@ public class CharacterSpawner : MonoBehaviour
                 if (spriteChild != null && spriteChild.TryGetComponent<SpriteRenderer>(out var sr))
                 {
                     sr.sprite = selectedData.characterSprite;
-
-                    // Chuẩn hóa kích thước nhân vật trong màn chơi để hiển thị to rõ ràng, cân đối
-                    float spriteHeight = sr.sprite.rect.height / sr.sprite.pixelsPerUnit;
-                    if (spriteHeight > 0.05f)
-                    {
-                        float targetHeight = 1.8f; // Chiều cao chuẩn nhân vật trong game
-                        float s = targetHeight / spriteHeight;
-                        spriteChild.localScale = new Vector3(s, s, 1f);
-                    }
                 }
+            }
+
+            // Khởi tạo hệ thống bước chân linh hoạt, khung hình chạy và chuẩn hóa kích thước to rõ
+            PlayerController pc = spawnedPlayer.GetComponent<PlayerController>();
+            if (pc != null)
+            {
+                pc.InitCharacter(selectedData);
             }
         }
         else

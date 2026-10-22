@@ -13,7 +13,30 @@ MonoBehaviour:
   m_Name: Char_EvilWizard
   m_EditorClassIdentifier: Assembly-CSharp::CharacterData
   characterName: Evil Wizard
-  passiveDescription: "Dark Arcana: +25% spell explosion radius, +30% projectile speed, +20% EXP magnet range."
+  passiveDescription: 'Dark Sorcerer: Hurls incinerating Magic Fireballs from his staff. +25% Spell Damage.'
   characterSprite: {fileID: 21300000, guid: d1e2f300000144448888000000000001, type: 3}
-  weaponSprite: {fileID: -2101580186, guid: 99f10abcf979e904b883da0c6922d74f, type: 3}
+  weaponSprite: {fileID: -196789849, guid: 99f10abcf979e904b883da0c6922d74f, type: 3}
   characterPrefab: {fileID: 135668588343800713, guid: e0d49022272e6064398f8b3a34069ca1, type: 3}
+  unlockCost: 0
+  walkFrames:
+  - {fileID: -1724553618, guid: 05e0a75274ead9e47b322de0fea771d0, type: 3}
+  - {fileID: 1219351802, guid: 05e0a75274ead9e47b322de0fea771d0, type: 3}
+  - {fileID: -1551950599, guid: 05e0a75274ead9e47b322de0fea771d0, type: 3}
+  - {fileID: -1385927162, guid: 05e0a75274ead9e47b322de0fea771d0, type: 3}
+  - {fileID: 1084330144, guid: 05e0a75274ead9e47b322de0fea771d0, type: 3}
+  - {fileID: 24959119, guid: 05e0a75274ead9e47b322de0fea771d0, type: 3}
+  - {fileID: 1879260498, guid: 05e0a75274ead9e47b322de0fea771d0, type: 3}
+  - {fileID: -412784377, guid: 05e0a75274ead9e47b322de0fea771d0, type: 3}
+  idleFrames:
+  - {fileID: 462434960, guid: 90c7332c857b6b043bad30766e14a946, type: 3}
+  - {fileID: -1549590570, guid: 90c7332c857b6b043bad30766e14a946, type: 3}
+  - {fileID: -1753734532, guid: 90c7332c857b6b043bad30766e14a946, type: 3}
+  - {fileID: 1381004252, guid: 90c7332c857b6b043bad30766e14a946, type: 3}
+  - {fileID: -1072028288, guid: 90c7332c857b6b043bad30766e14a946, type: 3}
+  - {fileID: -771920247, guid: 90c7332c857b6b043bad30766e14a946, type: 3}
+  - {fileID: 918264046, guid: 90c7332c857b6b043bad30766e14a946, type: 3}
+  - {fileID: 1997893319, guid: 90c7332c857b6b043bad30766e14a946, type: 3}
+  walkFrameRate: 10
+  idleFrameRate: 6
+  customScaleMultiplier: 1
+  signatureWeaponName: Magic Fireball

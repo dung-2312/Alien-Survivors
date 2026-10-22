@@ -13,7 +13,30 @@ MonoBehaviour:
   m_Name: Char_FemaleAdventurer
   m_EditorClassIdentifier: Assembly-CSharp::CharacterData
   characterName: Adventurer
-  passiveDescription: "Nature Blessing: +30% EXP pickup radius. Rapid piercing long-range shots."
+  passiveDescription: 'Sanctuary Maiden: Surrounded by a sacred protective Bright Zone. +30% EXP Radius.'
   characterSprite: {fileID: 21300000, guid: d1e2f300000444448888000000000004, type: 3}
-  weaponSprite: {fileID: -196789849, guid: 99f10abcf979e904b883da0c6922d74f, type: 3}
+  weaponSprite: {fileID: 21300000, guid: 0c78c8dd7f0745146b5b5c4fad8288e4, type: 3}
   characterPrefab: {fileID: 1221152227746878321, guid: fb6a78d577e4e844aa7c4354bbe8f7d9, type: 3}
+  unlockCost: 0
+  walkFrames:
+  - {fileID: 4204211648634801604, guid: 7b6782a9ff9b5db49b391824184bca25, type: 3}
+  - {fileID: -2959363626825222069, guid: 7b6782a9ff9b5db49b391824184bca25, type: 3}
+  - {fileID: -8119279285618188823, guid: 7b6782a9ff9b5db49b391824184bca25, type: 3}
+  - {fileID: -1406308435323457062, guid: 7b6782a9ff9b5db49b391824184bca25, type: 3}
+  - {fileID: -5585932290894609528, guid: 7b6782a9ff9b5db49b391824184bca25, type: 3}
+  - {fileID: -3014741820137528278, guid: 7b6782a9ff9b5db49b391824184bca25, type: 3}
+  - {fileID: 3939505287326085736, guid: 7b6782a9ff9b5db49b391824184bca25, type: 3}
+  - {fileID: 674083940831427441, guid: 7b6782a9ff9b5db49b391824184bca25, type: 3}
+  idleFrames:
+  - {fileID: 5903488652781262050, guid: 2ca9ddb3bb979d340ad1b0d865238428, type: 3}
+  - {fileID: -7212397726981208026, guid: 2ca9ddb3bb979d340ad1b0d865238428, type: 3}
+  - {fileID: 5237800769665446735, guid: 2ca9ddb3bb979d340ad1b0d865238428, type: 3}
+  - {fileID: 7162940272430989112, guid: 2ca9ddb3bb979d340ad1b0d865238428, type: 3}
+  - {fileID: -1988377778810844909, guid: 2ca9ddb3bb979d340ad1b0d865238428, type: 3}
+  - {fileID: -821423877148347225, guid: 2ca9ddb3bb979d340ad1b0d865238428, type: 3}
+  - {fileID: -4080541889421202062, guid: 2ca9ddb3bb979d340ad1b0d865238428, type: 3}
+  - {fileID: -7243029964827945222, guid: 2ca9ddb3bb979d340ad1b0d865238428, type: 3}
+  walkFrameRate: 10
+  idleFrameRate: 6
+  customScaleMultiplier: 1
+  signatureWeaponName: Bright Zone

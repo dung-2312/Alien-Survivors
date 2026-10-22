@@ -20,12 +20,28 @@ public class EnemySpawner : MonoBehaviour
     private int currentWave; // The current wave. AK
     private float waveCounter; // The counter for the wave. AK
 
+    [Header("Boss")]
+    public GameObject bossPrefab; // Needs an EnemyController and a BossController. Empty = build the Brood Queen from the first wave's enemy.
+    public float bossSpawnTime = 30f; // Run time (seconds) at which the boss arrives. Low for testing; 180 for the real run.
+    public bool spawnBoss = true; // Untick for no boss at all.
+    public bool pauseWavesDuringBoss = true; // The boss summons its own minions, so regular waves stop while it lives.
+    [HideInInspector]
+    public bool bossDefeated; // Saved with the run so Continue doesn't bring a beaten boss back.
+    private BossController activeBoss;
+
     [Header("Mini-Boss Events")]
     [Tooltip("Khoảng thời gian định kỳ triệu hồi Mini-Boss (giây), ví dụ 120s = 2 phút")]
     public float miniBossInterval = 120f;
     private float miniBossCounter;
     [Tooltip("Prefab vật phẩm đặc biệt rớt ra khi diệt Boss (Nam châm hoặc Hồi máu)")]
     public GameObject specialDropPrefab;
+
+    [Header("Dynamic Swarm & Ambush Events")]
+    public bool enableDynamicEvents = true;
+    public float hordeInterval = 130f; // Mỗi ~2 phút có 1 đợt bầy quái ùa vào
+    private float hordeCounter = 65f; // Đợt đầu tiên lúc 1:05
+    public float circleAmbushInterval = 190f; // Mỗi ~3 phút có 1 đợt vòng vây bao bọc
+    private float circleAmbushCounter = 135f; // Đợt đầu tiên lúc 2:15
 
     private readonly Dictionary<GameObject, List<GameObject>> enemyPools = new Dictionary<GameObject, List<GameObject>>(); // A pool of inactive enemies per prefab, so waves don't Instantiate/Destroy constantly. AK
 
@@ -54,6 +70,11 @@ public class EnemySpawner : MonoBehaviour
 
     void Update()
     {
+        if (EnemyController.globalFreezeTimer > 0f)
+        {
+            EnemyController.globalFreezeTimer -= Time.deltaTime;
+        }
+
         if (target == null && PlayerHealthController.instance != null)
         {
             target = PlayerHealthController.instance.transform;
@@ -61,7 +82,13 @@ public class EnemySpawner : MonoBehaviour
 
         if(PlayerHealthController.instance != null && PlayerHealthController.instance.gameObject.activeSelf) // If the player is active. AK
         {
-            // Định kỳ triệu hồi Mini-Boss
+            // 1. Kiểm tra Boss chính
+            if(spawnBoss && !bossDefeated && activeBoss == null && LevelManager.instance != null && LevelManager.instance.timer >= bossSpawnTime)
+            {
+                SpawnBoss();
+            }
+
+            // 2. Định kỳ triệu hồi Mini-Boss
             miniBossCounter -= Time.deltaTime;
             if (miniBossCounter <= 0f)
             {
@@ -69,7 +96,27 @@ public class EnemySpawner : MonoBehaviour
                 SpawnMiniBossEvent();
             }
 
-            if(currentWave < waves.Count) // If the current wave is less than the number of waves. AK
+            // 3. Sự kiện Đột biến Trong Trận (Horde Rush & Circle Ambush)
+            if (enableDynamicEvents)
+            {
+                hordeCounter -= Time.deltaTime;
+                if (hordeCounter <= 0f)
+                {
+                    hordeCounter = hordeInterval;
+                    StartCoroutine(TriggerHordeRushCo());
+                }
+
+                circleAmbushCounter -= Time.deltaTime;
+                if (circleAmbushCounter <= 0f)
+                {
+                    circleAmbushCounter = circleAmbushInterval;
+                    TriggerCircleAmbush();
+                }
+            }
+
+            // 4. Wave thông thường
+            bool wavesPaused = pauseWavesDuringBoss && activeBoss != null;
+            if(!wavesPaused && currentWave < waves.Count) // If the current wave is less than the number of waves. AK
             {
                 waveCounter -= Time.deltaTime; // Decrease the wave counter. AK
                 if(waveCounter <= 0) // If the wave counter is less than or equal to 0. AK
@@ -81,7 +128,7 @@ public class EnemySpawner : MonoBehaviour
                 {
                     spawnCounter = waves[currentWave].timeBetweenSpawns; // Reset the spawn counter. AK
 
-                    GameObject newEnemy = SpawnEnemy(waves[currentWave].enemyToSpawn, SelectSpawnPoint()); // Spawn (or reuse a pooled) enemy at the selected spawn point. AK
+                    GameObject newEnemy = SpawnEnemyWithVariant(waves[currentWave].enemyToSpawn, SelectSpawnPoint()); // Spawn quái (kèm cơ hội sinh biến thể Charger / Exploder)
 
                     spawnedEnemies.Add(newEnemy); // Add the new enemy to the list of spawned enemies. AK
                 }
@@ -126,6 +173,43 @@ public class EnemySpawner : MonoBehaviour
         }
     }
 
+    private void SpawnBoss() // Not pooled, and not distance-despawned.
+    {
+        if(bossPrefab != null)
+        {
+            activeBoss = Instantiate(bossPrefab, SelectSpawnPoint(), Quaternion.identity).GetComponent<BossController>();
+        }
+        else if(waves != null && waves.Count > 0 && waves[0].enemyToSpawn != null)
+        {
+            // Build it under an inactive holder so the enemy's Awake runs after the boss stats are applied.
+            GameObject holder = new GameObject("Boss Builder");
+            holder.SetActive(false);
+            GameObject boss = Instantiate(waves[0].enemyToSpawn, SelectSpawnPoint(), Quaternion.identity, holder.transform);
+            activeBoss = BossController.ConfigureAsBroodQueen(boss, waves[0].enemyToSpawn);
+            boss.transform.SetParent(null, true);
+            Destroy(holder);
+        }
+
+        if(activeBoss == null)
+        {
+            Debug.LogWarning("EnemySpawner: couldn't spawn a boss (no Boss Prefab and no first-wave enemy).", this);
+            spawnBoss = false;
+        }
+    }
+
+    public void OnBossDefeated() // Called by the BossController when it dies.
+    {
+        bossDefeated = true;
+        activeBoss = null;
+    }
+
+    public GameObject SpawnMinion(GameObject prefab, Vector3 position) // Lets a boss summon regular, pooled enemies.
+    {
+        GameObject minion = SpawnEnemy(prefab, position);
+        spawnedEnemies.Add(minion);
+        return minion;
+    }
+
     /// <summary>
     /// Triệu hồi sự kiện Mini-Boss kèm theo hiệu ứng cảnh báo và rung màn hình.
     /// </summary>
@@ -161,6 +245,114 @@ public class EnemySpawner : MonoBehaviour
         {
             UIController.instance.ShowWarning("WARNING: ELITE ALIEN DETECTED!", 3f);
         }
+    }
+
+    /// <summary>
+    /// Sự kiện Đột Biến: Bầy quái vật ùa vào dồn dập (Horde Swarm Rush).
+    /// </summary>
+    private IEnumerator TriggerHordeRushCo()
+    {
+        if (UIController.instance != null)
+        {
+            UIController.instance.ShowWarning("⚠️ WARNING: HORDE SWARM INCOMING! ⚠️", 3.5f);
+        }
+
+        if (CameraController.instance != null)
+        {
+            CameraController.instance.Shake(0.35f, 0.35f);
+        }
+
+        GameObject prefab = (waves != null && waves.Count > 0 && currentWave >= 0 && currentWave < waves.Count)
+            ? waves[currentWave].enemyToSpawn
+            : enemyToSpawn;
+
+        if (prefab == null) yield break;
+
+        // Sinh 35 quái vật liên tục trong 10 giây
+        int totalEnemies = 35;
+        for (int i = 0; i < totalEnemies; i++)
+        {
+            Vector3 spawnPos = SelectSpawnPoint();
+            GameObject enemyObj = SpawnEnemy(prefab, spawnPos);
+            spawnedEnemies.Add(enemyObj);
+
+            EnemyController ec = enemyObj.GetComponent<EnemyController>();
+            if (ec != null && Random.value < 0.25f)
+            {
+                ec.PromoteToSpecial(EnemySpecialType.Charger);
+            }
+
+            yield return new WaitForSeconds(0.28f);
+        }
+    }
+
+    /// <summary>
+    /// Sự kiện Đột Biến: Vòng vây tử thần khép kín (Circle Ambush).
+    /// </summary>
+    private void TriggerCircleAmbush()
+    {
+        if (target == null && PlayerHealthController.instance != null)
+        {
+            target = PlayerHealthController.instance.transform;
+        }
+        if (target == null) return;
+
+        if (UIController.instance != null)
+        {
+            UIController.instance.ShowWarning("💀 DANGER: AMBUSH SURROUNDED! 💀", 3.5f);
+        }
+
+        if (CameraController.instance != null)
+        {
+            CameraController.instance.Shake(0.45f, 0.4f);
+        }
+
+        GameObject prefab = (waves != null && waves.Count > 0 && currentWave >= 0 && currentWave < waves.Count)
+            ? waves[currentWave].enemyToSpawn
+            : enemyToSpawn;
+
+        if (prefab == null) return;
+
+        // Sinh 28 quái xếp thành vòng tròn khép kín bao vây người chơi ở bán kính 9m
+        int circleCount = 28;
+        float radius = 9f;
+        for (int i = 0; i < circleCount; i++)
+        {
+            float angle = (i * 360f / circleCount) * Mathf.Deg2Rad;
+            Vector3 spawnPos = target.position + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * radius;
+
+            GameObject enemyObj = SpawnEnemy(prefab, spawnPos);
+            spawnedEnemies.Add(enemyObj);
+
+            EnemyController ec = enemyObj.GetComponent<EnemyController>();
+            if (ec != null)
+            {
+                // Rải một vài Exploder để người chơi có thể bắn nổ mở đường máu thoát thân!
+                if (i % 5 == 0)
+                {
+                    ec.PromoteToSpecial(EnemySpecialType.Exploder);
+                }
+            }
+        }
+    }
+
+    public GameObject SpawnEnemyWithVariant(GameObject prefab, Vector3 position)
+    {
+        GameObject enemyObj = SpawnEnemy(prefab, position);
+        EnemyController ec = enemyObj.GetComponent<EnemyController>();
+        if (ec != null && currentWave >= 1) // Từ wave 1 trở đi bắt đầu xuất hiện các biến thể
+        {
+            float roll = Random.value;
+            if (roll < 0.15f)
+            {
+                ec.PromoteToSpecial(EnemySpecialType.Charger);
+            }
+            else if (roll < 0.28f)
+            {
+                ec.PromoteToSpecial(EnemySpecialType.Exploder);
+            }
+        }
+        return enemyObj;
     }
 
     private GameObject SpawnEnemy(GameObject prefab, Vector3 position) // Get a pooled enemy of this type, or instantiate a new one if the pool is empty. AK
