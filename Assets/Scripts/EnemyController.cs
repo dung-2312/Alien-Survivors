@@ -17,19 +17,10 @@ public class EnemyController : MonoBehaviour
     public int coinValue = 1; // The value of the coin. D
     public float coinDropRate = 0.5f; // The rate at which the coin drops. D
 
-    [Header("Mini-Boss / Elite Monster")]
-    public bool isMiniBoss = false;
-    public GameObject specialDropPrefab; // Meat or Magnet prefab
-    private Vector3 baseScale;
-    private SpriteRenderer spriteRenderer;
-
     [HideInInspector]
     public GameObject sourcePrefab; // The prefab this instance was spawned from, so it can be returned to the right pool. AK
     private float baseMoveSpeed; // The move speed as configured on the prefab, restored each time this is reused from the pool. AK
     private float baseHealth; // The health as configured on the prefab, restored each time this is reused from the pool. AK
-    private int baseExpToGive;
-    private int baseCoinValue;
-    private float baseCoinDropRate;
     private bool isReturnedToPool; // Guards against returning the same enemy to the pool twice in one frame. AK
 
     [HideInInspector]
@@ -43,11 +34,6 @@ public class EnemyController : MonoBehaviour
     {
         baseMoveSpeed = Mathf.Abs(moveSpeed); // Remember the prefab's configured speed before knockback flips its sign. AK
         baseHealth = health; // Remember the prefab's configured health. AK
-        baseExpToGive = expToGive;
-        baseCoinValue = coinValue;
-        baseCoinDropRate = coinDropRate;
-        baseScale = transform.localScale;
-        spriteRenderer = GetComponentInChildren<SpriteRenderer>();
     }
 
     void Start()
@@ -60,37 +46,9 @@ public class EnemyController : MonoBehaviour
     {
         health = baseHealth; // Restore full health. AK
         moveSpeed = baseMoveSpeed; // Restore the base move speed (knockback and death can leave it modified). AK
-        expToGive = baseExpToGive;
-        coinValue = baseCoinValue;
-        coinDropRate = baseCoinDropRate;
         hitCounter = 0f; // Clear the player-hit cooldown. AK
         knockBackCounter = 0f; // Clear any pending knockback. AK
         isReturnedToPool = false; // It's active again, so it can be returned to the pool once more later. AK
-        isMiniBoss = false;
-        transform.localScale = baseScale;
-        if (spriteRenderer != null)
-        {
-            spriteRenderer.color = Color.white;
-        }
-    }
-
-    public void PromoteToMiniBoss(float healthMultiplier = 5f, float scaleMultiplier = 1.6f, GameObject dropPrefab = null)
-    {
-        isMiniBoss = true;
-        health = baseHealth * healthMultiplier;
-        expToGive = baseExpToGive * 5;
-        coinValue = baseCoinValue * 5;
-        coinDropRate = 1f;
-        transform.localScale = baseScale * scaleMultiplier;
-        if (dropPrefab != null)
-        {
-            specialDropPrefab = dropPrefab;
-        }
-
-        if (spriteRenderer != null)
-        {
-            spriteRenderer.color = new Color(1f, 0.45f, 0.45f, 1f); // Reddish Elite Tint
-        }
     }
 
     void Update()
@@ -170,19 +128,6 @@ public class EnemyController : MonoBehaviour
             if (Random.value <= coinDropRate) // If the random value is less than or equal to the coin drop rate. D
             {
                 CoinController.instance.DropCoin(transform.position, coinValue); // Drop the coin. D
-            }
-
-            if (isMiniBoss)
-            {
-                if (CameraController.instance != null)
-                {
-                    CameraController.instance.Shake(0.35f, 0.4f);
-                }
-
-                if (specialDropPrefab != null)
-                {
-                    Instantiate(specialDropPrefab, transform.position, Quaternion.identity);
-                }
             }
 
             if (UIController.instance != null)
