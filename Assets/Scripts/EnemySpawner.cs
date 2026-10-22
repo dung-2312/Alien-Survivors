@@ -20,6 +20,13 @@ public class EnemySpawner : MonoBehaviour
     private int currentWave; // The current wave. AK
     private float waveCounter; // The counter for the wave. AK
 
+    [Header("Mini-Boss Events")]
+    [Tooltip("Khoảng thời gian định kỳ triệu hồi Mini-Boss (giây), ví dụ 120s = 2 phút")]
+    public float miniBossInterval = 120f;
+    private float miniBossCounter;
+    [Tooltip("Prefab vật phẩm đặc biệt rớt ra khi diệt Boss (Nam châm hoặc Hồi máu)")]
+    public GameObject specialDropPrefab;
+
     private readonly Dictionary<GameObject, List<GameObject>> enemyPools = new Dictionary<GameObject, List<GameObject>>(); // A pool of inactive enemies per prefab, so waves don't Instantiate/Destroy constantly. AK
 
     void Awake()
@@ -31,10 +38,15 @@ public class EnemySpawner : MonoBehaviour
     {
         //spawnCounter = timeToSpawn; // Set the spawn counter to the spawn time. AK
 
-        target = PlayerHealthController.instance.transform; // Find the player and set it as the target. AK
+        if (PlayerHealthController.instance != null)
+        {
+            target = PlayerHealthController.instance.transform; // Find the player and set it as the target. AK
+        }
 
         despawnDistance = Vector3.Distance(transform.position, maxSpawn.position) + 4f; // Set the despawn distance to the distance between the spawner and the maximum spawn position plus 4. AK
         despawnDistanceSqr = despawnDistance * despawnDistance; // Cache the squared despawn distance so the per-frame check can avoid a sqrt. AK
+
+        miniBossCounter = miniBossInterval;
 
         currentWave = -1; // Set the current wave to -1. AK
         GoToNextWave(); // Go to the next wave. AK
@@ -42,20 +54,21 @@ public class EnemySpawner : MonoBehaviour
 
     void Update()
     {
-        // spawnCounter -= Time.deltaTime; // Decrease the spawn counter. AK
-        // if(spawnCounter <= 0) // If the spawn counter is less than or equal to 0. AK
-        // {
-        //     spawnCounter = timeToSpawn; // Reset the spawn counter. AK
-
-        //     //Instantiate(enemyToSpawn, transform.position, transform.rotation); // Spawn the enemy at the spawner's position and rotation. AK
-
-        //     GameObject newEnemy = Instantiate(enemyToSpawn, SelectSpawnPoint(), transform.rotation); // Spawn the enemy at the selected spawn point and rotation. AK
-
-        //     spawnedEnemies.Add(newEnemy); // Add the new enemy to the list of spawned enemies. AK
-        // }
-
-        if(PlayerHealthController.instance.gameObject.activeSelf) // If the player is active. AK
+        if (target == null && PlayerHealthController.instance != null)
         {
+            target = PlayerHealthController.instance.transform;
+        }
+
+        if(PlayerHealthController.instance != null && PlayerHealthController.instance.gameObject.activeSelf) // If the player is active. AK
+        {
+            // Định kỳ triệu hồi Mini-Boss
+            miniBossCounter -= Time.deltaTime;
+            if (miniBossCounter <= 0f)
+            {
+                miniBossCounter = miniBossInterval;
+                SpawnMiniBossEvent();
+            }
+
             if(currentWave < waves.Count) // If the current wave is less than the number of waves. AK
             {
                 waveCounter -= Time.deltaTime; // Decrease the wave counter. AK
@@ -75,7 +88,10 @@ public class EnemySpawner : MonoBehaviour
             }
         }
 
-        transform.position = target.position; // Move the spawner to the player's position. AK
+        if (target != null)
+        {
+            transform.position = target.position; // Move the spawner to the player's position. AK
+        }
 
         int checkTarget = enemyToCheck + checkPerFrame; // Set the check target to the enemy to check plus the check per frame. AK
 
@@ -107,6 +123,43 @@ public class EnemySpawner : MonoBehaviour
                 enemyToCheck = 0; // Set the enemy to check to 0. AK
                 checkTarget = 0; // Set the check target to 0. AK
             }
+        }
+    }
+
+    /// <summary>
+    /// Triệu hồi sự kiện Mini-Boss kèm theo hiệu ứng cảnh báo và rung màn hình.
+    /// </summary>
+    public void SpawnMiniBossEvent()
+    {
+        if (target == null && PlayerHealthController.instance != null)
+        {
+            target = PlayerHealthController.instance.transform;
+        }
+
+        GameObject prefabToUse = (waves != null && waves.Count > 0 && currentWave >= 0 && currentWave < waves.Count)
+            ? waves[currentWave].enemyToSpawn
+            : enemyToSpawn;
+
+        if (prefabToUse == null) return;
+
+        Vector3 spawnPoint = SelectSpawnPoint();
+        GameObject bossObj = SpawnEnemy(prefabToUse, spawnPoint);
+        spawnedEnemies.Add(bossObj);
+
+        EnemyController ec = bossObj.GetComponent<EnemyController>();
+        if (ec != null)
+        {
+            ec.PromoteToMiniBoss(5f, 1.7f, specialDropPrefab);
+        }
+
+        if (CameraController.instance != null)
+        {
+            CameraController.instance.Shake(0.35f, 0.35f);
+        }
+
+        if (UIController.instance != null)
+        {
+            UIController.instance.ShowWarning("WARNING: ELITE ALIEN DETECTED!", 3f);
         }
     }
 
@@ -202,6 +255,11 @@ public class EnemySpawner : MonoBehaviour
 
         waveCounter = waves[currentWave].waveLength; // Set the wave counter to the wave length. AK
         spawnCounter = waves[currentWave].timeBetweenSpawns; // Set the spawn counter to the time between spawns. AK
+
+        if (waves[currentWave].spawnMiniBossAtStart)
+        {
+            SpawnMiniBossEvent();
+        }
     }
 }
 
@@ -209,6 +267,7 @@ public class EnemySpawner : MonoBehaviour
 public class WaveInfo // The wave information. AK
 {
     public GameObject enemyToSpawn; // The enemy to spawn. AK
-    public float waveLength =10f; // The length of the wave. AK
+    public float waveLength = 10f; // The length of the wave. AK
     public float timeBetweenSpawns = 1f; // The time between spawns. AK
+    public bool spawnMiniBossAtStart = false; // Triệu hồi Mini-Boss khi bắt đầu wave này
 }

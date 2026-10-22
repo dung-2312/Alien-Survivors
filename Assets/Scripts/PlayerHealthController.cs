@@ -17,10 +17,19 @@ public class PlayerHealthController : MonoBehaviour
     public Slider healthSlider; // The health slider. AK
     public GameObject deathEffect; // The death effect. GK
 
+    [Header("I-Frames & Feedback")]
+    [Tooltip("Khoảng thời gian bất tử (giây) sau khi dính đòn để tránh bị quái cắn liên tục")]
+    public float invincibilityDuration = 0.4f;
+    private float invincibilityCounter = 0f;
+    private SpriteRenderer[] playerSprites;
+    private Coroutine flashCoroutine;
+
     void Start()
     {
         maxHealth = PlayerStatController.instance.health[0].value; // Set the max health to the health value. GK
         currentHealth = maxHealth; // Set the current health to the max health at the start of the game. AK
+
+        playerSprites = GetComponentsInChildren<SpriteRenderer>();
 
         SetupHealthBarStyle();
         UpdateHealthUI();
@@ -72,15 +81,38 @@ public class PlayerHealthController : MonoBehaviour
 
     void Update()
     {
-        // if(Input.GetKeyDown(KeyCode.Space)) // If the space key is pressed. AK
-        // {
-        //     TakeDamage(10f); // Take 10 damage. AK
-        // }
+        if (invincibilityCounter > 0f)
+        {
+            invincibilityCounter -= Time.deltaTime;
+        }
     }
 
     public void TakeDamage(float damageToTake) // Function to take damage. AK
     {
+        // 1. Kiểm tra khung bất tử (I-Frames)
+        if (invincibilityCounter > 0f)
+        {
+            return; // Đang trong thời gian bất tử -> Bỏ qua sát thương
+        }
+
         currentHealth -= damageToTake; // Decrease the current health by the damage. AK
+        invincibilityCounter = invincibilityDuration;
+
+        // 2. Kích hoạt hiệu ứng Rung màn hình (Screen Shake)
+        if (CameraController.instance != null)
+        {
+            CameraController.instance.Shake(0.18f, 0.22f);
+        }
+
+        // 3. Hiệu ứng nhấp nháy nhân vật (I-Frames Flash)
+        if (gameObject.activeInHierarchy)
+        {
+            if (flashCoroutine != null)
+            {
+                StopCoroutine(flashCoroutine);
+            }
+            flashCoroutine = StartCoroutine(FlashIFrameCo());
+        }
 
         if(currentHealth <= 0) // If the current health is less than or equal to 0. AK
         {
@@ -92,5 +124,52 @@ public class PlayerHealthController : MonoBehaviour
         }
 
         UpdateHealthUI();
+    }
+
+    /// <summary>
+    /// Hồi máu cho Player và cập nhật thanh hiển thị.
+    /// </summary>
+    public void Heal(float amount)
+    {
+        currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
+        UpdateHealthUI();
+    }
+
+    private IEnumerator FlashIFrameCo()
+    {
+        if (playerSprites == null || playerSprites.Length == 0)
+        {
+            playerSprites = GetComponentsInChildren<SpriteRenderer>();
+        }
+
+        float flickerInterval = 0.08f;
+        while (invincibilityCounter > 0f)
+        {
+            SetSpriteAlpha(0.35f);
+            yield return new WaitForSeconds(flickerInterval);
+            SetSpriteAlpha(1.0f);
+            yield return new WaitForSeconds(flickerInterval);
+        }
+
+        SetSpriteAlpha(1.0f);
+    }
+
+    private void SetSpriteAlpha(float alpha)
+    {
+        if (playerSprites == null) return;
+        for (int i = 0; i < playerSprites.Length; i++)
+        {
+            if (playerSprites[i] != null)
+            {
+                Color c = playerSprites[i].color;
+                c.a = alpha;
+                playerSprites[i].color = c;
+            }
+        }
+    }
+
+    private void OnDisable()
+    {
+        SetSpriteAlpha(1.0f);
     }
 }
