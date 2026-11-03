@@ -3,32 +3,37 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
+/// <summary>
+/// Controls floating combat damage text, with arcade bounce-arc physics,
+/// vibrant color-grading for damage tiers, and spectacular critical hit popups.
+/// </summary>
 public class DamageNumber : MonoBehaviour
 {
     [Header("Components")]
     public TMP_Text damageText;
 
     [Header("Animation Settings")]
-    public float lifeTime = 0.8f;
-    public float floatSpeed = 1.2f;
-    public float punchScaleMultiplier = 1.35f;
-    public float punchDuration = 0.15f;
+    public float lifeTime = 0.85f;
+    public float floatSpeed = 1.1f;
+    public float punchScaleMultiplier = 1.4f;
+    public float punchDuration = 0.16f;
     [Range(0.1f, 0.9f)]
-    public float fadeOutThreshold = 0.4f; // Fades out during the last portion of lifetime
+    public float fadeOutThreshold = 0.45f;
 
     [Header("Aggregation Settings")]
-    public float aggregationWindow = 0.2f; // Time window during which new hits will stack
+    public float aggregationWindow = 0.2f;
 
     private float lifeCounter;
     private float totalDamage;
     private Vector3 baseScale;
-    private Color baseColor = Color.white;
     private float punchTimer;
     private Vector3 targetScale;
     private GameObject currentTarget;
     private bool isAggregating = true;
     private float aggregationTimer;
     private bool isInitialized = false;
+    private Vector2 velocity;
+    public bool isCritical = false;
 
     public bool CanAggregate => isAggregating && gameObject.activeSelf;
     public GameObject Target => currentTarget;
@@ -49,13 +54,22 @@ public class DamageNumber : MonoBehaviour
 
         if (damageText != null)
         {
-            baseColor = damageText.color;
+            // Apply retro pixel font if available from UIController
+            if (UIController.instance != null && UIController.instance.retroFont != null)
+            {
+                damageText.font = UIController.instance.retroFont;
+            }
+
+            damageText.fontStyle = FontStyles.Bold;
+            damageText.alignment = TextAlignmentOptions.Center;
+            damageText.richText = true;
+            damageText.raycastTarget = false;
         }
 
         baseScale = transform.localScale;
         if (baseScale == Vector3.zero)
         {
-            baseScale = Vector3.one;
+            baseScale = Vector3.one * 1.15f;
         }
 
         isInitialized = true;
@@ -63,32 +77,36 @@ public class DamageNumber : MonoBehaviour
 
     void Update()
     {
-        // 1. Bay lên trên
-        transform.position += Vector3.up * (floatSpeed * Time.deltaTime);
+        // 1. Arcade bounce-arc trajectory: pops up with horizontal spread then drifts up
+        transform.position += (Vector3)velocity * Time.deltaTime;
+        velocity.x = Mathf.MoveTowards(velocity.x, 0f, Time.deltaTime * 2.2f);
+        velocity.y = Mathf.MoveTowards(velocity.y, floatSpeed, Time.deltaTime * 4.5f);
 
-        // 2. Hiệu ứng phóng to & đàn hồi (Punch scale decay - Zero-GC)
+        // 2. Elastic punch scale decay
         if (punchTimer > 0f)
         {
             punchTimer -= Time.deltaTime;
             float progress = 1f - Mathf.Clamp01(punchTimer / punchDuration);
-            transform.localScale = Vector3.Lerp(targetScale, baseScale, progress);
+            // Elastic ease out
+            float ease = Mathf.Sin(progress * Mathf.PI * 0.5f);
+            transform.localScale = Vector3.Lerp(targetScale, baseScale, ease);
         }
         else
         {
             transform.localScale = baseScale;
         }
 
-        // 3. Đếm ngược cửa sổ gộp sát thương (Damage Aggregation window)
+        // 3. Aggregation window countdown
         if (isAggregating)
         {
             aggregationTimer -= Time.deltaTime;
             if (aggregationTimer <= 0f)
             {
-                isAggregating = false; // Đóng cửa sổ gộp để đòn đánh tiếp theo tạo số mới nếu giãn cách
+                isAggregating = false;
             }
         }
 
-        // 4. Đếm ngược thời gian sống & Mờ dần (Fade out - Zero-GC)
+        // 4. Smooth Alpha Fade-out across all rich-text tags
         if (lifeCounter > 0f)
         {
             lifeCounter -= Time.deltaTime;
@@ -97,9 +115,7 @@ public class DamageNumber : MonoBehaviour
             if (lifeCounter <= fadeDuration && damageText != null && fadeDuration > 0f)
             {
                 float alpha = Mathf.Clamp01(lifeCounter / fadeDuration);
-                Color c = baseColor;
-                c.a = alpha;
-                damageText.color = c;
+                damageText.alpha = alpha;
             }
 
             if (lifeCounter <= 0f)
@@ -109,8 +125,6 @@ public class DamageNumber : MonoBehaviour
         }
     }
 
-    public bool isCritical = false;
-
     public void Setup(float damage, Vector3 position, bool isCrit, GameObject target = null)
     {
         InitIfNeeded();
@@ -118,28 +132,48 @@ public class DamageNumber : MonoBehaviour
         currentTarget = target;
         totalDamage = damage;
         isCritical = isCrit;
-        lifeCounter = lifeTime > 0f ? lifeTime : (isCrit ? 1.0f : 0.8f);
-        isAggregating = !isCrit; // Crits tách biệt rõ ràng để người chơi nhìn rõ cú đánh chí mạng
+        lifeCounter = isCrit ? 1.15f : 0.85f;
+        isAggregating = !isCrit;
         aggregationTimer = aggregationWindow;
 
+        // Spread spawn point slightly
         transform.position = position;
         transform.localScale = baseScale;
 
+        // Dynamic arc velocity
+        float spreadX = Random.Range(-0.85f, 0.85f);
+        float popY = isCrit ? Random.Range(2.8f, 3.4f) : Random.Range(1.9f, 2.4f);
+        velocity = new Vector2(spreadX, popY);
+
         if (damageText != null)
         {
+            damageText.alpha = 1f;
+
             if (isCrit)
             {
-                damageText.color = new Color(1f, 0.84f, 0.12f, 1f); // Màu vàng kim hoàng kim rực rỡ
-                damageText.text = $"CRIT! {Mathf.RoundToInt(totalDamage)}";
+                int val = Mathf.RoundToInt(totalDamage);
+                damageText.text = $"💥 <color=#FF2244><b>CRIT!</b></color> <color=#FFE033><b>{val}</b></color>";
+                PunchScale(punchScaleMultiplier * 1.85f);
             }
             else
             {
-                damageText.color = baseColor;
-                damageText.text = Mathf.RoundToInt(totalDamage).ToString();
+                int val = Mathf.RoundToInt(totalDamage);
+                if (val >= 100)
+                {
+                    damageText.text = $"<color=#FF7B00><b>{val}</b></color>";
+                }
+                else if (val >= 40)
+                {
+                    damageText.text = $"<color=#FFD166><b>{val}</b></color>";
+                }
+                else
+                {
+                    damageText.text = $"<color=#FFFFFF><b>{val}</b></color>";
+                }
+
+                PunchScale(punchScaleMultiplier);
             }
         }
-
-        PunchScale(isCrit ? punchScaleMultiplier * 1.6f : punchScaleMultiplier);
     }
 
     public void Setup(float damage, Vector3 position, GameObject target = null)
@@ -147,34 +181,43 @@ public class DamageNumber : MonoBehaviour
         Setup(damage, position, false, target);
     }
 
-    // Tương thích ngược với các lệnh gọi cũ: Setup(int)
     public void Setup(int damageDisplay)
     {
-        Setup(damageDisplay, transform.position, null);
+        Setup(damageDisplay, transform.position, false, null);
     }
 
     public void AddDamage(float additionalDamage)
     {
         totalDamage += additionalDamage;
 
-        // Reset hoặc kéo dài thời gian sống để người chơi kịp đọc số tổng combo
-        float minRemainingLife = (lifeTime > 0f ? lifeTime : 0.8f) * 0.6f;
+        float minRemainingLife = (lifeTime > 0f ? lifeTime : 0.85f) * 0.65f;
         if (lifeCounter < minRemainingLife)
         {
             lifeCounter = minRemainingLife;
         }
 
-        // Gia hạn cửa sổ gộp thêm một khoảng ngắn
         aggregationTimer = aggregationWindow;
 
         if (damageText != null)
         {
-            damageText.color = baseColor; // Khôi phục độ sáng đầy đủ
-            damageText.text = Mathf.RoundToInt(totalDamage).ToString();
+            damageText.alpha = 1f;
+            int val = Mathf.RoundToInt(totalDamage);
+            if (val >= 100)
+            {
+                damageText.text = $"<color=#FF7B00><b>{val}</b></color>";
+            }
+            else if (val >= 40)
+            {
+                damageText.text = $"<color=#FFD166><b>{val}</b></color>";
+            }
+            else
+            {
+                damageText.text = $"<color=#FFFFFF><b>{val}</b></color>";
+            }
         }
 
-        // Hiệu ứng giật nảy to hơn một chút khi số tích lũy lớn dần
-        float comboBoost = Mathf.Min(0.35f, (totalDamage / 100f) * 0.15f);
+        // Bouncy punch boost when combo damage piles up
+        float comboBoost = Mathf.Min(0.45f, (totalDamage / 100f) * 0.2f);
         PunchScale(punchScaleMultiplier + comboBoost);
     }
 

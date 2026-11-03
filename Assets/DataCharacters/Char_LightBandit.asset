@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: Char_LightBandit
   m_EditorClassIdentifier: Assembly-CSharp::CharacterData
   characterName: Light Bandit
-  passiveDescription: 'Shadow Rogue: Flings rapid lethal Dagger Throws. +20% Move Speed.'
+  passiveDescription: 'Blade Rogue: Slashes rapid crescent waves from his scimitar. +20% Move Speed.'
   characterSprite: {fileID: 21300000, guid: f2ed27d6c1c3ccc48959bcca269d88f0, type: 3}
-  weaponSprite: {fileID: -1061488230, guid: 99f10abcf979e904b883da0c6922d74f, type: 3}
+  weaponSprite: {fileID: 906671935, guid: 99f10abcf979e904b883da0c6922d74f, type: 3}
   characterPrefab: {fileID: 135668588343800713, guid: e0d49022272e6064398f8b3a34069ca1, type: 3}
   unlockCost: 0
   walkFrames:
@@ -35,4 +35,5 @@ MonoBehaviour:
   walkFrameRate: 12
   idleFrameRate: 6
   customScaleMultiplier: 1
-  signatureWeaponName: Dagger Throw
+  signatureWeaponName: Giant Sword
+  defaultSpriteFacesLeft: 1

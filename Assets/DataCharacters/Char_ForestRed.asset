@@ -28,3 +28,4 @@ MonoBehaviour:
   idleFrameRate: 5
   customScaleMultiplier: 1
   signatureWeaponName: Forest Bow
+  defaultSpriteFacesLeft: 0

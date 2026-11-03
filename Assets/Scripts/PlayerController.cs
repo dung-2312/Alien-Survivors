@@ -46,12 +46,40 @@ public class PlayerController : MonoBehaviour
     private float stepCycleTime = 0f;
     private float prevStepSin = 0f;
     private bool hasCustomWalkFrames = false;
+    private float spriteFacingSign = 1f;
 
     [Header("Character Passives & Combat Traits")]
     private float divineRegenTimer = 3.5f;
     private float divineAegisCooldownTimer = 0f;
     private float caltropDropTimer = 1.8f;
     private int antonioKillStreak = 0;
+
+    [Header("Temporary Puddle Buffs")]
+    private float bloodFrenzyTimer = 0f;
+    public bool HasBloodFrenzy => bloodFrenzyTimer > 0f;
+
+    public void ApplyBloodFrenzy(float duration = 4.0f)
+    {
+        bloodFrenzyTimer = Mathf.Max(bloodFrenzyTimer, duration);
+    }
+
+    [Header("Celestial Frenzy Buff (Boss Slain)")]
+    private float celestialFrenzyTimer = 0f;
+    private GameObject celestialAuraObj;
+    public bool HasCelestialFrenzy => celestialFrenzyTimer > 0f;
+
+    public void ApplyCelestialFrenzy(float duration = 20.0f)
+    {
+        celestialFrenzyTimer = Mathf.Max(celestialFrenzyTimer, duration);
+        if (celestialAuraObj == null)
+        {
+            BuildCelestialAura();
+        }
+        if (ExpManager.instance != null)
+        {
+            ExpManager.instance.AttractAllGems();
+        }
+    }
 
     public float DashCooldownProgress => Mathf.Clamp01(dashCooldownTimer / dashCooldown);
     public bool IsDashReady => dashCooldownTimer <= 0f && !isDashing;
@@ -192,10 +220,13 @@ public class PlayerController : MonoBehaviour
         }
 
         // Ãp dá»¥ng scale chuáº©n hÃ³a ngay khi xuáº¥t hiá»‡n
+        // Áp dụng hướng lật sprite mặc định và scale chuẩn hóa ngay khi xuất hiện
+        spriteFacingSign = (data != null && (data.defaultSpriteFacesLeft || (data.characterName != null && data.characterName.ToLowerInvariant().Contains("bandit")))) ? -1f : 1f;
+
         if (spriteTransform != null)
         {
             float initScale = GetCurrentBaseScale();
-            spriteTransform.localScale = new Vector3(facingDirection * initScale, initScale, originalScaleZ);
+            spriteTransform.localScale = new Vector3(facingDirection * spriteFacingSign * initScale, initScale, originalScaleZ);
             originalBasePos = spriteTransform.localPosition;
         }
 
@@ -241,7 +272,7 @@ public class PlayerController : MonoBehaviour
             if (cName.Contains("knight")) targetWeapon = "Giant Sword";
             else if (cName.Contains("wizard")) targetWeapon = "Magic Fireball";
             else if (cName.Contains("antonio")) targetWeapon = "Throwing Axes";
-            else if (cName.Contains("bandit")) targetWeapon = "Dagger Throw";
+            else if (cName.Contains("bandit")) targetWeapon = "Giant Sword";
             else if (cName.Contains("adventurer")) targetWeapon = "Bright Zone";
             else if (cName.Contains("archer") || cName.Contains("forest")) targetWeapon = "Forest Bow";
         }
@@ -444,10 +475,32 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        // 1. Cáº­p nháº­t Cooldown cá»§a Dash
+        // 1. Cập nhật Cooldown của Dash & Puddle Buffs
         if (dashCooldownTimer > 0f)
         {
             dashCooldownTimer -= Time.deltaTime;
+        }
+
+        if (bloodFrenzyTimer > 0f)
+        {
+            bloodFrenzyTimer -= Time.deltaTime;
+        }
+
+        if (celestialFrenzyTimer > 0f)
+        {
+            celestialFrenzyTimer -= Time.deltaTime;
+            if (celestialAuraObj != null)
+            {
+                celestialAuraObj.transform.Rotate(0f, 0f, 150f * Time.deltaTime);
+                float pulse = 1f + Mathf.Sin(Time.time * 6f) * 0.1f;
+                celestialAuraObj.transform.localScale = Vector3.one * (2.2f * pulse);
+            }
+
+            if (celestialFrenzyTimer <= 0f && celestialAuraObj != null)
+            {
+                Destroy(celestialAuraObj);
+                celestialAuraObj = null;
+            }
         }
 
         Vector3 moveInput = new Vector3(0f, 0f, 0f); // Create a new vector to store the input. AK
@@ -502,7 +555,8 @@ public class PlayerController : MonoBehaviour
 
         // Smooth physics-based movement káº¿t há»£p tá»‘c Ä‘á»™ tá»« chuá»—i combo Cuá»“ng Ná»™ (Combo Bloodrush)
         float comboSpeedBonus = (ComboManager.instance != null) ? ComboManager.instance.MoveSpeedMultiplier : 1.0f;
-        float finalMoveSpeed = moveSpeed * comboSpeedBonus;
+        float frenzyBonus = HasCelestialFrenzy ? 1.40f : (HasBloodFrenzy ? 1.25f : 1.0f);
+        float finalMoveSpeed = moveSpeed * comboSpeedBonus * frenzyBonus;
         Vector2 targetVelocity = new Vector2(moveInput.x, moveInput.y) * finalMoveSpeed;
         if (theRB != null)
         {
@@ -549,20 +603,20 @@ public class PlayerController : MonoBehaviour
 
             // GÃ³c nghiÃªng Ä‘á»• ngÆ°á»i vá» phÃ­a trÆ°á»›c theo hÆ°á»›ng cháº¡y (Dynamic Run Lean):
             // GiÃºp nhÃ¢n váº­t trÃ´ng thanh thoÃ¡t, dÅ©ng mÃ£nh lÆ°á»›t giÃ³ thay vÃ¬ láº¯c lÆ° nhÆ° con láº¯c
-            float targetLean = -4.5f * facingDirection;
+            float targetLean = -4.5f * facingDirection * spriteFacingSign;
             if (Mathf.Abs(moveInput.x) < 0.2f && Mathf.Abs(moveInput.y) > 0.2f)
             {
-                targetLean = 0f; // Cháº¡y tháº³ng Ä‘á»©ng lÃªn/xuá»‘ng thÃ¬ giá»¯ thÄƒng báº±ng
+                targetLean = 0f; // Chạy thẳng đứng lên/xuống thì giữ thăng bằng
             }
 
-            // Vá»›i nhÃ¢n váº­t khÃ´ng cÃ³ animation frame (nhÆ° Antonio), thÃªm nhá»‹p chuyá»ƒn bÆ°á»›c chÃ¢n cá»±c nháº¹ (1.5Â°)
+            // Với nhân vật không có animation frame (như Antonio), thêm nhịp chuyển bước chân cực nhẹ (1.5°)
             float walkWiggle = hasCustomWalkFrames ? 0f : Mathf.Sin(stepCycleTime) * 1.5f;
 
             Quaternion targetRot = Quaternion.Euler(0f, 0f, targetLean + walkWiggle);
             spriteTransform.localRotation = Quaternion.Lerp(spriteTransform.localRotation, targetRot, 14f * Time.deltaTime);
             spriteTransform.localPosition = new Vector3(originalBasePos.x, originalBasePos.y + stepHop, originalBasePos.z);
 
-            // B. Khung hÃ¬nh bÆ°á»›c chÃ¢n (Frame-by-Frame Walk Sprites)
+            // B. Khung hình bước chân (Frame-by-Frame Walk Sprites)
             if (hasCustomWalkFrames && currentWalkFrames != null && currentWalkFrames.Length > 0)
             {
                 animTimer += Time.deltaTime * currentWalkFrameRate * stepSpeedFactor;
@@ -574,10 +628,10 @@ public class PlayerController : MonoBehaviour
                 }
             }
 
-            // Giá»¯ nguyÃªn tá»· lá»‡ Pixel Art vuÃ´ng váº¯n sáº¯c nÃ©t 100% (KHÃ”NG co mÃ©o legSquash lÃ m vá»¡ pixel)
-            spriteTransform.localScale = new Vector3(facingDirection * baseScale, baseScale, originalScaleZ);
+            // Giữ nguyên tỷ lệ Pixel Art vuông vắn sắc nét 100% (KHÔNG co méo legSquash làm vỡ pixel)
+            spriteTransform.localScale = new Vector3(facingDirection * spriteFacingSign * baseScale, baseScale, originalScaleZ);
 
-            // C. Bá»¥i gÃ³t chÃ¢n má»m máº¡i khi tiáº¿p Ä‘áº¥t
+            // C. Bụi gót chân mềm mại khi tiếp đất
             float currentSin = Mathf.Sin(stepCycleTime);
             if ((prevStepSin < 0f && currentSin >= 0f) || (prevStepSin > 0f && currentSin <= 0f))
             {
@@ -587,10 +641,10 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            // Reset gÃ³c nghiÃªng vá» tháº³ng Ä‘á»©ng khi dá»«ng láº¡i má»™t cÃ¡ch Ãªm Ã¡i
+            // Reset góc nghiêng về thẳng đứng khi dừng lại một cách êm ái
             spriteTransform.localRotation = Quaternion.Lerp(spriteTransform.localRotation, Quaternion.identity, 12f * Time.deltaTime);
 
-            // Khung hÃ¬nh Idle náº¿u cÃ³
+            // Khung hình Idle nếu có
             if (currentIdleFrames != null && currentIdleFrames.Length > 0)
             {
                 animTimer += Time.deltaTime * currentIdleFrameRate;
@@ -607,12 +661,12 @@ public class PlayerController : MonoBehaviour
                 baseScale = GetCurrentBaseScale();
             }
 
-            // Nhá»‹p thá»Ÿ bá»“ng bá»nh thanh thoÃ¡t theo phÆ°Æ¡ng Y (Gentle Breathing Float)
+            // Nhịp thở bồng bềnh thanh thoát theo phương Y (Gentle Breathing Float)
             float idleBob = Mathf.Sin(Time.time * 3f) * 0.02f;
             spriteTransform.localPosition = new Vector3(originalBasePos.x, originalBasePos.y + idleBob, originalBasePos.z);
 
-            // Giá»¯ nguyÃªn tá»· lá»‡ chuáº©n hÃ³a tuyá»‡t Ä‘á»‘i, khÃ´ng co dÃ£n mÃ©o pixel
-            spriteTransform.localScale = new Vector3(facingDirection * baseScale, baseScale, originalScaleZ);
+            // Giữ nguyên tỷ lệ chuẩn hóa tuyệt đối, không co dãn méo pixel
+            spriteTransform.localScale = new Vector3(facingDirection * spriteFacingSign * baseScale, baseScale, originalScaleZ);
         }
     }
 
@@ -808,7 +862,7 @@ public class PlayerController : MonoBehaviour
         float baseScale = GetCurrentBaseScale();
 
         Vector3 punchOffset = new Vector3(sign * 0.14f, 0.03f, 0f);
-        Quaternion swingRot = Quaternion.Euler(0f, 0f, -14f * sign);
+        Quaternion swingRot = Quaternion.Euler(0f, 0f, -14f * sign * spriteFacingSign);
 
         while (elapsed < swingDuration)
         {
@@ -822,7 +876,7 @@ public class PlayerController : MonoBehaviour
             {
                 spriteTransform.localPosition = originalBasePos + punchOffset * forwardFactor;
                 spriteTransform.localRotation = Quaternion.Slerp(Quaternion.identity, swingRot, forwardFactor);
-                spriteTransform.localScale = new Vector3(facingDirection * baseScale, baseScale, originalScaleZ);
+                spriteTransform.localScale = new Vector3(facingDirection * spriteFacingSign * baseScale, baseScale, originalScaleZ);
             }
             yield return null;
         }
@@ -831,7 +885,7 @@ public class PlayerController : MonoBehaviour
         {
             spriteTransform.localPosition = originalBasePos;
             spriteTransform.localRotation = Quaternion.identity;
-            spriteTransform.localScale = new Vector3(facingDirection * baseScale, baseScale, originalScaleZ);
+            spriteTransform.localScale = new Vector3(facingDirection * spriteFacingSign * baseScale, baseScale, originalScaleZ);
         }
         attackSwingCo = null;
     }
@@ -1008,6 +1062,50 @@ public class PlayerController : MonoBehaviour
         CircleCollider2D col = caltrop.GetComponent<CircleCollider2D>();
         col.isTrigger = true;
         col.radius = 0.45f;
+    }
+
+    private void BuildCelestialAura()
+    {
+        if (celestialAuraObj != null) return;
+        celestialAuraObj = new GameObject("CelestialRunicAura");
+        celestialAuraObj.transform.SetParent(transform, false);
+        celestialAuraObj.transform.localPosition = new Vector3(0f, -0.3f, 0f);
+        celestialAuraObj.transform.localScale = Vector3.one * 2.2f;
+
+        SpriteRenderer sr = celestialAuraObj.AddComponent<SpriteRenderer>();
+        sr.sortingOrder = (playerSR != null ? playerSR.sortingOrder : 10) - 1;
+        sr.color = new Color(1f, 0.88f, 0.35f, 0.85f);
+
+        int res = 128;
+        Texture2D tex = new Texture2D(res, res, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Bilinear;
+        Color[] cols = new Color[res * res];
+        Vector2 center = new Vector2(res * 0.5f, res * 0.5f);
+        float rOut = res * 0.46f;
+        float rIn = res * 0.36f;
+        float rMid = (rOut + rIn) * 0.5f;
+
+        for (int y = 0; y < res; y++)
+        {
+            for (int x = 0; x < res; x++)
+            {
+                float d = Vector2.Distance(new Vector2(x, y), center);
+                if (d >= rIn && d <= rOut)
+                {
+                    float ringAlpha = 1f - Mathf.Abs(d - rMid) / ((rOut - rIn) * 0.5f);
+                    float angle = Mathf.Atan2(y - center.y, x - center.x);
+                    float rays = 0.75f + 0.25f * Mathf.Cos(angle * 8f);
+                    cols[y * res + x] = new Color(1f, 0.92f, 0.5f, ringAlpha * rays);
+                }
+                else
+                {
+                    cols[y * res + x] = Color.clear;
+                }
+            }
+        }
+        tex.SetPixels(cols);
+        tex.Apply();
+        sr.sprite = Sprite.Create(tex, new Rect(0, 0, res, res), new Vector2(0.5f, 0.5f), 100f);
     }
 }
 

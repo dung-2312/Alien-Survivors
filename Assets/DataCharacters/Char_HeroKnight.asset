@@ -42,3 +42,4 @@ MonoBehaviour:
   idleFrameRate: 7
   customScaleMultiplier: 1
   signatureWeaponName: Giant Sword
+  defaultSpriteFacesLeft: 0

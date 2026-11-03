@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using AlienSurvivors.Upgrades;
 
 public class UIController : MonoBehaviour
 {
@@ -47,9 +48,14 @@ public class UIController : MonoBehaviour
     private Image ultWidgetBg;
 
     private List<Image> weaponSlotIcons = new List<Image>();
+    private List<TextMeshProUGUI> weaponSlotLevels = new List<TextMeshProUGUI>();
+    private List<Image> passiveSlotIcons = new List<Image>();
+    private List<TextMeshProUGUI> passiveSlotLevels = new List<TextMeshProUGUI>();
     private int lastWeaponCount = -1;
+    private int lastPassiveHash = -1;
     private float targetExpValue = 0f;
     private int currentDisplayLevel = 1;
+    private TMP_Text stageSubtitleText;
 
     // Start is called before the first frame update
     void Start()
@@ -68,8 +74,8 @@ public class UIController : MonoBehaviour
         }
     }
 
-    // Vampire-Survivors style level-up: a framed window with the title on top, three wide rows inside it
-    // and a red Skip button beside it. Built at runtime from the existing panel objects.
+    // Vampire-Survivors style level-up: ornate gold-framed window, iconic "LEVEL UP!" title with drop shadow,
+    // subtitle, three wide cards with level pips, and a gothic red BANISH (SKIP) button.
     public void ApplySciFiLevelUpTheme()
     {
         if (levelUpPanel != null)
@@ -84,7 +90,7 @@ public class UIController : MonoBehaviour
             if (panelImg != null)
             {
                 panelImg.sprite = null;
-                panelImg.color = new Color(0.02f, 0.03f, 0.07f, 0.7f); // Dim the game behind the window
+                panelImg.color = new Color(0.02f, 0.02f, 0.05f, 0.85f); // Dim the game behind the window
             }
 
             // Gold-framed window behind everything
@@ -99,9 +105,9 @@ public class UIController : MonoBehaviour
             RectTransform windowRt = (RectTransform)windowT;
             windowRt.anchorMin = windowRt.anchorMax = windowRt.pivot = new Vector2(0.5f, 0.5f);
             windowRt.anchoredPosition = Vector2.zero;
-            windowRt.sizeDelta = new Vector2(900f, 780f);
+            windowRt.sizeDelta = new Vector2(940f, 820f);
             Image windowImg = windowT.GetComponent<Image>();
-            windowImg.sprite = Resources.Load<Sprite>("UI/VS_Window_Gold_Frame") ?? Resources.Load<Sprite>("UI/UI_WindowFrame_Gold");
+            windowImg.sprite = GetGothicWindowSprite();
             windowImg.type = Image.Type.Sliced;
             windowImg.color = Color.white;
 
@@ -110,41 +116,58 @@ public class UIController : MonoBehaviour
             {
                 if (t.name == "Upgrade Text")
                 {
-                    t.text = "- -  GRIMOIRE OF POWER -  -"; t.fontSize = 58;
+                    t.text = "✦  M Y S T I C   A S C E N S I O N  ✦";
+                    t.fontSize = 50;
                     t.fontStyle = FontStyles.Bold;
                     t.enableAutoSizing = false;
-                    t.fontSize = 72;
                     t.characterSpacing = 4f;
                     t.textWrappingMode = TextWrappingModes.NoWrap;
                     t.alignment = TextAlignmentOptions.Center;
-                    t.color = new Color(1f, 0.88f, 0.25f);
+                    t.color = new Color(1f, 0.88f, 0.32f);
                     t.rectTransform.anchorMin = t.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-                    t.rectTransform.sizeDelta = new Vector2(800f, 100f);
-                    t.rectTransform.anchoredPosition = new Vector2(0f, 320f);
+                    t.rectTransform.sizeDelta = new Vector2(880f, 70f);
+                    t.rectTransform.anchoredPosition = new Vector2(0f, 342f);
                 }
                 else if (t.transform.parent != null && t.transform.parent.name == "Skip Level Up")
                 {
-                    t.text = "BANISH (SKIP)"; t.fontSize = 38;
+                    t.text = "⚔  BANISH (SKIP)  ⚔";
+                    t.fontSize = 26;
                     t.fontStyle = FontStyles.Bold;
                     t.enableAutoSizing = false;
-                    t.fontSize = 48;
-                    t.color = Color.white;
+                    t.color = new Color(1f, 0.94f, 0.90f);
+                    t.alignment = TextAlignmentOptions.Center;
                 }
             }
 
-            // Red Skip button on the right of the window
+            // Subtitle "CHOOSE YOUR SACRED BLESSING"
+            Transform subT = levelUpPanel.transform.Find("Level Up Subtitle");
+            GameObject subGO = subT != null ? subT.gameObject : new GameObject("Level Up Subtitle", typeof(RectTransform), typeof(TextMeshProUGUI));
+            if (subT == null) subGO.transform.SetParent(levelUpPanel.transform, false);
+            RectTransform subRT = subGO.GetComponent<RectTransform>();
+            subRT.anchorMin = subRT.anchorMax = subRT.pivot = new Vector2(0.5f, 0.5f);
+            subRT.sizeDelta = new Vector2(740f, 32f);
+            subRT.anchoredPosition = new Vector2(0f, 286f);
+            TextMeshProUGUI subTMP = subGO.GetComponent<TextMeshProUGUI>();
+            if (retroFont != null) subTMP.font = retroFont;
+            subTMP.text = "✦  CHOOSE YOUR SACRED BLESSING  ✦";
+            subTMP.fontSize = 22f;
+            subTMP.alignment = TextAlignmentOptions.Center;
+            subTMP.color = new Color(0.92f, 0.84f, 0.60f, 0.95f);
+            subTMP.characterSpacing = 3f;
+            subTMP.raycastTarget = false;
+
+            // Gothic Blood Crimson Skip button at the bottom of the window
             Transform skip = levelUpPanel.transform.Find("Skip Level Up");
             if (skip != null)
             {
                 RectTransform skipRt = (RectTransform)skip;
                 skipRt.anchorMin = skipRt.anchorMax = skipRt.pivot = new Vector2(0.5f, 0.5f);
-                skipRt.sizeDelta = new Vector2(280f, 92f);
-                skipRt.anchoredPosition = new Vector2(640f, 140f);
+                skipRt.sizeDelta = new Vector2(300f, 62f);
+                skipRt.anchoredPosition = new Vector2(0f, -342f);
                 Image skipImg = skip.GetComponent<Image>();
-                Sprite redButton = Resources.Load<Sprite>("UI/VS_Button_Quit_Red") ?? Resources.Load<Sprite>("UI/UI_Button_Back");
-                if (skipImg != null && redButton != null)
+                if (skipImg != null)
                 {
-                    skipImg.sprite = redButton;
+                    skipImg.sprite = GetGothicBanishButtonSprite();
                     skipImg.type = Image.Type.Sliced;
                     skipImg.color = Color.white;
                 }
@@ -163,7 +186,7 @@ public class UIController : MonoBehaviour
             for (int i = 0; i < levelUpButtons.Length && i < 3; i++)
             {
                 if (levelUpButtons[i] != null)
-                    levelUpButtons[i].SetLayout(new Vector2(820f, 178f), new Vector2(0f, 135f - i * 192f));
+                    levelUpButtons[i].SetLayout(new Vector2(840f, 162f), new Vector2(0f, 155f - i * 175f));
             }
         }
     }
@@ -315,6 +338,27 @@ public class UIController : MonoBehaviour
             timeText.margin = Vector4.zero;
             timeText.text = "0:00";
         }
+
+        // 5b. Stage Name Subtitle ribbon under the timer
+        Transform existingStageSub = canvasT.Find("HUD Stage Subtitle");
+        GameObject stageSubGO = existingStageSub != null ? existingStageSub.gameObject : new GameObject("HUD Stage Subtitle", typeof(RectTransform), typeof(TextMeshProUGUI));
+        if (existingStageSub == null) stageSubGO.transform.SetParent(canvasT, false);
+
+        RectTransform stageRT = stageSubGO.GetComponent<RectTransform>();
+        stageRT.anchorMin = new Vector2(0.5f, 1f);
+        stageRT.anchorMax = new Vector2(0.5f, 1f);
+        stageRT.pivot = new Vector2(0.5f, 0.5f);
+        stageRT.anchoredPosition = new Vector2(0f, -80f);
+        stageRT.sizeDelta = new Vector2(500f, 24f);
+
+        stageSubtitleText = stageSubGO.GetComponent<TextMeshProUGUI>();
+        if (retroFont != null) stageSubtitleText.font = retroFont;
+        stageSubtitleText.fontSize = 20;
+        stageSubtitleText.alignment = TextAlignmentOptions.Center;
+        stageSubtitleText.fontStyle = FontStyles.Bold;
+        stageSubtitleText.raycastTarget = false;
+        stageSubtitleText.enableAutoSizing = false;
+        stageSubtitleText.text = "<color=#88FF88>✦ STAGE I: THE TOXIC MEADOW ✦</color>";
 
         // 6. Retro Pause Button ("||" on far right of HUD row)
         Transform existingPauseBtn = canvasT.Find("HUD Pause Button");
@@ -480,7 +524,7 @@ public class UIController : MonoBehaviour
         killTextRT.offsetMin = Vector2.zero;
         killTextRT.offsetMax = new Vector2(-32f, 0f);
 
-        // 9. Weapon / Item Inventory Slots (Top-Left under top bar)
+        // 9A. Row 1: Weapon Inventory Slots (Top-Left: 6 framed slots with level badge)
         Transform existingSlotsContainer = canvasT.Find("Weapon Slots Container");
         GameObject slotsContainer;
         if (existingSlotsContainer == null)
@@ -497,12 +541,13 @@ public class UIController : MonoBehaviour
         scRT.anchorMin = new Vector2(0f, 1f);
         scRT.anchorMax = new Vector2(0f, 1f);
         scRT.pivot = new Vector2(0f, 0.5f);
-        scRT.anchoredPosition = new Vector2(12f, -54f);
-        scRT.sizeDelta = new Vector2(210f, 32f);
+        scRT.anchoredPosition = new Vector2(12f, -44f);
+        scRT.sizeDelta = new Vector2(212f, 32f);
 
         weaponSlotIcons.Clear();
+        weaponSlotLevels.Clear();
         int maxSlots = 6;
-        float slotSize = 30f;
+        float slotSize = 32f;
         float slotSpacing = 4f;
 
         for (int i = 0; i < maxSlots; i++)
@@ -530,7 +575,7 @@ public class UIController : MonoBehaviour
             Image slotFrame = slotGO.GetComponent<Image>();
             if (hudSlot != null) slotFrame.sprite = hudSlot;
             slotFrame.type = Image.Type.Sliced;
-            slotFrame.color = new Color(1f, 1f, 1f, 0.45f);
+            slotFrame.color = new Color(1f, 1f, 1f, 0.65f);
 
             Transform iconChild = slotGO.transform.Find("Icon");
             GameObject iconGO;
@@ -549,16 +594,130 @@ public class UIController : MonoBehaviour
             iconRT.anchorMax = new Vector2(0.5f, 0.5f);
             iconRT.pivot = new Vector2(0.5f, 0.5f);
             iconRT.anchoredPosition = Vector2.zero;
-            iconRT.sizeDelta = new Vector2(22f, 22f);
+            iconRT.sizeDelta = new Vector2(24f, 24f);
 
             Image iconImg = iconGO.GetComponent<Image>();
             iconImg.preserveAspect = true;
             iconImg.enabled = false;
-
             weaponSlotIcons.Add(iconImg);
+
+            // Level text at bottom-right corner of slot
+            Transform lvlChild = slotGO.transform.Find("LevelText");
+            GameObject lvlGO = lvlChild != null ? lvlChild.gameObject : new GameObject("LevelText", typeof(RectTransform), typeof(TextMeshProUGUI));
+            if (lvlChild == null) lvlGO.transform.SetParent(slotGO.transform, false);
+            RectTransform lvlRT = lvlGO.GetComponent<RectTransform>();
+            lvlRT.anchorMin = new Vector2(1f, 0f);
+            lvlRT.anchorMax = new Vector2(1f, 0f);
+            lvlRT.pivot = new Vector2(1f, 0f);
+            lvlRT.anchoredPosition = new Vector2(1f, -1f);
+            lvlRT.sizeDelta = new Vector2(20f, 16f);
+            TextMeshProUGUI lvlTMP = lvlGO.GetComponent<TextMeshProUGUI>();
+            if (retroFont != null) lvlTMP.font = retroFont;
+            lvlTMP.fontSize = 14f;
+            lvlTMP.alignment = TextAlignmentOptions.BottomRight;
+            lvlTMP.color = new Color(1f, 0.9f, 0.3f);
+            lvlTMP.fontStyle = FontStyles.Bold;
+            lvlTMP.enabled = false;
+            lvlTMP.raycastTarget = false;
+            weaponSlotLevels.Add(lvlTMP);
         }
 
-        // 10. Dash Skill Cooldown Widget
+        // 9B. Row 2: Passive Item Inventory Slots (Directly under Weapons, matching Vampire Survivors)
+        Transform existingPassivesContainer = canvasT.Find("Passive Slots Container");
+        GameObject passivesContainer;
+        if (existingPassivesContainer == null)
+        {
+            passivesContainer = new GameObject("Passive Slots Container", typeof(RectTransform));
+            passivesContainer.transform.SetParent(canvasT, false);
+        }
+        else
+        {
+            passivesContainer = existingPassivesContainer.gameObject;
+        }
+
+        RectTransform pcRT = passivesContainer.GetComponent<RectTransform>();
+        pcRT.anchorMin = new Vector2(0f, 1f);
+        pcRT.anchorMax = new Vector2(0f, 1f);
+        pcRT.pivot = new Vector2(0f, 0.5f);
+        pcRT.anchoredPosition = new Vector2(12f, -80f);
+        pcRT.sizeDelta = new Vector2(212f, 32f);
+
+        passiveSlotIcons.Clear();
+        passiveSlotLevels.Clear();
+
+        for (int i = 0; i < maxSlots; i++)
+        {
+            string slotName = "PassiveSlot_" + i;
+            Transform slotChild = passivesContainer.transform.Find(slotName);
+            GameObject slotGO;
+            if (slotChild == null)
+            {
+                slotGO = new GameObject(slotName, typeof(RectTransform), typeof(Image));
+                slotGO.transform.SetParent(passivesContainer.transform, false);
+            }
+            else
+            {
+                slotGO = slotChild.gameObject;
+            }
+
+            RectTransform slotRT = slotGO.GetComponent<RectTransform>();
+            slotRT.anchorMin = new Vector2(0f, 0.5f);
+            slotRT.anchorMax = new Vector2(0f, 0.5f);
+            slotRT.pivot = new Vector2(0f, 0.5f);
+            slotRT.anchoredPosition = new Vector2(i * (slotSize + slotSpacing), 0f);
+            slotRT.sizeDelta = new Vector2(slotSize, slotSize);
+
+            Image slotFrame = slotGO.GetComponent<Image>();
+            if (hudSlot != null) slotFrame.sprite = hudSlot;
+            slotFrame.type = Image.Type.Sliced;
+            slotFrame.color = new Color(0.9f, 0.95f, 1f, 0.55f);
+
+            Transform iconChild = slotGO.transform.Find("Icon");
+            GameObject iconGO;
+            if (iconChild == null)
+            {
+                iconGO = new GameObject("Icon", typeof(RectTransform), typeof(Image));
+                iconGO.transform.SetParent(slotGO.transform, false);
+            }
+            else
+            {
+                iconGO = iconChild.gameObject;
+            }
+
+            RectTransform iconRT = iconGO.GetComponent<RectTransform>();
+            iconRT.anchorMin = new Vector2(0.5f, 0.5f);
+            iconRT.anchorMax = new Vector2(0.5f, 0.5f);
+            iconRT.pivot = new Vector2(0.5f, 0.5f);
+            iconRT.anchoredPosition = Vector2.zero;
+            iconRT.sizeDelta = new Vector2(24f, 24f);
+
+            Image iconImg = iconGO.GetComponent<Image>();
+            iconImg.preserveAspect = true;
+            iconImg.enabled = false;
+            passiveSlotIcons.Add(iconImg);
+
+            // Level text at bottom-right corner of passive slot
+            Transform lvlChild = slotGO.transform.Find("LevelText");
+            GameObject lvlGO = lvlChild != null ? lvlChild.gameObject : new GameObject("LevelText", typeof(RectTransform), typeof(TextMeshProUGUI));
+            if (lvlChild == null) lvlGO.transform.SetParent(slotGO.transform, false);
+            RectTransform lvlRT = lvlGO.GetComponent<RectTransform>();
+            lvlRT.anchorMin = new Vector2(1f, 0f);
+            lvlRT.anchorMax = new Vector2(1f, 0f);
+            lvlRT.pivot = new Vector2(1f, 0f);
+            lvlRT.anchoredPosition = new Vector2(1f, -1f);
+            lvlRT.sizeDelta = new Vector2(20f, 16f);
+            TextMeshProUGUI lvlTMP = lvlGO.GetComponent<TextMeshProUGUI>();
+            if (retroFont != null) lvlTMP.font = retroFont;
+            lvlTMP.fontSize = 14f;
+            lvlTMP.alignment = TextAlignmentOptions.BottomRight;
+            lvlTMP.color = new Color(0.4f, 1f, 0.7f);
+            lvlTMP.fontStyle = FontStyles.Bold;
+            lvlTMP.enabled = false;
+            lvlTMP.raycastTarget = false;
+            passiveSlotLevels.Add(lvlTMP);
+        }
+
+        // 10A. Sleek Dash Ability Pill (Placed neatly under the inventory)
         Transform existingDashWidget = canvasT.Find("HUD Dash Widget");
         GameObject dashWidgetGO;
         if (existingDashWidget == null)
@@ -575,13 +734,13 @@ public class UIController : MonoBehaviour
         dwRT.anchorMin = new Vector2(0f, 1f);
         dwRT.anchorMax = new Vector2(0f, 1f);
         dwRT.pivot = new Vector2(0f, 0.5f);
-        dwRT.anchoredPosition = new Vector2(12f, -92f);
-        dwRT.sizeDelta = new Vector2(380f, 26f);
+        dwRT.anchoredPosition = new Vector2(12f, -114f);
+        dwRT.sizeDelta = new Vector2(165f, 26f);
 
         Image dwImg = dashWidgetGO.GetComponent<Image>();
         if (hudSlot != null) dwImg.sprite = hudSlot;
         dwImg.type = Image.Type.Sliced;
-        dwImg.color = new Color(0.12f, 0.15f, 0.22f, 0.75f);
+        dwImg.color = new Color(0.08f, 0.12f, 0.18f, 0.85f);
 
         Transform dwTextChild = dashWidgetGO.transform.Find("Dash Text");
         GameObject dwTextGO = dwTextChild != null ? dwTextChild.gameObject : new GameObject("Dash Text", typeof(RectTransform), typeof(TextMeshProUGUI));
@@ -589,7 +748,7 @@ public class UIController : MonoBehaviour
 
         dashStatusText = dwTextGO.GetComponent<TextMeshProUGUI>();
         if (retroFont != null) dashStatusText.font = retroFont;
-        dashStatusText.fontSize = 17;
+        dashStatusText.fontSize = 15;
         dashStatusText.alignment = TextAlignmentOptions.Center;
         dashStatusText.color = new Color(0.2f, 1f, 0.6f);
         dashStatusText.text = "SPACE: READY";
@@ -600,7 +759,7 @@ public class UIController : MonoBehaviour
         dwtRT.offsetMin = Vector2.zero;
         dwtRT.offsetMax = Vector2.zero;
 
-        // 10B. Ultimate Skill Action Widget
+        // 10B. Sleek Ultimate Ability Pill (Side-by-side with Dash)
         Transform existingUltWidget = canvasT.Find("HUD Ultimate Widget");
         GameObject ultWidgetGO;
         if (existingUltWidget == null)
@@ -617,8 +776,8 @@ public class UIController : MonoBehaviour
         uwRT.anchorMin = new Vector2(0f, 1f);
         uwRT.anchorMax = new Vector2(0f, 1f);
         uwRT.pivot = new Vector2(0f, 0.5f);
-        uwRT.anchoredPosition = new Vector2(12f, -122f);
-        uwRT.sizeDelta = new Vector2(380f, 28f);
+        uwRT.anchoredPosition = new Vector2(182f, -114f);
+        uwRT.sizeDelta = new Vector2(180f, 26f);
 
         ultWidgetBg = ultWidgetGO.GetComponent<Image>();
         if (hudSlot != null) ultWidgetBg.sprite = hudSlot;
@@ -641,10 +800,10 @@ public class UIController : MonoBehaviour
 
         ultStatusText = uwTextGO.GetComponent<TextMeshProUGUI>();
         if (retroFont != null) ultStatusText.font = retroFont;
-        ultStatusText.fontSize = 17;
+        ultStatusText.fontSize = 15;
         ultStatusText.alignment = TextAlignmentOptions.Center;
         ultStatusText.color = new Color(1f, 0.8f, 0.2f);
-        ultStatusText.text = "[E / CLICK] ULTIMATE: 0%";
+        ultStatusText.text = "[E] ULT: 0%";
 
         RectTransform uwtRT = uwTextGO.GetComponent<RectTransform>();
         uwtRT.anchorMin = Vector2.zero;
@@ -682,10 +841,129 @@ public class UIController : MonoBehaviour
                 weaponSlotIcons[i].sprite = activeWeapons[i].icon;
                 weaponSlotIcons[i].enabled = true;
                 weaponSlotIcons[i].color = Color.white;
+
+                if (i < weaponSlotLevels.Count && weaponSlotLevels[i] != null)
+                {
+                    int lvl = activeWeapons[i].weaponLevel + 1;
+                    bool isMax = activeWeapons[i].stats != null && lvl >= activeWeapons[i].stats.Count;
+                    weaponSlotLevels[i].text = isMax ? "MAX" : lvl.ToString();
+                    weaponSlotLevels[i].color = isMax ? new Color(1f, 0.4f, 0.4f) : new Color(1f, 0.9f, 0.3f);
+                    weaponSlotLevels[i].enabled = true;
+                }
             }
             else
             {
                 weaponSlotIcons[i].enabled = false;
+                if (i < weaponSlotLevels.Count && weaponSlotLevels[i] != null)
+                {
+                    weaponSlotLevels[i].enabled = false;
+                }
+            }
+        }
+    }
+
+    public struct PassiveSlotData
+    {
+        public string name;
+        public Sprite icon;
+        public int level;
+        public int maxLevel;
+    }
+
+    public List<PassiveSlotData> GetActivePassives()
+    {
+        List<PassiveSlotData> list = new List<PassiveSlotData>();
+
+        if (UpgradeManager.instance != null && UpgradeManager.instance.upgradeDatabase != null)
+        {
+            foreach (var up in UpgradeManager.instance.upgradeDatabase)
+            {
+                if (up is UpgradeStatUpgradeData statUp && statUp.currentLevel > 0)
+                {
+                    list.Add(new PassiveSlotData
+                    {
+                        name = statUp.upgradeName,
+                        icon = statUp.GetIcon(),
+                        level = statUp.currentLevel,
+                        maxLevel = statUp.maxLevel
+                    });
+                }
+            }
+        }
+
+        if (list.Count == 0 && PlayerStatController.instance != null)
+        {
+            UpgradeStatUpgradeData[] stats = Resources.LoadAll<UpgradeStatUpgradeData>("DataUpgrades");
+            Sprite bootsIcon = null, heartIcon = null, magnetIcon = null;
+            if (stats != null)
+            {
+                foreach (var s in stats)
+                {
+                    if (s.statType == StatUpgradeType.MoveSpeed && s.icon != null) bootsIcon = s.icon;
+                    if (s.statType == StatUpgradeType.MaxHealth && s.icon != null) heartIcon = s.icon;
+                    if (s.statType == StatUpgradeType.PickupRange && s.icon != null) magnetIcon = s.icon;
+                }
+            }
+
+            if (PlayerStatController.instance.moveSpeedLevel > 0)
+                list.Add(new PassiveSlotData { name = "Wings", icon = bootsIcon, level = PlayerStatController.instance.moveSpeedLevel, maxLevel = 5 });
+            if (PlayerStatController.instance.healthLevel > 0)
+                list.Add(new PassiveSlotData { name = "Hollow Heart", icon = heartIcon, level = PlayerStatController.instance.healthLevel, maxLevel = 5 });
+            if (PlayerStatController.instance.pickupRangeLevel > 0)
+                list.Add(new PassiveSlotData { name = "Attractorb", icon = magnetIcon, level = PlayerStatController.instance.pickupRangeLevel, maxLevel = 5 });
+        }
+
+        return list;
+    }
+
+    public int GetPassiveStateHash()
+    {
+        int hash = 17;
+        if (UpgradeManager.instance != null && UpgradeManager.instance.upgradeDatabase != null)
+        {
+            foreach (var up in UpgradeManager.instance.upgradeDatabase)
+            {
+                if (up is UpgradeStatUpgradeData s) hash = hash * 31 + s.currentLevel;
+            }
+        }
+        if (PlayerStatController.instance != null)
+        {
+            hash = hash * 31 + PlayerStatController.instance.moveSpeedLevel;
+            hash = hash * 31 + PlayerStatController.instance.healthLevel;
+            hash = hash * 31 + PlayerStatController.instance.pickupRangeLevel;
+        }
+        return hash;
+    }
+
+    public void UpdatePassiveSlots()
+    {
+        if (passiveSlotIcons == null || passiveSlotIcons.Count == 0) return;
+
+        List<PassiveSlotData> passives = GetActivePassives();
+
+        for (int i = 0; i < passiveSlotIcons.Count; i++)
+        {
+            if (i < passives.Count && passives[i].icon != null)
+            {
+                passiveSlotIcons[i].sprite = passives[i].icon;
+                passiveSlotIcons[i].enabled = true;
+                passiveSlotIcons[i].color = Color.white;
+
+                if (i < passiveSlotLevels.Count && passiveSlotLevels[i] != null)
+                {
+                    bool isMax = passives[i].level >= passives[i].maxLevel;
+                    passiveSlotLevels[i].text = isMax ? "MAX" : passives[i].level.ToString();
+                    passiveSlotLevels[i].color = isMax ? new Color(1f, 0.4f, 0.4f) : new Color(0.4f, 1f, 0.7f);
+                    passiveSlotLevels[i].enabled = true;
+                }
+            }
+            else
+            {
+                passiveSlotIcons[i].enabled = false;
+                if (i < passiveSlotLevels.Count && passiveSlotLevels[i] != null)
+                {
+                    passiveSlotLevels[i].enabled = false;
+                }
             }
         }
     }
@@ -768,6 +1046,13 @@ public class UIController : MonoBehaviour
                 UpdateWeaponSlots();
             }
         }
+
+        int passHash = GetPassiveStateHash();
+        if (passHash != lastPassiveHash)
+        {
+            lastPassiveHash = passHash;
+            UpdatePassiveSlots();
+        }
     }
 
     public void UpdateExperience(int currentExp, int levelExp, int currentLvl) // Function to update the experience. GK
@@ -787,6 +1072,7 @@ public class UIController : MonoBehaviour
             explvlText.text = "LV " + currentLvl; // Set text matching Vampire Survivors "LV 1" style. GK
         }
         UpdateWeaponSlots();
+        UpdatePassiveSlots();
     }
 
     public void RegisterKill() // Function to track and display defeated enemies.
@@ -843,6 +1129,22 @@ public class UIController : MonoBehaviour
         {
             timeText.text = string.Format("{0}:{1:00}", (int)minutes, (int)seconds); // Vampire Survivors retro timer format (e.g. 0:05). GK
         }
+
+        if (stageSubtitleText != null)
+        {
+            if (time < 120f)
+                stageSubtitleText.text = "<color=#88FF88>✦ STAGE I: THE TOXIC MEADOW ✦</color>";
+            else if (time < 300f)
+                stageSubtitleText.text = "<color=#66DDFF>✦ STAGE II: THE FROSTBITE TUNDRA ✦</color>";
+            else if (time < 480f)
+                stageSubtitleText.text = "<color=#FF6677>✦ STAGE III: THE CURSED CATACOMBS ✦</color>";
+            else if (time < 690f)
+                stageSubtitleText.text = "<color=#DD77FF>✦ STAGE IV: THE VOID NETHERWORLD ✦</color>";
+            else if (time < 900f)
+                stageSubtitleText.text = "<color=#FFAA33>✦ STAGE V: THE INFERNAL CATACLYSM ✦</color>";
+            else
+                stageSubtitleText.text = "<color=#FFD700>✦ ENDLESS CHAOS OVERLORD ✦</color>";
+        }
     }
 
     public void GoToMainMenu() // Function to go to the main menu. GK
@@ -872,18 +1174,416 @@ public class UIController : MonoBehaviour
     {
         if (pauseScreen.activeSelf == false) // If the pause screen is active. GK
         {
-            pauseScreen.SetActive(true); // Set the pause screen to the opposite of itself. GK
+            pauseScreen.SetActive(true); // Set the pause screen to active. GK
             Time.timeScale = 0f; // Set the time scale to 0. GK
+            FormatAndRefreshPauseScreen();
         }
         else
         {
-            pauseScreen.SetActive(false); // Set the pause screen to the opposite of itself. GK
+            pauseScreen.SetActive(false); // Set the pause screen to inactive. GK
             if (levelUpPanel.activeSelf == false) // If the level up panel is not active. GK
             {
                 Time.timeScale = 1f; // Set the time scale to 1. GK 
-
             }
         }
+    }
+
+    public void FormatAndRefreshPauseScreen()
+    {
+        if (pauseScreen == null) return;
+
+        // 1. Dark gothic vignette backdrop
+        Image bgImg = pauseScreen.GetComponent<Image>();
+        if (bgImg != null)
+        {
+            bgImg.sprite = null;
+            bgImg.color = new Color(0.02f, 0.02f, 0.05f, 0.88f);
+            bgImg.raycastTarget = true;
+        }
+
+        // 2. Gold-framed Pause Window
+        Transform winT = pauseScreen.transform.Find("Window");
+        if (winT == null)
+        {
+            GameObject w = new GameObject("Window", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            w.transform.SetParent(pauseScreen.transform, false);
+            winT = w.transform;
+        }
+        RectTransform winRT = (RectTransform)winT;
+        winRT.anchorMin = winRT.anchorMax = winRT.pivot = new Vector2(0.5f, 0.5f);
+        winRT.anchoredPosition = Vector2.zero;
+        winRT.sizeDelta = new Vector2(860f, 740f);
+
+        Image winImg = winT.GetComponent<Image>();
+        if (winImg != null)
+        {
+            winImg.sprite = GetGothicWindowSprite();
+            winImg.type = Image.Type.Sliced;
+            winImg.color = Color.white;
+        }
+
+        // 3. Title: "❖   ✦   P A U S E D   ✦   ❖"
+        Transform titleT = winT.Find("Title");
+        GameObject titleGO = titleT != null ? titleT.gameObject : new GameObject("Title", typeof(RectTransform), typeof(TextMeshProUGUI));
+        if (titleT == null) titleGO.transform.SetParent(winT, false);
+        RectTransform tRT = titleGO.GetComponent<RectTransform>();
+        tRT.anchorMin = tRT.anchorMax = tRT.pivot = new Vector2(0.5f, 0.5f);
+        tRT.anchoredPosition = new Vector2(0f, 324f);
+        tRT.sizeDelta = new Vector2(750f, 65f);
+
+        TextMeshProUGUI tTMP = titleGO.GetComponent<TextMeshProUGUI>();
+        if (retroFont != null) tTMP.font = retroFont;
+        tTMP.text = "❖   ✦   P A U S E D   ✦   ❖";
+        tTMP.fontSize = 62f;
+        tTMP.fontStyle = FontStyles.Bold;
+        tTMP.characterSpacing = 6f;
+        tTMP.alignment = TextAlignmentOptions.Center;
+        tTMP.color = new Color(1f, 0.88f, 0.25f);
+
+        // Subtitle under pause title
+        Transform subT = winT.Find("PauseSubtitle");
+        GameObject subGO = subT != null ? subT.gameObject : new GameObject("PauseSubtitle", typeof(RectTransform), typeof(TextMeshProUGUI));
+        if (subT == null) subGO.transform.SetParent(winT, false);
+        RectTransform subRT = subGO.GetComponent<RectTransform>();
+        subRT.anchorMin = subRT.anchorMax = subRT.pivot = new Vector2(0.5f, 0.5f);
+        subRT.anchoredPosition = new Vector2(0f, 275f);
+        subRT.sizeDelta = new Vector2(650f, 28f);
+        TextMeshProUGUI subTMP = subGO.GetComponent<TextMeshProUGUI>();
+        if (retroFont != null) subTMP.font = retroFont;
+        subTMP.text = "✦  THE NIGHT HOLDS ITS BREATH  ✦";
+        subTMP.fontSize = 22f;
+        subTMP.alignment = TextAlignmentOptions.Center;
+        subTMP.color = new Color(0.92f, 0.82f, 0.55f, 0.95f);
+        subTMP.characterSpacing = 3f;
+
+        // Hide legacy flat divider if present
+        Transform divT = winT.Find("Divider");
+        if (divT != null) divT.gameObject.SetActive(false);
+
+        // 4. Equipment Grid Container (Weapons & Passives)
+        Transform equipT = winT.Find("PauseEquipmentGrid");
+        GameObject equipGO = equipT != null ? equipT.gameObject : new GameObject("PauseEquipmentGrid", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        if (equipT == null) equipGO.transform.SetParent(winT, false);
+        RectTransform eqRT = equipGO.GetComponent<RectTransform>();
+        eqRT.anchorMin = eqRT.anchorMax = eqRT.pivot = new Vector2(0.5f, 0.5f);
+        eqRT.anchoredPosition = new Vector2(0f, 130f);
+        eqRT.sizeDelta = new Vector2(790f, 240f);
+
+        Image eqImg = equipGO.GetComponent<Image>();
+        eqImg.sprite = Resources.Load<Sprite>("UI/UI_SubPanel_Gold");
+        eqImg.type = Image.Type.Sliced;
+        eqImg.color = new Color(0.08f, 0.07f, 0.12f, 0.95f);
+
+        // 4A. Weapons Row inside Equipment Grid
+        Transform wHeaderT = equipGO.transform.Find("WeaponsHeader");
+        GameObject wHeaderGO = wHeaderT != null ? wHeaderT.gameObject : new GameObject("WeaponsHeader", typeof(RectTransform), typeof(TextMeshProUGUI));
+        if (wHeaderT == null) wHeaderGO.transform.SetParent(equipGO.transform, false);
+        RectTransform whRT = wHeaderGO.GetComponent<RectTransform>();
+        whRT.anchorMin = whRT.anchorMax = whRT.pivot = new Vector2(0.5f, 0.5f);
+        whRT.anchoredPosition = new Vector2(0f, 85f);
+        whRT.sizeDelta = new Vector2(750f, 30f);
+        TextMeshProUGUI whTMP = wHeaderGO.GetComponent<TextMeshProUGUI>();
+        if (retroFont != null) whTMP.font = retroFont;
+        whTMP.fontSize = 24f;
+        whTMP.alignment = TextAlignmentOptions.Center;
+        whTMP.color = new Color(1f, 0.85f, 0.3f);
+        whTMP.text = "✦  EQUIPPED WEAPONS  ✦";
+
+        // Query active weapons
+        List<Weapon> activeWeapons = new List<Weapon>();
+        if (PlayerController.instance != null)
+        {
+            if (PlayerController.instance.assignedWeapons != null) activeWeapons.AddRange(PlayerController.instance.assignedWeapons);
+            if (PlayerController.instance.fullyLevelledWeapons != null) activeWeapons.AddRange(PlayerController.instance.fullyLevelledWeapons);
+        }
+
+        Sprite slotFrame = Resources.Load<Sprite>("UI/VS_HUD_Slot");
+        float slotW = 54f;
+        float slotSpacing = 16f;
+        float startX = -((6 * slotW + 5 * slotSpacing) * 0.5f) + (slotW * 0.5f);
+
+        for (int i = 0; i < 6; i++)
+        {
+            string sName = "P_WeaponSlot_" + i;
+            Transform sChild = equipGO.transform.Find(sName);
+            GameObject sGO = sChild != null ? sChild.gameObject : new GameObject(sName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            if (sChild == null) sGO.transform.SetParent(equipGO.transform, false);
+            RectTransform sRT = sGO.GetComponent<RectTransform>();
+            sRT.anchorMin = sRT.anchorMax = sRT.pivot = new Vector2(0.5f, 0.5f);
+            sRT.anchoredPosition = new Vector2(startX + i * (slotW + slotSpacing), 32f);
+            sRT.sizeDelta = new Vector2(slotW, slotW);
+
+            Image sImg = sGO.GetComponent<Image>();
+            sImg.sprite = slotFrame;
+            sImg.type = Image.Type.Sliced;
+            sImg.color = Color.white;
+
+            // Icon
+            Transform iconT = sGO.transform.Find("Icon");
+            GameObject iconGO = iconT != null ? iconT.gameObject : new GameObject("Icon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            if (iconT == null) iconGO.transform.SetParent(sGO.transform, false);
+            RectTransform icRT = iconGO.GetComponent<RectTransform>();
+            icRT.anchorMin = Vector2.zero;
+            icRT.anchorMax = Vector2.one;
+            icRT.offsetMin = new Vector2(6f, 6f);
+            icRT.offsetMax = new Vector2(-6f, -6f);
+            Image icImg = iconGO.GetComponent<Image>();
+            icImg.preserveAspect = true;
+
+            // Level Label
+            Transform lvlT = sGO.transform.Find("Level");
+            GameObject lvlGO = lvlT != null ? lvlT.gameObject : new GameObject("Level", typeof(RectTransform), typeof(TextMeshProUGUI));
+            if (lvlT == null) lvlGO.transform.SetParent(sGO.transform, false);
+            RectTransform lRT = lvlGO.GetComponent<RectTransform>();
+            lRT.anchorMin = new Vector2(0f, 0f);
+            lRT.anchorMax = new Vector2(1f, 0f);
+            lRT.pivot = new Vector2(0.5f, 1f);
+            lRT.anchoredPosition = new Vector2(0f, -4f);
+            lRT.sizeDelta = new Vector2(60f, 20f);
+            TextMeshProUGUI lTMP = lvlGO.GetComponent<TextMeshProUGUI>();
+            if (retroFont != null) lTMP.font = retroFont;
+            lTMP.fontSize = 17f;
+            lTMP.alignment = TextAlignmentOptions.Center;
+
+            if (i < activeWeapons.Count && activeWeapons[i] != null && activeWeapons[i].icon != null)
+            {
+                icImg.sprite = activeWeapons[i].icon;
+                icImg.enabled = true;
+                icImg.color = Color.white;
+
+                int lvl = activeWeapons[i].weaponLevel + 1;
+                bool isMax = activeWeapons[i].stats != null && lvl >= activeWeapons[i].stats.Count;
+                lTMP.text = isMax ? "<color=#FF4444>MAX</color>" : $"<color=#FFE040>LV {lvl}</color>";
+                lTMP.enabled = true;
+            }
+            else
+            {
+                icImg.enabled = false;
+                lTMP.enabled = false;
+            }
+        }
+
+        // 4B. Passives Row inside Equipment Grid
+        Transform pHeaderT = equipGO.transform.Find("PassivesHeader");
+        GameObject pHeaderGO = pHeaderT != null ? pHeaderT.gameObject : new GameObject("PassivesHeader", typeof(RectTransform), typeof(TextMeshProUGUI));
+        if (pHeaderT == null) pHeaderGO.transform.SetParent(equipGO.transform, false);
+        RectTransform phRT = pHeaderGO.GetComponent<RectTransform>();
+        phRT.anchorMin = phRT.anchorMax = phRT.pivot = new Vector2(0.5f, 0.5f);
+        phRT.anchoredPosition = new Vector2(0f, -38f);
+        phRT.sizeDelta = new Vector2(750f, 30f);
+        TextMeshProUGUI phTMP = pHeaderGO.GetComponent<TextMeshProUGUI>();
+        if (retroFont != null) phTMP.font = retroFont;
+        phTMP.fontSize = 24f;
+        phTMP.alignment = TextAlignmentOptions.Center;
+        phTMP.color = new Color(0.4f, 1f, 0.7f);
+        phTMP.text = "✦  PASSIVE ACCESSORIES  ✦";
+
+        List<PassiveSlotData> activePassives = GetActivePassives();
+
+        for (int i = 0; i < 6; i++)
+        {
+            string sName = "P_PassiveSlot_" + i;
+            Transform sChild = equipGO.transform.Find(sName);
+            GameObject sGO = sChild != null ? sChild.gameObject : new GameObject(sName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            if (sChild == null) sGO.transform.SetParent(equipGO.transform, false);
+            RectTransform sRT = sGO.GetComponent<RectTransform>();
+            sRT.anchorMin = sRT.anchorMax = sRT.pivot = new Vector2(0.5f, 0.5f);
+            sRT.anchoredPosition = new Vector2(startX + i * (slotW + slotSpacing), -90f);
+            sRT.sizeDelta = new Vector2(slotW, slotW);
+
+            Image sImg = sGO.GetComponent<Image>();
+            sImg.sprite = slotFrame;
+            sImg.type = Image.Type.Sliced;
+            sImg.color = Color.white;
+
+            // Icon
+            Transform iconT = sGO.transform.Find("Icon");
+            GameObject iconGO = iconT != null ? iconT.gameObject : new GameObject("Icon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            if (iconT == null) iconGO.transform.SetParent(sGO.transform, false);
+            RectTransform icRT = iconGO.GetComponent<RectTransform>();
+            icRT.anchorMin = Vector2.zero;
+            icRT.anchorMax = Vector2.one;
+            icRT.offsetMin = new Vector2(6f, 6f);
+            icRT.offsetMax = new Vector2(-6f, -6f);
+            Image icImg = iconGO.GetComponent<Image>();
+            icImg.preserveAspect = true;
+
+            // Level Label
+            Transform lvlT = sGO.transform.Find("Level");
+            GameObject lvlGO = lvlT != null ? lvlT.gameObject : new GameObject("Level", typeof(RectTransform), typeof(TextMeshProUGUI));
+            if (lvlT == null) lvlGO.transform.SetParent(sGO.transform, false);
+            RectTransform lRT = lvlGO.GetComponent<RectTransform>();
+            lRT.anchorMin = new Vector2(0f, 0f);
+            lRT.anchorMax = new Vector2(1f, 0f);
+            lRT.pivot = new Vector2(0.5f, 1f);
+            lRT.anchoredPosition = new Vector2(0f, -4f);
+            lRT.sizeDelta = new Vector2(60f, 20f);
+            TextMeshProUGUI lTMP = lvlGO.GetComponent<TextMeshProUGUI>();
+            if (retroFont != null) lTMP.font = retroFont;
+            lTMP.fontSize = 17f;
+            lTMP.alignment = TextAlignmentOptions.Center;
+
+            if (i < activePassives.Count && activePassives[i].icon != null)
+            {
+                icImg.sprite = activePassives[i].icon;
+                icImg.enabled = true;
+                icImg.color = Color.white;
+
+                bool isMax = activePassives[i].level >= activePassives[i].maxLevel;
+                lTMP.text = isMax ? "<color=#FF4444>MAX</color>" : $"<color=#66FFAA>LV {activePassives[i].level}</color>";
+                lTMP.enabled = true;
+            }
+            else
+            {
+                icImg.enabled = false;
+                lTMP.enabled = false;
+            }
+        }
+
+        // 5. Player Stats Summary Panel
+        Transform statsT = winT.Find("PauseStatsPanel");
+        GameObject statsGO = statsT != null ? statsT.gameObject : new GameObject("PauseStatsPanel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        if (statsT == null) statsGO.transform.SetParent(winT, false);
+        RectTransform stRT = statsGO.GetComponent<RectTransform>();
+        stRT.anchorMin = stRT.anchorMax = stRT.pivot = new Vector2(0.5f, 0.5f);
+        stRT.anchoredPosition = new Vector2(0f, -42f);
+        stRT.sizeDelta = new Vector2(790f, 75f);
+
+        Image stImg = statsGO.GetComponent<Image>();
+        stImg.sprite = Resources.Load<Sprite>("UI/UI_SubPanel_Gold");
+        stImg.type = Image.Type.Sliced;
+        stImg.color = new Color(0.06f, 0.05f, 0.10f, 0.95f);
+
+        Transform statsTextT = statsGO.transform.Find("StatsText");
+        GameObject statsTextGO = statsTextT != null ? statsTextT.gameObject : new GameObject("StatsText", typeof(RectTransform), typeof(TextMeshProUGUI));
+        if (statsTextT == null) statsTextGO.transform.SetParent(statsGO.transform, false);
+        RectTransform sttRT = statsTextGO.GetComponent<RectTransform>();
+        sttRT.anchorMin = Vector2.zero;
+        sttRT.anchorMax = Vector2.one;
+        sttRT.offsetMin = new Vector2(18f, 6f);
+        sttRT.offsetMax = new Vector2(-18f, -6f);
+        TextMeshProUGUI sttTMP = statsTextGO.GetComponent<TextMeshProUGUI>();
+        if (retroFont != null) sttTMP.font = retroFont;
+        sttTMP.fontSize = 20f;
+        sttTMP.alignment = TextAlignmentOptions.Midline;
+
+        float moveSpd = PlayerController.instance != null ? PlayerController.instance.moveSpeed : 5f;
+        float maxHp = PlayerHealthController.instance != null ? PlayerHealthController.instance.maxHealth : 100f;
+        float curHp = PlayerHealthController.instance != null ? PlayerHealthController.instance.currentHealth : 100f;
+        int coins = CoinController.instance != null ? CoinController.instance.currentCoins : 0;
+        int curLvl = ExperienceLevelController.instance != null ? ExperienceLevelController.instance.currentLevel : 1;
+
+        sttTMP.text = $"<color=#FFD700>STAGE LV: {curLvl}</color>    |    <color=#FF6666>HP: {(int)curHp}/{(int)maxHp}</color>    |    <color=#00FFAA>SPEED: {moveSpd:0.0}</color>    |    <color=#FF5566>KILLS: {killCount}</color>    |    <color=#FFE040>GOLD: {coins}</color>";
+
+        // 6. Action Buttons Layout with Royal Gothic 9-Slice Styling
+        Sprite btnEmerald = MainMenu.CreateRoyalGothicButton(
+            new Color(0.04f, 0.18f, 0.09f),
+            new Color(0.10f, 0.36f, 0.18f),
+            new Color(0.88f, 0.74f, 0.25f),
+            new Color(1.0f, 0.96f, 0.55f),
+            new Color(0.20f, 0.98f, 0.45f)
+        );
+
+        Sprite btnSapphire = MainMenu.CreateRoyalGothicButton(
+            new Color(0.04f, 0.12f, 0.25f),
+            new Color(0.09f, 0.24f, 0.45f),
+            new Color(0.85f, 0.72f, 0.22f),
+            new Color(0.98f, 0.92f, 0.50f),
+            new Color(0.25f, 0.75f, 1f)
+        );
+
+        Sprite btnAmber = MainMenu.CreateRoyalGothicButton(
+            new Color(0.25f, 0.15f, 0.04f),
+            new Color(0.45f, 0.28f, 0.08f),
+            new Color(0.95f, 0.80f, 0.25f),
+            new Color(1.0f, 0.96f, 0.58f),
+            new Color(1f, 0.85f, 0.2f)
+        );
+
+        Sprite btnCrimson = MainMenu.CreateRoyalGothicButton(
+            new Color(0.22f, 0.05f, 0.07f),
+            new Color(0.44f, 0.10f, 0.14f),
+            new Color(0.82f, 0.62f, 0.20f),
+            new Color(0.98f, 0.84f, 0.42f),
+            new Color(0.95f, 0.22f, 0.22f)
+        );
+
+        SetupPauseButton(winT, "Resume", "✦  RESUME  ✦", new Vector2(-195f, -135f), new Vector2(365f, 60f), btnEmerald, new Color(0.92f, 1f, 0.94f), 32f, PauseUnpause);
+        SetupPauseButton(winT, "Save And Exit", "✦  SAVE & EXIT  ✦", new Vector2(195f, -135f), new Vector2(365f, 60f), btnSapphire, new Color(0.92f, 0.96f, 1f), 32f, SaveAndExit);
+        SetupPauseButton(winT, "Restart", "✦  RESTART  ✦", new Vector2(-260f, -218f), new Vector2(235f, 56f), btnAmber, new Color(1f, 0.95f, 0.85f), 28f, Restart);
+        SetupPauseButton(winT, "Main Menu", "✦  MAIN MENU  ✦", new Vector2(0f, -218f), new Vector2(235f, 56f), btnCrimson, new Color(1f, 0.88f, 0.88f), 28f, GoToMainMenu);
+        SetupPauseButton(winT, "Quit Game", "✦  QUIT  ✦", new Vector2(260f, -218f), new Vector2(235f, 56f), btnCrimson, new Color(1f, 0.88f, 0.88f), 28f, QuitGame);
+    }
+
+    private void SetupPauseButton(Transform win, string btnName, string label, Vector2 pos, Vector2 size, Sprite sprite, Color textCol, float fontSize, UnityEngine.Events.UnityAction onClickAction)
+    {
+        Transform bT = win.Find(btnName);
+        GameObject bGO;
+        if (bT == null)
+        {
+            bGO = new GameObject(btnName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+            bGO.transform.SetParent(win, false);
+        }
+        else
+        {
+            bGO = bT.gameObject;
+        }
+
+        RectTransform rt = bGO.GetComponent<RectTransform>();
+        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = pos;
+        rt.sizeDelta = size;
+
+        Image img = bGO.GetComponent<Image>();
+        if (img != null && sprite != null)
+        {
+            img.sprite = sprite;
+            img.type = Image.Type.Sliced;
+            img.color = Color.white;
+        }
+
+        Button btn = bGO.GetComponent<Button>();
+        btn.onClick.RemoveAllListeners();
+        btn.onClick.AddListener(onClickAction);
+
+        if (bGO.GetComponent<GothicMenuButtonEffects>() == null)
+        {
+            bGO.AddComponent<GothicMenuButtonEffects>();
+        }
+
+        Transform tChild = bGO.transform.Find("Text");
+        GameObject tGO = tChild != null ? tChild.gameObject : null;
+        if (tGO == null)
+        {
+            TextMeshProUGUI existing = bGO.GetComponentInChildren<TextMeshProUGUI>();
+            if (existing != null) tGO = existing.gameObject;
+            else
+            {
+                tGO = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+                tGO.transform.SetParent(bGO.transform, false);
+            }
+        }
+
+        RectTransform trt = tGO.GetComponent<RectTransform>();
+        trt.anchorMin = Vector2.zero;
+        trt.anchorMax = Vector2.one;
+        trt.offsetMin = Vector2.zero;
+        trt.offsetMax = Vector2.zero;
+
+        TextMeshProUGUI tmp = tGO.GetComponent<TextMeshProUGUI>();
+        if (retroFont != null) tmp.font = retroFont;
+        tmp.text = label;
+        tmp.fontSize = fontSize;
+        tmp.alignment = TextAlignmentOptions.Center;
+        tmp.color = textCol;
+        tmp.characterSpacing = 3f;
+        tmp.fontStyle = FontStyles.Bold;
+    }
+
+    public void HideWarningBanner()
+    {
+        if (warningBannerCo != null) StopCoroutine(warningBannerCo);
+        if (warningBannerRoot != null) warningBannerRoot.SetActive(false);
     }
 
     [Header("Warning Banner")]
@@ -907,51 +1607,522 @@ public class UIController : MonoBehaviour
         }
     }
 
+    private GameObject warningBannerRoot;
+
     private void CreateWarningBanner()
     {
         Transform canvasT = explvlSlider != null ? explvlSlider.transform.parent : transform;
-        GameObject bannerObj = new GameObject("BossWarningBanner", typeof(RectTransform));
-        bannerObj.transform.SetParent(canvasT, false);
+        warningBannerRoot = new GameObject("BossWarningBanner", typeof(RectTransform));
+        warningBannerRoot.transform.SetParent(canvasT, false);
 
-        RectTransform rt = bannerObj.GetComponent<RectTransform>();
-        rt.anchorMin = new Vector2(0.5f, 0.5f);
-        rt.anchorMax = new Vector2(0.5f, 0.5f);
-        rt.pivot = new Vector2(0.5f, 0.5f);
-        rt.anchoredPosition = new Vector2(0f, 160f);
-        rt.sizeDelta = new Vector2(900f, 90f);
+        RectTransform rt = warningBannerRoot.GetComponent<RectTransform>();
+        // Neo Gothic Top-Right Alert Box: leaves the center battlefield completely clear!
+        rt.anchorMin = new Vector2(1f, 1f);
+        rt.anchorMax = new Vector2(1f, 1f);
+        rt.pivot = new Vector2(1f, 1f);
+        rt.anchoredPosition = new Vector2(-16f, -96f);
+        rt.sizeDelta = new Vector2(490f, 66f);
 
-        warningBannerText = bannerObj.AddComponent<TextMeshProUGUI>();
+        // Gothic dark velvet backdrop with ruby & gold border
+        GameObject bgObj = new GameObject("Backdrop", typeof(RectTransform), typeof(Image));
+        bgObj.transform.SetParent(warningBannerRoot.transform, false);
+        RectTransform bgRt = bgObj.GetComponent<RectTransform>();
+        bgRt.anchorMin = Vector2.zero;
+        bgRt.anchorMax = Vector2.one;
+        bgRt.offsetMin = Vector2.zero;
+        bgRt.offsetMax = Vector2.zero;
+        Image bgImg = bgObj.GetComponent<Image>();
+        bgImg.color = new Color(0.06f, 0.03f, 0.08f, 0.94f);
+        bgImg.raycastTarget = false;
+
+        // Gold ornamental top line
+        GameObject topLine = new GameObject("TopLine", typeof(RectTransform), typeof(Image));
+        topLine.transform.SetParent(warningBannerRoot.transform, false);
+        RectTransform topRt = topLine.GetComponent<RectTransform>();
+        topRt.anchorMin = new Vector2(0f, 1f);
+        topRt.anchorMax = new Vector2(1f, 1f);
+        topRt.pivot = new Vector2(0.5f, 1f);
+        topRt.anchoredPosition = Vector2.zero;
+        topRt.sizeDelta = new Vector2(0f, 2.5f);
+        topLine.GetComponent<Image>().color = new Color(0.9f, 0.75f, 0.2f, 0.95f);
+
+        // Crimson ornamental bottom line
+        GameObject bottomLine = new GameObject("BottomLine", typeof(RectTransform), typeof(Image));
+        bottomLine.transform.SetParent(warningBannerRoot.transform, false);
+        RectTransform botRt = bottomLine.GetComponent<RectTransform>();
+        botRt.anchorMin = new Vector2(0f, 0f);
+        botRt.anchorMax = new Vector2(1f, 0f);
+        botRt.pivot = new Vector2(0.5f, 0f);
+        botRt.anchoredPosition = Vector2.zero;
+        botRt.sizeDelta = new Vector2(0f, 2.5f);
+        bottomLine.GetComponent<Image>().color = new Color(0.9f, 0.2f, 0.25f, 0.95f);
+
+        // Alert text container
+        GameObject textObj = new GameObject("WarningText", typeof(RectTransform), typeof(TextMeshProUGUI));
+        textObj.transform.SetParent(warningBannerRoot.transform, false);
+        RectTransform textRt = textObj.GetComponent<RectTransform>();
+        textRt.anchorMin = Vector2.zero;
+        textRt.anchorMax = Vector2.one;
+        textRt.offsetMin = new Vector2(14f, 4f);
+        textRt.offsetMax = new Vector2(-14f, -4f);
+
+        warningBannerText = textObj.GetComponent<TextMeshProUGUI>();
         if (retroFont != null) warningBannerText.font = retroFont;
-        warningBannerText.fontSize = 42f;
+        warningBannerText.fontSize = 24f;
         warningBannerText.alignment = TextAlignmentOptions.Center;
-        warningBannerText.color = new Color(1f, 0.2f, 0.2f, 1f);
+        warningBannerText.color = new Color(1f, 0.88f, 0.35f, 1f);
+        warningBannerText.fontStyle = FontStyles.Bold;
         warningBannerText.raycastTarget = false;
-        warningBannerText.enableAutoSizing = false;
+        warningBannerText.enableAutoSizing = true;
+        warningBannerText.fontSizeMin = 18f;
+        warningBannerText.fontSizeMax = 28f;
 
-        bannerObj.SetActive(false);
+        warningBannerRoot.SetActive(false);
     }
 
     private IEnumerator WarningBannerRoutine(string message, float duration)
     {
-        if (warningBannerText == null) yield break;
+        if (warningBannerRoot == null) yield break;
 
-        warningBannerText.gameObject.SetActive(true);
-        warningBannerText.text = message;
+        warningBannerRoot.SetActive(true);
+        if (warningBannerText != null) warningBannerText.text = message;
 
         if (SFXManager.instance != null)
         {
             SFXManager.instance.PlaySFXPitched(0);
         }
 
+        RectTransform rt = warningBannerRoot.GetComponent<RectTransform>();
+        Vector2 targetPos = new Vector2(-16f, -96f);
+        Vector2 startPos = new Vector2(450f, -96f);
+
+        // Slide in from right edge
+        float slideIn = 0.2f;
+        float elapsed = 0f;
+        while (elapsed < slideIn)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / slideIn);
+            float ease = 1f - Mathf.Pow(1f - t, 3);
+            rt.anchoredPosition = Vector2.Lerp(startPos, targetPos, ease);
+            yield return null;
+        }
+        rt.anchoredPosition = targetPos;
+
+        // Pulse color
+        float pulseTime = Mathf.Max(0.5f, duration - 0.4f);
+        elapsed = 0f;
+        while (elapsed < pulseTime)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.PingPong(elapsed * 6f, 1f);
+            if (warningBannerText != null)
+            {
+                warningBannerText.color = Color.Lerp(new Color(1f, 0.25f, 0.2f, 1f), new Color(1f, 0.92f, 0.35f, 1f), t);
+            }
+            yield return null;
+        }
+
+        // Slide out to right edge
+        float slideOut = 0.2f;
+        elapsed = 0f;
+        while (elapsed < slideOut)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / slideOut);
+            float ease = t * t;
+            rt.anchoredPosition = Vector2.Lerp(targetPos, startPos, ease);
+            yield return null;
+        }
+
+        warningBannerRoot.SetActive(false);
+    }
+
+    private static Sprite gothicWindowSprite;
+    public static Sprite GetGothicWindowSprite()
+    {
+        if (gothicWindowSprite != null) return gothicWindowSprite;
+
+        int size = 96;
+        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Point;
+        Color[] p = new Color[size * size];
+
+        Color darkIron = new Color(0.06f, 0.05f, 0.08f, 1f);
+        Color borderGold = new Color(0.85f, 0.68f, 0.22f, 1f);
+        Color shadowBronze = new Color(0.28f, 0.18f, 0.06f, 1f);
+        Color highlightGold = new Color(1f, 0.94f, 0.65f, 1f);
+        Color innerDark = new Color(0.06f, 0.05f, 0.09f, 0.96f);
+        Color innerLight = new Color(0.10f, 0.08f, 0.15f, 0.96f);
+        Color jewelRuby = new Color(0.92f, 0.15f, 0.25f, 1f);
+        Color jewelCore = new Color(1f, 0.85f, 0.85f, 1f);
+
+        for (int y = 0; y < size; y++)
+        {
+            float tY = (float)y / (size - 1);
+            Color currentInner = Color.Lerp(innerDark, innerLight, tY);
+
+            for (int x = 0; x < size; x++)
+            {
+                if (x == 0 || x == size - 1 || y == 0 || y == size - 1)
+                {
+                    p[y * size + x] = darkIron;
+                }
+                else if (x <= 4 || x >= size - 5 || y <= 4 || y >= size - 5)
+                {
+                    bool isCornerGem = (x >= 2 && x <= 6 && y >= 2 && y <= 6) ||
+                                       (x >= size - 7 && x <= size - 3 && y >= 2 && y <= 6) ||
+                                       (x >= 2 && x <= 6 && y >= size - 7 && y <= size - 3) ||
+                                       (x >= size - 7 && x <= size - 3 && y >= size - 7 && y <= size - 3);
+
+                    if (isCornerGem)
+                    {
+                        bool isCenter = (x == 4 || x == size - 5) && (y == 4 || y == size - 5);
+                        p[y * size + x] = isCenter ? jewelCore : jewelRuby;
+                    }
+                    else
+                    {
+                        bool isTopOrLeft = (x <= 2 || y >= size - 3);
+                        p[y * size + x] = isTopOrLeft ? highlightGold : shadowBronze;
+                    }
+                }
+                else if (x == 7 || x == size - 8 || y == 7 || y == size - 8)
+                {
+                    p[y * size + x] = borderGold * 0.75f;
+                }
+                else
+                {
+                    p[y * size + x] = currentInner;
+                }
+            }
+        }
+
+        tex.SetPixels(p);
+        tex.Apply();
+        gothicWindowSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(24, 24, 24, 24));
+        return gothicWindowSprite;
+    }
+
+    private static Sprite gothicBanishButtonSprite;
+    public static Sprite GetGothicBanishButtonSprite()
+    {
+        if (gothicBanishButtonSprite != null) return gothicBanishButtonSprite;
+
+        int w = 64;
+        int h = 32;
+        Texture2D tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Point;
+        Color[] p = new Color[w * h];
+
+        Color darkIron = new Color(0.12f, 0.08f, 0.10f, 1f);
+        Color borderGold = new Color(0.85f, 0.68f, 0.22f, 1f);
+        Color shadowBronze = new Color(0.32f, 0.18f, 0.06f, 1f);
+        Color highlightGold = new Color(1f, 0.92f, 0.60f, 1f);
+        Color crimsonDark = new Color(0.38f, 0.06f, 0.10f, 1f);
+        Color crimsonLight = new Color(0.68f, 0.12f, 0.18f, 1f);
+
+        for (int y = 0; y < h; y++)
+        {
+            float tY = (float)y / (h - 1);
+            Color currentInner = Color.Lerp(crimsonDark, crimsonLight, tY);
+
+            for (int x = 0; x < w; x++)
+            {
+                if (x == 0 || x == w - 1 || y == 0 || y == h - 1)
+                {
+                    p[y * w + x] = darkIron;
+                }
+                else if (x <= 3 || x >= w - 4 || y <= 3 || y >= h - 4)
+                {
+                    bool isTopOrLeft = (x <= 2 || y >= h - 3);
+                    p[y * w + x] = isTopOrLeft ? highlightGold : shadowBronze;
+                }
+                else
+                {
+                    p[y * w + x] = currentInner;
+                }
+            }
+        }
+
+        tex.SetPixels(p);
+        tex.Apply();
+        gothicBanishButtonSprite = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(12, 12, 12, 12));
+        return gothicBanishButtonSprite;
+    }
+
+    // ====================================================================================
+    // GRAND ROYAL GOTHIC CENTER-SCREEN BOSS ANNOUNCEMENTS & DEFEAT SPLASH
+    // ====================================================================================
+    private GameObject bossCenterBannerRoot;
+    private TMPro.TextMeshProUGUI bossCenterHeaderText;
+    private TMPro.TextMeshProUGUI bossCenterNameText;
+    private TMPro.TextMeshProUGUI bossCenterSubtitleText;
+    private CanvasGroup bossCenterCanvasGroup;
+    private RectTransform bossCenterRect;
+    private Coroutine bossCenterBannerCo;
+
+    private void CreateBossCenterBanner()
+    {
+        Transform canvasT = explvlSlider != null ? explvlSlider.transform.parent : transform;
+        bossCenterBannerRoot = new GameObject("BossCenterBanner", typeof(RectTransform), typeof(CanvasGroup));
+        bossCenterBannerRoot.transform.SetParent(canvasT, false);
+
+        bossCenterRect = bossCenterBannerRoot.GetComponent<RectTransform>();
+        bossCenterRect.anchorMin = new Vector2(0.5f, 0.5f);
+        bossCenterRect.anchorMax = new Vector2(0.5f, 0.5f);
+        bossCenterRect.pivot = new Vector2(0.5f, 0.5f);
+        bossCenterRect.anchoredPosition = new Vector2(0f, 65f);
+        bossCenterRect.sizeDelta = new Vector2(720f, 155f);
+
+        bossCenterCanvasGroup = bossCenterBannerRoot.GetComponent<CanvasGroup>();
+        bossCenterCanvasGroup.blocksRaycasts = false;
+        bossCenterCanvasGroup.interactable = false;
+
+        // Khung cá»­a sá»• hoÃ ng gia Gothic 9-slice Promax
+        GameObject bgObj = new GameObject("Backdrop", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+        bgObj.transform.SetParent(bossCenterBannerRoot.transform, false);
+        RectTransform bgRt = bgObj.GetComponent<RectTransform>();
+        bgRt.anchorMin = Vector2.zero;
+        bgRt.anchorMax = Vector2.one;
+        bgRt.offsetMin = Vector2.zero;
+        bgRt.offsetMax = Vector2.zero;
+        UnityEngine.UI.Image bgImg = bgObj.GetComponent<UnityEngine.UI.Image>();
+        bgImg.sprite = GetGothicWindowSprite();
+        bgImg.type = UnityEngine.UI.Image.Type.Sliced;
+        bgImg.color = new Color(1f, 1f, 1f, 0.98f);
+        bgImg.raycastTarget = false;
+
+        // Dáº£i ruy bÄƒng Ä‘en nhung bÃ³ng má» phÃ­a trong
+        GameObject innerShade = new GameObject("InnerShade", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+        innerShade.transform.SetParent(bossCenterBannerRoot.transform, false);
+        RectTransform isRt = innerShade.GetComponent<RectTransform>();
+        isRt.anchorMin = new Vector2(0.04f, 0.1f);
+        isRt.anchorMax = new Vector2(0.96f, 0.9f);
+        isRt.offsetMin = Vector2.zero;
+        isRt.offsetMax = Vector2.zero;
+        UnityEngine.UI.Image isImg = innerShade.GetComponent<UnityEngine.UI.Image>();
+        isImg.color = new Color(0.02f, 0.01f, 0.04f, 0.65f);
+        isImg.raycastTarget = false;
+
+        // 1. TiÃªu Ä‘á» nhá» bÃªn trÃªn (Header Banner)
+        GameObject headerObj = new GameObject("BossHeader", typeof(RectTransform), typeof(TMPro.TextMeshProUGUI));
+        headerObj.transform.SetParent(bossCenterBannerRoot.transform, false);
+        RectTransform headRt = headerObj.GetComponent<RectTransform>();
+        headRt.anchorMin = new Vector2(0f, 0.68f);
+        headRt.anchorMax = new Vector2(1f, 0.95f);
+        headRt.offsetMin = Vector2.zero;
+        headRt.offsetMax = Vector2.zero;
+        bossCenterHeaderText = headerObj.GetComponent<TMPro.TextMeshProUGUI>();
+        if (retroFont != null) bossCenterHeaderText.font = retroFont;
+        bossCenterHeaderText.fontSize = 20f;
+        bossCenterHeaderText.alignment = TMPro.TextAlignmentOptions.Center;
+        bossCenterHeaderText.color = new Color(1f, 0.85f, 0.35f, 1f);
+        bossCenterHeaderText.fontStyle = TMPro.FontStyles.Bold;
+        bossCenterHeaderText.raycastTarget = false;
+
+        // 2. TÃªn Boss to khá»•ng lá»“ rá»±c rá»¡ á»Ÿ giá»¯a (Big Boss Name)
+        GameObject nameObj = new GameObject("BossName", typeof(RectTransform), typeof(TMPro.TextMeshProUGUI));
+        nameObj.transform.SetParent(bossCenterBannerRoot.transform, false);
+        RectTransform nameRt = nameObj.GetComponent<RectTransform>();
+        nameRt.anchorMin = new Vector2(0f, 0.28f);
+        nameRt.anchorMax = new Vector2(1f, 0.72f);
+        nameRt.offsetMin = Vector2.zero;
+        nameRt.offsetMax = Vector2.zero;
+        bossCenterNameText = nameObj.GetComponent<TMPro.TextMeshProUGUI>();
+        if (retroFont != null) bossCenterNameText.font = retroFont;
+        bossCenterNameText.fontSize = 38f;
+        bossCenterNameText.alignment = TMPro.TextAlignmentOptions.Center;
+        bossCenterNameText.color = new Color(1f, 0.92f, 0.75f, 1f);
+        bossCenterNameText.fontStyle = TMPro.FontStyles.Bold;
+        bossCenterNameText.raycastTarget = false;
+        bossCenterNameText.enableAutoSizing = true;
+        bossCenterNameText.fontSizeMin = 26f;
+        bossCenterNameText.fontSizeMax = 44f;
+
+        // 3. Phá»¥ Ä‘á» tÆ°á»›c hiá»‡u Boss bÃªn dÆ°á»›i (Boss Subtitle)
+        GameObject subObj = new GameObject("BossSubtitle", typeof(RectTransform), typeof(TMPro.TextMeshProUGUI));
+        subObj.transform.SetParent(bossCenterBannerRoot.transform, false);
+        RectTransform subRt = subObj.GetComponent<RectTransform>();
+        subRt.anchorMin = new Vector2(0f, 0.06f);
+        subRt.anchorMax = new Vector2(1f, 0.32f);
+        subRt.offsetMin = Vector2.zero;
+        subRt.offsetMax = Vector2.zero;
+        bossCenterSubtitleText = subObj.GetComponent<TMPro.TextMeshProUGUI>();
+        if (retroFont != null) bossCenterSubtitleText.font = retroFont;
+        bossCenterSubtitleText.fontSize = 17f;
+        bossCenterSubtitleText.alignment = TMPro.TextAlignmentOptions.Center;
+        bossCenterSubtitleText.color = new Color(0.75f, 0.88f, 1f, 1f);
+        bossCenterSubtitleText.fontStyle = TMPro.FontStyles.Italic;
+        bossCenterSubtitleText.raycastTarget = false;
+
+        bossCenterBannerRoot.SetActive(false);
+    }
+
+    public void ShowBossIntroBanner(string bossName, string bossSubtitle, Color elementColor)
+    {
+        if (bossCenterBannerRoot == null) CreateBossCenterBanner();
+        if (bossCenterBannerCo != null) StopCoroutine(bossCenterBannerCo);
+        bossCenterBannerCo = StartCoroutine(BossIntroBannerRoutine(bossName, bossSubtitle, elementColor));
+    }
+
+    private IEnumerator BossIntroBannerRoutine(string bossName, string bossSubtitle, Color elementColor)
+    {
+        if (bossCenterBannerRoot == null) yield break;
+
+        bossCenterBannerRoot.SetActive(true);
+        bossCenterCanvasGroup.alpha = 0f;
+        bossCenterRect.localScale = Vector3.one * 0.7f;
+        bossCenterRect.anchoredPosition = new Vector2(0f, 65f);
+
+        bossCenterHeaderText.text = "â– â”€â”€â”€ â˜  B O S S   E N C O U N T E R â˜  â”€â”€â”€ â–";
+        bossCenterHeaderText.color = new Color(1f, 0.35f, 0.3f, 1f);
+
+        bossCenterNameText.text = bossName.ToUpper();
+        bossCenterNameText.color = Color.white;
+
+        bossCenterSubtitleText.text = string.IsNullOrEmpty(bossSubtitle) ? "âœ¦ ANCIENT APEX PREDATOR âœ¦" : bossSubtitle;
+        bossCenterSubtitleText.color = new Color(0.85f, 0.92f, 1f, 0.95f);
+
+        // KÃ­ch hoáº¡t hiá»‡u á»©ng Slow-motion ká»‹ch tÃ­nh & rung mÃ n hÃ¬nh
+        StartCoroutine(BossSlowMoEffect(0.35f, 0.65f));
+        if (CameraController.instance != null) CameraController.instance.Shake(0.55f, 0.45f);
+        if (SFXManager.instance != null) SFXManager.instance.PlaySFXPitched(0);
+
+        // Hiá»‡u á»©ng Zoom náº£y vÃ o (Scale Pop-in with Ease Out Back)
+        float popInDuration = 0.35f;
+        float elapsed = 0f;
+        while (elapsed < popInDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / popInDuration);
+            float c1 = 1.70158f;
+            float c3 = c1 + 1f;
+            float ease = 1f + c3 * Mathf.Pow(t - 1f, 3) + c1 * Mathf.Pow(t - 1f, 2);
+            bossCenterRect.localScale = Vector3.one * Mathf.Lerp(0.7f, 1.0f, ease);
+            bossCenterCanvasGroup.alpha = Mathf.Clamp01(t * 2.5f);
+            yield return null;
+        }
+
+        bossCenterRect.localScale = Vector3.one;
+        bossCenterCanvasGroup.alpha = 1f;
+
+        // Giá»¯ thÃ´ng bÃ¡o hiá»ƒn thá»‹ rá»±c rá»¡ vÃ  nháº¥p nhÃ¡y mÃ u nguyÃªn tá»‘ cá»§a boss trong 3.2 giÃ¢y
+        float holdDuration = 3.2f;
+        elapsed = 0f;
+        while (elapsed < holdDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float pulse = Mathf.PingPong(elapsed * 4.5f, 1f);
+            bossCenterNameText.color = Color.Lerp(Color.white, elementColor, pulse);
+            yield return null;
+        }
+
+        // LÆ°á»›t nháº¹ lÃªn vÃ  tan biáº¿n mÆ°á»£t mÃ  (Fade Out Glide)
+        float fadeOutDuration = 0.45f;
+        elapsed = 0f;
+        Vector2 startPos = bossCenterRect.anchoredPosition;
+        Vector2 endPos = startPos + new Vector2(0f, 40f);
+        while (elapsed < fadeOutDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / fadeOutDuration);
+            bossCenterRect.anchoredPosition = Vector2.Lerp(startPos, endPos, t);
+            bossCenterCanvasGroup.alpha = 1f - t;
+            yield return null;
+        }
+
+        bossCenterBannerRoot.SetActive(false);
+    }
+
+    public void ShowBossDefeatedBanner(string bossName, int bonusCoins)
+    {
+        if (bossCenterBannerRoot == null) CreateBossCenterBanner();
+        if (bossCenterBannerCo != null) StopCoroutine(bossCenterBannerCo);
+        bossCenterBannerCo = StartCoroutine(BossDefeatedBannerRoutine(bossName, bonusCoins));
+    }
+
+    private IEnumerator BossDefeatedBannerRoutine(string bossName, int bonusCoins)
+    {
+        if (bossCenterBannerRoot == null) yield break;
+
+        bossCenterBannerRoot.SetActive(true);
+        bossCenterCanvasGroup.alpha = 0f;
+        bossCenterRect.localScale = Vector3.one * 0.7f;
+        bossCenterRect.anchoredPosition = new Vector2(0f, 65f);
+
+        bossCenterHeaderText.text = "â– â”€â”€â”€ âš”  B O S S   S L A I N !  âš” â”€â”€â”€ â–";
+        bossCenterHeaderText.color = new Color(1f, 0.88f, 0.35f, 1f);
+
+        bossCenterNameText.text = $"{bossName.ToUpper()} VANQUISHED!";
+        bossCenterNameText.color = new Color(1f, 0.95f, 0.75f, 1f);
+
+        bossCenterSubtitleText.text = $"âœ¦ +{bonusCoins} ROYAL GOLD  |  âš¡ CELESTIAL FRENZY (20s) âœ¦";
+        bossCenterSubtitleText.color = new Color(0.35f, 1f, 0.55f, 1f);
+
+        if (CameraController.instance != null) CameraController.instance.Shake(0.6f, 0.5f);
+        if (SFXManager.instance != null) SFXManager.instance.PlaySFXPitched(8);
+
+        float popInDuration = 0.35f;
+        float elapsed = 0f;
+        while (elapsed < popInDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / popInDuration);
+            float c1 = 1.70158f;
+            float c3 = c1 + 1f;
+            float ease = 1f + c3 * Mathf.Pow(t - 1f, 3) + c1 * Mathf.Pow(t - 1f, 2);
+            bossCenterRect.localScale = Vector3.one * Mathf.Lerp(0.7f, 1.0f, ease);
+            bossCenterCanvasGroup.alpha = Mathf.Clamp01(t * 2.5f);
+            yield return null;
+        }
+
+        bossCenterRect.localScale = Vector3.one;
+        bossCenterCanvasGroup.alpha = 1f;
+
+        float holdDuration = 3.2f;
+        elapsed = 0f;
+        while (elapsed < holdDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float pulse = Mathf.PingPong(elapsed * 5f, 1f);
+            bossCenterNameText.color = Color.Lerp(new Color(1f, 0.95f, 0.75f, 1f), new Color(1f, 0.75f, 0.2f, 1f), pulse);
+            yield return null;
+        }
+
+        float fadeOutDuration = 0.45f;
+        elapsed = 0f;
+        Vector2 startPos = bossCenterRect.anchoredPosition;
+        Vector2 endPos = startPos + new Vector2(0f, 40f);
+        while (elapsed < fadeOutDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / fadeOutDuration);
+            bossCenterRect.anchoredPosition = Vector2.Lerp(startPos, endPos, t);
+            bossCenterCanvasGroup.alpha = 1f - t;
+            yield return null;
+        }
+
+        bossCenterBannerRoot.SetActive(false);
+    }
+
+    public IEnumerator BossSlowMoEffect(float targetScale, float duration)
+    {
+        float prevScale = Time.timeScale;
+        Time.timeScale = targetScale;
         float elapsed = 0f;
         while (elapsed < duration)
         {
             elapsed += Time.unscaledDeltaTime;
-            float t = Mathf.PingPong(elapsed * 6f, 1f);
-            warningBannerText.color = Color.Lerp(new Color(1f, 0.15f, 0.15f, 1f), new Color(1f, 0.95f, 0.2f, 1f), t);
             yield return null;
         }
-
-        warningBannerText.gameObject.SetActive(false);
+        float restoreTime = 0.35f;
+        elapsed = 0f;
+        while (elapsed < restoreTime)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            Time.timeScale = Mathf.Lerp(targetScale, 1.0f, elapsed / restoreTime);
+            yield return null;
+        }
+        Time.timeScale = 1.0f;
     }
 }

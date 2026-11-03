@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -29,6 +29,13 @@ public class EnemySpawner : MonoBehaviour
     public bool bossDefeated; // Saved with the run so Continue doesn't bring a beaten boss back.
     private BossController activeBoss;
 
+    [Header("Multi-Tier Boss Progression")]
+    public List<BossEncounter> bossEncounters = new List<BossEncounter>();
+    private int currentEncounterIndex = -1;
+    private float endlessSpawnTimer = 1080f; // 18 minutes (post 15m dragon)
+    private float endlessInterval = 180f; // Every 3 minutes
+    private int endlessCycleCount = 0;
+
     [Header("Mini-Boss Events")]
     [Tooltip("Khoảng thời gian định kỳ triệu hồi Mini-Boss (giây), ví dụ 120s = 2 phút")]
     public float miniBossInterval = 120f;
@@ -43,6 +50,7 @@ public class EnemySpawner : MonoBehaviour
     public float circleAmbushInterval = 190f; // Mỗi ~3 phút có 1 đợt vòng vây bao bọc
     private float circleAmbushCounter = 135f; // Đợt đầu tiên lúc 2:15
 
+    private List<GameObject> allEnemyPrefabs = new List<GameObject>();
     private readonly Dictionary<GameObject, List<GameObject>> enemyPools = new Dictionary<GameObject, List<GameObject>>(); // A pool of inactive enemies per prefab, so waves don't Instantiate/Destroy constantly. AK
 
     void Awake()
@@ -62,7 +70,26 @@ public class EnemySpawner : MonoBehaviour
         despawnDistance = Vector3.Distance(transform.position, maxSpawn.position) + 4f; // Set the despawn distance to the distance between the spawner and the maximum spawn position plus 4. AK
         despawnDistanceSqr = despawnDistance * despawnDistance; // Cache the squared despawn distance so the per-frame check can avoid a sqrt. AK
 
-        miniBossCounter = miniBossInterval;
+        allEnemyPrefabs.Clear();
+        if (waves != null)
+        {
+            foreach (var w in waves)
+            {
+                if (w != null && w.enemyToSpawn != null && !allEnemyPrefabs.Contains(w.enemyToSpawn))
+                {
+                    allEnemyPrefabs.Add(w.enemyToSpawn);
+                }
+            }
+        }
+        if (allEnemyPrefabs.Count == 0 && enemyToSpawn != null)
+        {
+            allEnemyPrefabs.Add(enemyToSpawn);
+        }
+
+        miniBossInterval = 65f;
+        miniBossCounter = 40f;
+
+        InitBossEncounters();
 
         currentWave = -1; // Set the current wave to -1. AK
         GoToNextWave(); // Go to the next wave. AK
@@ -82,10 +109,10 @@ public class EnemySpawner : MonoBehaviour
 
         if(PlayerHealthController.instance != null && PlayerHealthController.instance.gameObject.activeSelf) // If the player is active. AK
         {
-            // 1. Kiểm tra Boss chính
-            if(spawnBoss && !bossDefeated && activeBoss == null && LevelManager.instance != null && LevelManager.instance.timer >= bossSpawnTime)
+            // 1. Kiểm tra Boss chính theo phân hóa từng cấp độ / từng màn
+            if (spawnBoss && activeBoss == null && LevelManager.instance != null)
             {
-                SpawnBoss();
+                CheckBossProgression();
             }
 
             // 2. Định kỳ triệu hồi Mini-Boss
@@ -173,33 +200,180 @@ public class EnemySpawner : MonoBehaviour
         }
     }
 
-    private void SpawnBoss() // Not pooled, and not distance-despawned.
+    private void InitBossEncounters()
     {
-        if(bossPrefab != null)
+        if (bossEncounters == null || bossEncounters.Count == 0)
         {
-            activeBoss = Instantiate(bossPrefab, SelectSpawnPoint(), Quaternion.identity).GetComponent<BossController>();
-        }
-        else if(waves != null && waves.Count > 0 && waves[0].enemyToSpawn != null)
-        {
-            // Build it under an inactive holder so the enemy's Awake runs after the boss stats are applied.
-            GameObject holder = new GameObject("Boss Builder");
-            holder.SetActive(false);
-            GameObject boss = Instantiate(waves[0].enemyToSpawn, SelectSpawnPoint(), Quaternion.identity, holder.transform);
-            activeBoss = BossController.ConfigureAsBroodQueen(boss, waves[0].enemyToSpawn);
-            boss.transform.SetParent(null, true);
-            Destroy(holder);
+            bossEncounters = new List<BossEncounter>();
+            // If bossSpawnTime has a custom low value (e.g. 30s for testing), respect it for Tier 1
+            float t1 = (bossSpawnTime > 0f && bossSpawnTime < 60f) ? bossSpawnTime : 60f;
+
+            bossEncounters.Add(new BossEncounter(BossType.BroodQueen, "STAGE I: THE TOXIC MEADOW", "THE BROOD QUEEN", t1, 0, 0));
+            bossEncounters.Add(new BossEncounter(BossType.FrostfangFenrir, "STAGE II: THE FROSTBITE TUNDRA", "FROSTFANG FENRIR", 150f, 1, 1));
+            bossEncounters.Add(new BossEncounter(BossType.SkeletonWarlord, "STAGE III: THE CURSED CATACOMBS", "WARLORD MALAKOR", 255f, 3, 3));
+            bossEncounters.Add(new BossEncounter(BossType.DeathPhantom, "STAGE IV: THE VOID NETHERWORLD", "THANATOS", 375f, 4, 4));
+            bossEncounters.Add(new BossEncounter(BossType.GoldenDragon, "STAGE V: THE INFERNAL CATACLYSM", "PYROCLAST THE DRAGON", 510f, 5, 5));
         }
 
-        if(activeBoss == null)
+        if (bossDefeated && bossEncounters != null)
         {
-            Debug.LogWarning("EnemySpawner: couldn't spawn a boss (no Boss Prefab and no first-wave enemy).", this);
-            spawnBoss = false;
+            foreach (var enc in bossEncounters)
+            {
+                enc.spawned = true;
+                enc.defeated = true;
+            }
         }
     }
 
-    public void OnBossDefeated() // Called by the BossController when it dies.
+    private void CheckBossProgression()
     {
-        bossDefeated = true;
+        float timer = LevelManager.instance.timer;
+
+        for (int i = 0; i < bossEncounters.Count; i++)
+        {
+            BossEncounter enc = bossEncounters[i];
+            if (!enc.spawned && !enc.defeated && timer >= enc.spawnTime)
+            {
+                enc.spawned = true;
+                currentEncounterIndex = i;
+                SpawnBossEncounter(enc);
+                return;
+            }
+        }
+
+        // Post-15:00 Endless Mode: Ascended Chaos Overlords every 3 minutes
+        if (bossEncounters.Count > 0 && bossEncounters[bossEncounters.Count - 1].defeated && timer >= endlessSpawnTimer)
+        {
+            endlessSpawnTimer = timer + endlessInterval;
+            SpawnEndlessOverlord();
+        }
+    }
+
+    private void SpawnBossEncounter(BossEncounter enc)
+    {
+        if (bossPrefab != null && enc.bossType == BossType.BroodQueen)
+        {
+            activeBoss = Instantiate(bossPrefab, SelectSpawnPoint(), Quaternion.identity).GetComponent<BossController>();
+            return;
+        }
+
+        GameObject prefabToUse = null;
+        GameObject minionPrefab = null;
+
+        if (waves != null && waves.Count > 0)
+        {
+            int waveIdx = Mathf.Clamp(enc.enemyWavePrefabIndex, 0, waves.Count - 1);
+            prefabToUse = waves[waveIdx].enemyToSpawn;
+
+            int minionIdx = Mathf.Clamp(enc.minionPrefabIndex, 0, waves.Count - 1);
+            minionPrefab = waves[minionIdx].enemyToSpawn;
+        }
+
+        if (prefabToUse == null) prefabToUse = enemyToSpawn;
+        if (minionPrefab == null) minionPrefab = prefabToUse;
+
+        if (prefabToUse != null)
+        {
+            Vector3 spawnPoint = SelectSpawnPoint();
+            GameObject holder = new GameObject("Boss Holder");
+            holder.SetActive(false);
+            GameObject bossObj = Instantiate(prefabToUse, spawnPoint, Quaternion.identity, holder.transform);
+            activeBoss = BossController.ConfigureBoss(bossObj, enc.bossType, minionPrefab);
+            bossObj.transform.SetParent(null, true);
+            Destroy(holder);
+
+            if (CameraController.instance != null) CameraController.instance.Shake(0.45f, 0.4f);
+            if (UIController.instance != null)
+            {
+                UIController.instance.ShowWarning($"⚠ {enc.stageTitle} ⚠\n{enc.bossTitle} HAS AWAKENED!", 4.0f);
+            }
+        }
+    }
+
+    private void SpawnEndlessOverlord()
+    {
+        endlessCycleCount++;
+        BossType randomType = (BossType)Random.Range(0, 5);
+        int waveIdx = 0;
+        switch (randomType)
+        {
+            case BossType.BroodQueen: waveIdx = 0; break;
+            case BossType.FrostfangFenrir: waveIdx = 1; break;
+            case BossType.SkeletonWarlord: waveIdx = 3; break;
+            case BossType.DeathPhantom: waveIdx = 4; break;
+            case BossType.GoldenDragon: waveIdx = 5; break;
+        }
+
+        GameObject prefab = (waves != null && waves.Count > waveIdx) ? waves[waveIdx].enemyToSpawn : enemyToSpawn;
+        if (prefab == null) return;
+
+        Vector3 spawnPoint = SelectSpawnPoint();
+        GameObject holder = new GameObject("Overlord Holder");
+        holder.SetActive(false);
+        GameObject bossObj = Instantiate(prefab, spawnPoint, Quaternion.identity, holder.transform);
+        activeBoss = BossController.ConfigureBoss(bossObj, randomType, prefab);
+        bossObj.transform.SetParent(null, true);
+        Destroy(holder);
+
+        EnemyController ec = bossObj.GetComponent<EnemyController>();
+        if (ec != null)
+        {
+            float hpMult = 1f + (endlessCycleCount * 0.35f);
+            ec.health *= hpMult;
+            ec.damage *= (1f + endlessCycleCount * 0.2f);
+        }
+
+        if (activeBoss != null)
+        {
+            activeBoss.bossName = "ASCENDED " + activeBoss.bossName;
+            activeBoss.bossSubtitle = $"✦ CHAOS OVERLORD (TIER {endlessCycleCount}) ✦";
+            activeBoss.chestTier = 3;
+            activeBoss.bonusCoins += 40 * endlessCycleCount;
+        }
+
+        if (CameraController.instance != null) CameraController.instance.Shake(0.5f, 0.5f);
+        if (UIController.instance != null)
+        {
+            UIController.instance.ShowWarning($"☠ DANGER: ASCENDED OVERLORD AWAKENS (CYCLE {endlessCycleCount})! ☠", 4.0f);
+        }
+    }
+
+    private void SpawnBoss() // Fallback method
+    {
+        if (bossEncounters != null && bossEncounters.Count > 0)
+        {
+            SpawnBossEncounter(bossEncounters[0]);
+        }
+    }
+
+    public void OnBossDefeated(BossController boss = null)
+    {
+        if (currentEncounterIndex >= 0 && currentEncounterIndex < bossEncounters.Count)
+        {
+            bossEncounters[currentEncounterIndex].defeated = true;
+            if (currentEncounterIndex == bossEncounters.Count - 1)
+            {
+                bossDefeated = true;
+            }
+            else
+            {
+                // Fast-track the next progression boss encounter to arrive in 45 seconds!
+                int nextIdx = currentEncounterIndex + 1;
+                if (nextIdx < bossEncounters.Count && LevelManager.instance != null)
+                {
+                    float nextArrival = LevelManager.instance.timer + 45f;
+                    if (bossEncounters[nextIdx].spawnTime > nextArrival)
+                    {
+                        bossEncounters[nextIdx].spawnTime = nextArrival;
+                    }
+                }
+            }
+        }
+        else
+        {
+            bossDefeated = true;
+        }
+
         activeBoss = null;
     }
 
@@ -340,22 +514,38 @@ public class EnemySpawner : MonoBehaviour
     {
         GameObject enemyObj = SpawnEnemy(prefab, position);
         EnemyController ec = enemyObj.GetComponent<EnemyController>();
-        if (ec != null && currentWave >= 1) // Từ wave 1 trở đi bắt đầu xuất hiện các biến thể
+        if (ec != null && currentWave >= 1) // Từ wave 1 trở đi bắt đầu xuất hiện các biến thể phong phú
         {
             float roll = Random.value;
-            if (roll < 0.15f)
+            if (roll < 0.09f)
             {
                 ec.PromoteToSpecial(EnemySpecialType.Charger);
             }
-            else if (roll < 0.28f)
+            else if (roll < 0.17f)
             {
                 ec.PromoteToSpecial(EnemySpecialType.Exploder);
+            }
+            else if (roll < 0.25f)
+            {
+                ec.PromoteToSpecial(EnemySpecialType.Spitter);
+            }
+            else if (roll < 0.32f)
+            {
+                ec.PromoteToSpecial(EnemySpecialType.GhostPhaser);
+            }
+            else if (roll < 0.38f && currentWave >= 2)
+            {
+                ec.PromoteToSpecial(EnemySpecialType.Necromancer);
+            }
+            else if (roll < 0.44f && currentWave >= 2)
+            {
+                ec.PromoteToSpecial(EnemySpecialType.VampiricShield);
             }
         }
         return enemyObj;
     }
 
-    private GameObject SpawnEnemy(GameObject prefab, Vector3 position) // Get a pooled enemy of this type, or instantiate a new one if the pool is empty. AK
+    public GameObject SpawnEnemy(GameObject prefab, Vector3 position) // Get a pooled enemy of this type, or instantiate a new one if the pool is empty. AK
     {
         List<GameObject> pool = GetPoolFor(prefab); // The pool bucket for this enemy prefab. AK
         GameObject enemyInstance; // The enemy instance to spawn. AK
@@ -462,4 +652,31 @@ public class WaveInfo // The wave information. AK
     public float waveLength = 10f; // The length of the wave. AK
     public float timeBetweenSpawns = 1f; // The time between spawns. AK
     public bool spawnMiniBossAtStart = false; // Triệu hồi Mini-Boss khi bắt đầu wave này
+}
+
+[System.Serializable]
+public class BossEncounter
+{
+    public BossType bossType;
+    public string stageTitle;
+    public string bossTitle;
+    public float spawnTime;
+    public int enemyWavePrefabIndex;
+    public int minionPrefabIndex;
+    [HideInInspector] public bool spawned;
+    [HideInInspector] public bool defeated;
+
+    public BossEncounter() { }
+
+    public BossEncounter(BossType type, string stage, string boss, float time, int waveIdx, int minionIdx)
+    {
+        bossType = type;
+        stageTitle = stage;
+        bossTitle = boss;
+        spawnTime = time;
+        enemyWavePrefabIndex = waveIdx;
+        minionPrefabIndex = minionIdx;
+        spawned = false;
+        defeated = false;
+    }
 }

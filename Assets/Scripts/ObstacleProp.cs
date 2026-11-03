@@ -1,13 +1,16 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public enum ObstacleType
 {
-    Gravestone,     // Bia má»™ cá»•
-    AncientObelisk, // Cá»™t Ä‘Ã¡ cá»• Ä‘áº¡i kiÃªn cá»‘
-    Boulder,        // Táº£ng Ä‘Ã¡ rÃªu phong
-    AncientUrn      // BÃ¬nh gá»‘m / HÃ²m kho bÃ¡u chá»©a váº­t pháº©m
+    Gravestone,         // Bia mộ cổ
+    AncientObelisk,     // Cột đá cổ đại kiên cố
+    Boulder,            // Tảng đá rêu phong
+    AncientUrn,         // Bình gốm / Hòm kho báu chứa vật phẩm
+    GothicBrazier,      // Đuốc / Lò lửa Gothic rực sáng (rơi thịt nướng hồi máu)
+    AncientSarcophagus, // Quan tài đá cổ đại (cực bền, rơi bảo vật cao cấp)
+    CryptFence          // Hàng rào nghĩa địa Gothic (tạo chốt chặn chiến thuật)
 }
 
 public class ObstacleProp : MonoBehaviour
@@ -60,6 +63,12 @@ public class ObstacleProp : MonoBehaviour
                 transform.localScale = Vector3.one * 1.25f;
                 break;
 
+            case ObstacleType.CryptFence:
+                maxHealth = 9999f;
+                isBreakable = false;
+                transform.localScale = Vector3.one * 1.2f;
+                break;
+
             case ObstacleType.Gravestone:
                 maxHealth = 40f;
                 isBreakable = true;
@@ -70,6 +79,19 @@ public class ObstacleProp : MonoBehaviour
                 maxHealth = 15f;
                 isBreakable = true;
                 transform.localScale = Vector3.one * 1.05f;
+                break;
+
+            case ObstacleType.GothicBrazier:
+                maxHealth = 35f;
+                isBreakable = true;
+                transform.localScale = Vector3.one * 1.2f;
+                AttachFlameGlow();
+                break;
+
+            case ObstacleType.AncientSarcophagus:
+                maxHealth = 70f;
+                isBreakable = true;
+                transform.localScale = Vector3.one * 1.35f;
                 break;
         }
 
@@ -157,39 +179,87 @@ public class ObstacleProp : MonoBehaviour
         if (sr != null) sr.color = originalColor;
     }
 
+    private void AttachFlameGlow()
+    {
+        if (transform.Find("FlameGlow") != null) return;
+
+        GameObject flameObj = new GameObject("FlameGlow", typeof(SpriteRenderer));
+        flameObj.transform.SetParent(transform, false);
+        flameObj.transform.localPosition = new Vector2(0f, 0.72f);
+        flameObj.transform.localScale = Vector3.one * 0.45f;
+
+        SpriteRenderer fsr = flameObj.GetComponent<SpriteRenderer>();
+        fsr.sprite = EnvironmentDecorManager.GetOrCreateSoftShadowSprite();
+        fsr.color = new Color(1f, 0.65f, 0.15f, 0.85f);
+        fsr.sortingLayerName = sr != null ? sr.sortingLayerName : "Default";
+        fsr.sortingOrder = (sr != null ? sr.sortingOrder : 2) + 2;
+
+        StartCoroutine(FlameFlickerRoutine(flameObj.transform, fsr));
+    }
+
+    private IEnumerator FlameFlickerRoutine(Transform tr, SpriteRenderer fsr)
+    {
+        Vector3 baseScale = tr.localScale;
+        while (tr != null && fsr != null)
+        {
+            float flicker = Mathf.Sin(Time.time * 18f) * 0.12f + Random.Range(-0.06f, 0.06f);
+            tr.localScale = baseScale * (1f + flicker);
+            fsr.color = Color.Lerp(new Color(1f, 0.55f, 0.1f, 0.9f), new Color(1f, 0.9f, 0.3f, 0.95f), Random.value);
+            yield return new WaitForSeconds(0.04f);
+        }
+    }
+
     private void BreakAndLoot()
     {
         if (isDestroyed) return;
         isDestroyed = true;
 
-        // 1. RÆ¡i tiá»n vÃ ng
-        if (CoinController.instance != null && Random.value <= coinDropChance)
+        // 1. Rơi tiền vàng
+        int coinsToDrop = Random.Range(minCoins, maxCoins + 1);
+        if (obstacleType == ObstacleType.GothicBrazier) coinsToDrop = Random.Range(4, 9);
+        else if (obstacleType == ObstacleType.AncientSarcophagus) coinsToDrop = Random.Range(8, 16);
+
+        if (CoinController.instance != null)
         {
-            int coinsToDrop = Random.Range(minCoins, maxCoins + 1);
             CoinController.instance.DropCoin(transform.position, coinsToDrop);
         }
 
-        // 2. Rơi vật phẩm chiến thuật đặc sắc
-        float lootRoll = Random.value;
-        if (lootRoll < 0.28f)
+        // 2. Rơi vật phẩm chiến thuật đặc sắc theo loại
+        if (obstacleType == ObstacleType.GothicBrazier)
         {
+            // Lò đuốc Gothic nướng thịt thơm phức -> Luôn rơi Thịt Hồi Máu!
             SpecialPickup.SpawnPickup(transform.position, SpecialPickupType.HealthMeat);
         }
-        else if (lootRoll < 0.40f)
+        else if (obstacleType == ObstacleType.AncientSarcophagus)
         {
-            SpecialPickup.SpawnPickup(transform.position, SpecialPickupType.GoldPouch);
+            // Quan tài cổ đại -> Chắc chắn rơi bảo bối cao cấp (Bom Thánh, Nam Châm, hoặc Đóng Băng Thời Gian)
+            SpecialPickupType highTier = (Random.value < 0.4f) ? SpecialPickupType.HolyBomb :
+                                         (Random.value < 0.7f ? SpecialPickupType.Magnet : SpecialPickupType.TimeFreeze);
+            SpecialPickup.SpawnPickup(transform.position, highTier);
         }
-        else if (lootRoll < 0.48f)
+        else
         {
-            SpecialPickup.SpawnPickup(transform.position, SpecialPickupType.Magnet);
-        }
-        else if (lootRoll < 0.54f)
-        {
-            SpecialPickup.SpawnPickup(transform.position, SpecialPickupType.TimeFreeze);
-        }
-        else if (lootRoll < 0.59f)
-        {
-            SpecialPickup.SpawnPickup(transform.position, SpecialPickupType.HolyBomb);
+            float lootRoll = Random.value;
+            if (lootRoll < 0.28f)
+            {
+                SpecialPickup.SpawnPickup(transform.position, SpecialPickupType.HealthMeat);
+            }
+            else if (lootRoll < 0.40f)
+            {
+                SpecialPickup.SpawnPickup(transform.position, SpecialPickupType.GoldPouch);
+            }
+            else if (lootRoll < 0.48f)
+            {
+                SpecialPickup.SpawnPickup(transform.position, SpecialPickupType.Magnet);
+            }
+            else if (lootRoll < 0.54f)
+            {
+                SpecialPickup.SpawnPickup(transform.position, SpecialPickupType.TimeFreeze);
+            }
+            else if (lootRoll < 0.59f)
+            {
+                SpecialPickup.SpawnPickup(transform.position, SpecialPickupType.HolyBomb);
+            }
         }
 
         // 3. Hiá»‡u á»©ng vá»¡ tan thÃ nh máº£nh vá»¥n

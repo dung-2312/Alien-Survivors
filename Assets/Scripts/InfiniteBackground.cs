@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [ExecuteAlways]
@@ -35,11 +36,13 @@ public class InfiniteBackground : MonoBehaviour
     {
         SetupBackgroundRenderer();
         FindCamera();
+        SetupAtmosphere();
     }
 
     private void OnEnable()
     {
         SetupBackgroundRenderer();
+        SetupAtmosphere();
     }
 
     private void OnValidate()
@@ -184,6 +187,86 @@ public class InfiniteBackground : MonoBehaviour
         }
     }
 
+    private GameObject vignetteObj;
+    private static Sprite vignetteSprite;
+
+    private void SetupAtmosphere()
+    {
+        if (!Application.isPlaying) return;
+
+        Camera cam = Camera.main;
+        if (cam == null) return;
+
+        // 1. Subtle Gothic Camera Vignette
+        if (vignetteObj == null)
+        {
+            Transform existing = cam.transform.Find("Atmospheric_Vignette");
+            if (existing != null)
+            {
+                vignetteObj = existing.gameObject;
+            }
+            else
+            {
+                vignetteObj = new GameObject("Atmospheric_Vignette", typeof(SpriteRenderer));
+                vignetteObj.transform.SetParent(cam.transform, false);
+                vignetteObj.transform.localPosition = new Vector3(0f, 0f, 1f);
+
+                SpriteRenderer vsr = vignetteObj.GetComponent<SpriteRenderer>();
+                vsr.sprite = GetOrCreateVignetteSprite();
+                vsr.sortingLayerName = "Default";
+                vsr.sortingOrder = 999; // Phủ viền màn hình nhưng nằm dưới Canvas UI
+                vsr.color = new Color(0.02f, 0.03f, 0.06f, 0.42f);
+            }
+        }
+
+        if (vignetteObj != null && cam != null)
+        {
+            float height = cam.orthographicSize * 2f;
+            float width = height * cam.aspect;
+            vignetteObj.transform.localScale = new Vector3(width, height, 1f);
+        }
+
+        // 2. Floating Ethereal Fog Wisps & Ground Motes
+        if (transform.Find("Ambient_Gothic_Motes") == null)
+        {
+            GameObject motesObj = new GameObject("Ambient_Gothic_Motes");
+            motesObj.transform.SetParent(transform, false);
+            motesObj.AddComponent<GothicMotesController>();
+        }
+    }
+
+    public static Sprite GetOrCreateVignetteSprite()
+    {
+        if (vignetteSprite != null) return vignetteSprite;
+
+        int size = 128;
+        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.wrapMode = TextureWrapMode.Clamp;
+        tex.filterMode = FilterMode.Bilinear;
+        Color[] pixels = new Color[size * size];
+
+        float center = (size - 1) * 0.5f;
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dx = (x - center) / center;
+                float dy = (y - center) / center;
+                float dist = Mathf.Sqrt(dx * dx + dy * dy);
+
+                // Đường cong bóng tối mềm mại: trong veo ở giữa màn hình (để nhìn rõ nhân vật & quái), tối dần ở 4 góc cạnh
+                float alpha = Mathf.InverseLerp(0.52f, 1.08f, dist);
+                alpha = Mathf.SmoothStep(0f, 1f, alpha);
+                pixels[y * size + x] = new Color(0.02f, 0.02f, 0.05f, alpha);
+            }
+        }
+
+        tex.SetPixels(pixels);
+        tex.Apply();
+        vignetteSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 128f);
+        return vignetteSprite;
+    }
+
 #if UNITY_EDITOR
     [UnityEditor.InitializeOnLoadMethod]
     private static void EditorInit()
@@ -197,4 +280,91 @@ public class InfiniteBackground : MonoBehaviour
         };
     }
 #endif
+}
+
+public class GothicMotesController : MonoBehaviour
+{
+    private struct MoteData
+    {
+        public Transform transform;
+        public SpriteRenderer sr;
+        public Vector2 driftVelocity;
+        public float baseAlpha;
+        public float phase;
+    }
+
+    private readonly List<MoteData> motes = new List<MoteData>();
+    private Transform camTarget;
+
+    void Start()
+    {
+        if (Camera.main != null) camTarget = Camera.main.transform;
+        else if (PlayerController.instance != null) camTarget = PlayerController.instance.transform;
+
+        int count = 18;
+        for (int i = 0; i < count; i++)
+        {
+            GameObject m = new GameObject("Mote_" + i, typeof(SpriteRenderer));
+            m.transform.SetParent(transform, false);
+
+            Vector2 offset = new Vector2(Random.Range(-15f, 15f), Random.Range(-10f, 10f));
+            Vector3 initPos = (camTarget != null ? camTarget.position : Vector3.zero) + (Vector3)offset;
+            initPos.z = 0f;
+            m.transform.position = initPos;
+            m.transform.localScale = Vector3.one * Random.Range(0.25f, 0.65f);
+
+            SpriteRenderer msr = m.GetComponent<SpriteRenderer>();
+            msr.sprite = EnvironmentDecorManager.GetOrCreateSoftShadowSprite();
+            msr.sortingLayerName = "Default";
+            msr.sortingOrder = -85; // Nổi trên nền cỏ và vũng nước
+
+            Color moteColor = (i % 3 == 0) ? new Color(0.35f, 0.85f, 1f, 0.45f) :
+                              ((i % 3 == 1) ? new Color(0.75f, 0.45f, 1f, 0.40f) :
+                              new Color(1f, 0.85f, 0.4f, 0.35f));
+            msr.color = moteColor;
+
+            MoteData md = new MoteData
+            {
+                transform = m.transform,
+                sr = msr,
+                driftVelocity = new Vector2(Random.Range(-0.8f, -0.2f), Random.Range(0.15f, 0.45f)),
+                baseAlpha = moteColor.a,
+                phase = Random.Range(0f, Mathf.PI * 2f)
+            };
+            motes.Add(md);
+        }
+    }
+
+    void Update()
+    {
+        if (camTarget == null)
+        {
+            if (Camera.main != null) camTarget = Camera.main.transform;
+            else if (PlayerController.instance != null) camTarget = PlayerController.instance.transform;
+            if (camTarget == null) return;
+        }
+
+        Vector3 camPos = camTarget.position;
+        float halfW = 16f;
+        float halfH = 11f;
+
+        for (int i = 0; i < motes.Count; i++)
+        {
+            var m = motes[i];
+            m.transform.position += (Vector3)(m.driftVelocity * Time.deltaTime);
+
+            // Nhấp nháy nhẹ nhàng
+            float alphaMod = 0.7f + 0.3f * Mathf.Sin(Time.time * 2.5f + m.phase);
+            Color c = m.sr.color;
+            c.a = m.baseAlpha * alphaMod;
+            m.sr.color = c;
+
+            // Tái tuần hoàn vị trí khi trôi ra ngoài tầm nhìn camera
+            Vector3 diff = m.transform.position - camPos;
+            if (diff.x < -halfW) m.transform.position += new Vector3(halfW * 2f, 0f, 0f);
+            if (diff.x > halfW) m.transform.position -= new Vector3(halfW * 2f, 0f, 0f);
+            if (diff.y < -halfH) m.transform.position += new Vector3(0f, halfH * 2f, 0f);
+            if (diff.y > halfH) m.transform.position -= new Vector3(0f, halfH * 2f, 0f);
+        }
+    }
 }
