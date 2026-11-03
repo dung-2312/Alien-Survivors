@@ -26,4 +26,8 @@ public class CharacterData : ScriptableObject
     [Header("Vũ khí khởi đầu đặc trưng")]
     [Tooltip("Tên vũ khí khởi đầu độc quyền của nhân vật này (ví dụ: Giant Sword, Orbitting Fireball, Throwing Axes, Dagger Throw, Bright Zone, Forest Bow)")]
     public string signatureWeaponName;
+
+    [Header("Hướng mặt Sprite mặc định")]
+    [Tooltip("Nếu sprite gốc vẽ quay sang trái (ví dụ Bandit), tích chọn để đảo chiều di chuyển cho đúng hướng")]
+    public bool defaultSpriteFacesLeft = false;
 }

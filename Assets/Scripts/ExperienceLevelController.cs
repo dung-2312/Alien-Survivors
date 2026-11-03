@@ -27,9 +27,20 @@ public class ExperienceLevelController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        while (expLevels.Count < levelCount)    // While the experience levels are less than the level count. GK
+        // Build authentic Vampire Survivors progressive EXP curve
+        // Early levels are accessible; higher levels progressively take much more EXP to fill
+        expLevels = new List<int>();
+        expLevels.Add(0); // Level 0 dummy index
+        for (int lvl = 1; lvl <= levelCount; lvl++)
         {
-            expLevels.Add(Mathf.CeilToInt(expLevels[expLevels.Count-1]*1.1f)); // Add the experience levels to the list. GK
+            int req;
+            if (lvl <= 1) req = 8;
+            else if (lvl <= 5) req = 8 + (lvl - 1) * 12; // Lvl 2: 20, Lvl 3: 32, Lvl 4: 44, Lvl 5: 56
+            else if (lvl <= 10) req = 56 + (lvl - 5) * 24; // Lvl 6: 80, Lvl 7: 104, Lvl 8: 128, Lvl 9: 152, Lvl 10: 176
+            else if (lvl <= 20) req = 176 + (lvl - 10) * 48; // Lvl 15: 416, Lvl 20: 656
+            else if (lvl <= 40) req = 656 + (lvl - 20) * 95; // Lvl 30: 1606, Lvl 40: 2556
+            else req = 2556 + (lvl - 40) * 180 + (int)(Mathf.Pow(lvl - 40, 1.85f) * 25f);
+            expLevels.Add(req);
         }
 
         // Tự động khởi tạo ExpManager nếu chưa có trong Scene

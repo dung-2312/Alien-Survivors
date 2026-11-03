@@ -5,38 +5,61 @@ using UnityEngine;
 public class EnemyAnimation : MonoBehaviour
 {
     public Transform sprite; // The sprite object. AK
-    public float speed; // The speed at which the sprite rotates. AK
-    public float minSize, maxSize; // The minimum and maximum size of the sprite. AK
+    public float speed = 1.5f; // The speed at which the sprite animates. AK
+    public float minSize = 0.92f, maxSize = 1.08f; // The minimum and maximum size of the sprite. AK
     private float activeSize; // The size of the sprite. AK
 
     private float initialZRotation;
+    private Vector3 initialLocalPos;
+    private float animPhaseOffset;
+
+    void Awake()
+    {
+        if (sprite == null)
+        {
+            Transform found = transform.Find("Sprite");
+            if (found != null) sprite = found;
+            else
+            {
+                SpriteRenderer sr = GetComponentInChildren<SpriteRenderer>();
+                if (sr != null) sprite = sr.transform;
+            }
+        }
+    }
 
     void Start()
     {
-        activeSize = maxSize; // Set the active size to the maximum size. AK
-        speed = speed * Random.Range(.75f, 1.25f); // Randomize the speed. AK
-        if (sprite != null) initialZRotation = sprite.localEulerAngles.z;
+        activeSize = maxSize;
+        if (speed < 1.2f) speed = 1.6f;
+        speed = speed * Random.Range(0.85f, 1.25f);
+        animPhaseOffset = Random.value * 10f;
+
+        if (sprite != null)
+        {
+            initialZRotation = sprite.localEulerAngles.z;
+            initialLocalPos = sprite.localPosition;
+        }
     }
 
     void Update()
     {
         if (sprite == null) return;
-        sprite.localScale = Vector3.MoveTowards(sprite.localScale, Vector3.one * activeSize, speed * Time.deltaTime); // Change the size of the sprite. AK
 
-        if(Mathf.Approximately(sprite.localScale.x, activeSize)) // If the sprite has reached the active size. AK
+        // 1. Nhịp thở co giãn sinh động (Breathing squash and stretch)
+        sprite.localScale = Vector3.MoveTowards(sprite.localScale, Vector3.one * activeSize, speed * 2.2f * Time.deltaTime);
+
+        if (Mathf.Approximately(sprite.localScale.x, activeSize))
         {
-            if(activeSize == maxSize) // If the active size is the maximum size. AK
-            {
-                activeSize = minSize; // Set the active size to the minimum size. AK
-            }
-            else // If the active size is the minimum size. AK
-            {
-                activeSize = maxSize; // Set the active size to the maximum size. AK
-            }
+            activeSize = (activeSize == maxSize) ? minSize : maxSize;
         }
 
-        // Nhịp lắc lư nhẹ nhàng tự nhiên tạo cảm giác sinh vật sống động
-        float wobble = Mathf.Sin(Time.time * speed * 3.2f) * 3.0f;
+        // 2. Nhịp vẫy cánh / nhún nhảy tự nhiên chống tình trạng đơ cứng (Organic Flap & Step Tilt)
+        float flapFrequency = speed * 8.5f;
+        float wobble = Mathf.Sin(Time.time * flapFrequency + animPhaseOffset) * 7.5f;
         sprite.localRotation = Quaternion.Euler(0, 0, initialZRotation + wobble);
+
+        // 3. Nhấp nhô trục Y tạo cảm giác bước chân hoặc bay lơ lửng
+        float bob = Mathf.Sin(Time.time * flapFrequency * 0.7f + animPhaseOffset) * 0.06f;
+        sprite.localPosition = new Vector3(initialLocalPos.x, initialLocalPos.y + bob, initialLocalPos.z);
     }
 }

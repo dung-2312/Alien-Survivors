@@ -40,3 +40,4 @@ MonoBehaviour:
   idleFrameRate: 6
   customScaleMultiplier: 1
   signatureWeaponName: Bright Zone
+  defaultSpriteFacesLeft: 0

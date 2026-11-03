@@ -1,12 +1,16 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public enum EnemySpecialType
 {
     Normal,
-    Charger,   // Dá»«ng láº¡i tÃ­ch lá»±c 0.6s -> HÃºc tháº³ng cá»±c nhanh x3.2 tá»‘c Ä‘á»™
-    Exploder   // Äáº¿n gáº§n hoáº·c cháº¿t -> Phá»“ng to phÃ¡t ná»• AOE sÃ¡t thÆ°Æ¡ng cáº£ Player láº«n Enemies
+    Charger,
+    Exploder,
+    Spitter,
+    Necromancer,
+    VampiricShield,
+    GhostPhaser
 }
 
 public class EnemyController : MonoBehaviour
@@ -58,6 +62,25 @@ public class EnemyController : MonoBehaviour
     private float explosionCountdownTimer = 0f;
     private bool hasDetonated = false;
 
+    // Spitter Variant
+    private float spitterCooldownTimer = 0f;
+    private float spitterTelegraphTimer = 0f;
+    private bool isSpitterTelegraphing = false;
+
+    // Necromancer Variant
+    private float necromancerSummonTimer = 0f;
+    private GameObject summonRuneObj;
+
+    // VampiricShield Variant
+    private bool vampiricShieldActive = false;
+    private float shieldHealth = 30f;
+    private GameObject shieldOrbsContainer;
+
+    // GhostPhaser Variant
+    private float ghostPhaseTimer = 0f;
+    private float ghostPhaseDurationTimer = 0f;
+    private bool isPhasing = false;
+
     [HideInInspector]
     public GameObject sourcePrefab; // The prefab this instance was spawned from, so it can be returned to the right pool. AK
     private float baseMoveSpeed; // The move speed as configured on the prefab, restored each time this is reused from the pool. AK
@@ -65,6 +88,7 @@ public class EnemyController : MonoBehaviour
     private int baseExpToGive;
     private int baseCoinValue;
     private float baseCoinDropRate;
+    private float baseDamage;
     private bool isReturnedToPool; // Guards against returning the same enemy to the pool twice in one frame. AK
 
     [HideInInspector]
@@ -74,16 +98,43 @@ public class EnemyController : MonoBehaviour
     public event System.Action<EnemyController> Died; // Raised once when health reaches 0, before the enemy is removed.
     public float MaxHealth => baseHealth; // The health this enemy spawned with.
 
+    private float animPhaseOffset;
+
     void Awake()
     {
-        baseMoveSpeed = Mathf.Abs(moveSpeed); // Remember the prefab's configured speed before knockback flips its sign. AK
-        baseHealth = health; // Remember the prefab's configured health. AK
+        if (theRB == null) theRB = GetComponent<Rigidbody2D>();
+        if (theRB != null)
+        {
+            theRB.gravityScale = 0f;
+            theRB.freezeRotation = true;
+            theRB.sleepMode = RigidbodySleepMode2D.NeverSleep;
+            theRB.interpolation = RigidbodyInterpolation2D.Interpolate;
+        }
+
+        float configuredSpeed = Mathf.Abs(moveSpeed);
+        // TÄƒng tá»‘c Ä‘á»™ cÆ¡ báº£n Ä‘á»ƒ quÃ¡i khÃ´ng bá»‹ rá» rÃ , Ä‘Æ¡ cá»©ng; chuáº©n Vampire Survivors dá»“n dáº­p
+        baseMoveSpeed = Mathf.Max(configuredSpeed * 2.4f, 2.85f);
+        moveSpeed = baseMoveSpeed;
+
+        baseHealth = health;
+        baseDamage = damage;
         baseExpToGive = expToGive;
         baseCoinValue = coinValue;
         baseCoinDropRate = coinDropRate;
         baseScale = transform.localScale;
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        animPhaseOffset = Random.value * 10f;
         CreateGroundShadow();
+    }
+
+    private Vector2 CalculateFlockingDirection(Vector2 targetPos, float swayFactor = 0.32f)
+    {
+        Vector2 toTarget = targetPos - (Vector2)transform.position;
+        float dist = toTarget.magnitude;
+        Vector2 dir = dist > 0.05f ? toTarget / dist : Vector2.up;
+        float flank = Mathf.Sin(Time.time * 4.2f + animPhaseOffset) * swayFactor;
+        Vector2 normalTangent = new Vector2(-dir.y, dir.x);
+        return (dir + normalTangent * flank).normalized;
     }
 
     void Start()
@@ -100,6 +151,29 @@ public class EnemyController : MonoBehaviour
     {
         health = baseHealth; // Restore full health. AK
         moveSpeed = baseMoveSpeed; // Restore the base move speed (knockback and death can leave it modified). AK
+        damage = baseDamage;
+
+        if (theRB == null) theRB = GetComponent<Rigidbody2D>();
+        if (theRB != null)
+        {
+            theRB.gravityScale = 0f;
+            theRB.freezeRotation = true;
+            theRB.sleepMode = RigidbodySleepMode2D.NeverSleep;
+            theRB.interpolation = RigidbodyInterpolation2D.Interpolate;
+            theRB.linearVelocity = Vector2.zero;
+        }
+
+        // Promax Difficulty & Thrill Scaling:
+        // As survival time progresses, enemies gain +7% health per minute and +3% move speed per minute
+        if (LevelManager.instance != null)
+        {
+            float elapsedMin = LevelManager.instance.timer / 60f;
+            float hpMult = 1f + Mathf.Min(1.6f, elapsedMin * 0.07f);
+            float spdMult = 1f + Mathf.Min(0.35f, elapsedMin * 0.03f);
+            health = baseHealth * hpMult;
+            moveSpeed = baseMoveSpeed * spdMult;
+        }
+
         expToGive = baseExpToGive;
         coinValue = baseCoinValue;
         coinDropRate = baseCoinDropRate;
@@ -112,6 +186,13 @@ public class EnemyController : MonoBehaviour
         isTelegraphing = false;
         isExploding = false;
         hasDetonated = false;
+        isSpitterTelegraphing = false;
+        vampiricShieldActive = false;
+        isPhasing = false;
+        DestroyShieldOrbs();
+        DestroySummoningRune();
+        Collider2D col = GetComponent<Collider2D>();
+        if (col != null) col.isTrigger = false;
         chargeCooldownTimer = Random.Range(3f, 5.5f);
         transform.localScale = baseScale;
         if (spriteRenderer != null)
@@ -124,6 +205,8 @@ public class EnemyController : MonoBehaviour
     {
         isMiniBoss = true;
         health = baseHealth * healthMultiplier;
+        moveSpeed = baseMoveSpeed * 1.25f; // Mini-bosses are faster and more menacing
+        damage = baseDamage * 1.2f;
         expToGive = baseExpToGive * 5;
         coinValue = baseCoinValue * 5;
         coinDropRate = 1f;
@@ -140,7 +223,7 @@ public class EnemyController : MonoBehaviour
     }
 
     /// <summary>
-    /// ThÄƒng cáº¥p quÃ¡i váº­t thÆ°á»ng thÃ nh biáº¿n thá»ƒ Ä‘áº·c biá»‡t (Charger hoáº·c Exploder).
+    /// Thăng cấp quái vật thường thành biến thể đặc biệt (Charger, Exploder, Spitter, Necromancer, VampiricShield, GhostPhaser).
     /// </summary>
     public void PromoteToSpecial(EnemySpecialType type)
     {
@@ -151,7 +234,7 @@ public class EnemyController : MonoBehaviour
             transform.localScale = baseScale * 1.25f;
             if (spriteRenderer != null)
             {
-                spriteRenderer.color = new Color(1f, 0.65f, 0.2f, 1f); // Cam lá»­a
+                spriteRenderer.color = new Color(1f, 0.65f, 0.2f, 1f); // Cam lửa
             }
         }
         else if (type == EnemySpecialType.Exploder)
@@ -161,7 +244,52 @@ public class EnemyController : MonoBehaviour
             transform.localScale = baseScale * 1.15f;
             if (spriteRenderer != null)
             {
-                spriteRenderer.color = new Color(0.35f, 1f, 0.45f, 1f); // Xanh axit phÃ³ng xáº¡
+                spriteRenderer.color = new Color(0.35f, 1f, 0.45f, 1f); // Xanh axit phóng xạ
+            }
+        }
+        else if (type == EnemySpecialType.Spitter)
+        {
+            spitterCooldownTimer = Random.Range(1.8f, 3.2f);
+            transform.localScale = baseScale * 1.15f;
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.color = new Color(0.20f, 0.95f, 0.35f, 1f); // Xanh lục dạ quang
+            }
+        }
+        else if (type == EnemySpecialType.Necromancer)
+        {
+            health = baseHealth * 2.2f;
+            moveSpeed = baseMoveSpeed * 0.75f;
+            necromancerSummonTimer = Random.Range(3.5f, 5.5f);
+            expToGive = baseExpToGive * 3;
+            coinValue = baseCoinValue * 2;
+            transform.localScale = baseScale * 1.35f;
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.color = new Color(0.75f, 0.25f, 0.95f, 1f); // Tím ma pháp
+            }
+            AttachSummoningRune();
+        }
+        else if (type == EnemySpecialType.VampiricShield)
+        {
+            health = baseHealth * 1.6f;
+            vampiricShieldActive = true;
+            shieldHealth = 35f;
+            transform.localScale = baseScale * 1.25f;
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.color = new Color(0.95f, 0.20f, 0.25f, 1f); // Đỏ huyết
+            }
+            AttachBloodShieldOrbs();
+        }
+        else if (type == EnemySpecialType.GhostPhaser)
+        {
+            ghostPhaseTimer = Random.Range(3.5f, 5.5f);
+            isPhasing = false;
+            transform.localScale = baseScale * 1.15f;
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.color = new Color(0.45f, 0.88f, 1f, 0.95f); // Lam bạc hư vô
             }
         }
     }
@@ -268,7 +396,7 @@ public class EnemyController : MonoBehaviour
             }
 
             // Di chuyá»ƒn bÃ¬nh thÆ°á»ng vÃ  Ä‘áº¿m cooldown Ä‘á»ƒ lao
-            theRB.linearVelocity = (target.position - transform.position).normalized * moveSpeed;
+            theRB.linearVelocity = CalculateFlockingDirection(target.position) * moveSpeed;
             chargeCooldownTimer -= Time.deltaTime;
 
             if (chargeCooldownTimer <= 0f && (target.position - transform.position).sqrMagnitude < 64f) // Trong táº§m 8m
@@ -310,9 +438,123 @@ public class EnemyController : MonoBehaviour
                 return;
             }
         }
+        // 3. Quái Bắn Axit (Spitter Alien)
+        if (specialType == EnemySpecialType.Spitter)
+        {
+            float distSqr = (target.position - transform.position).sqrMagnitude;
+            Vector2 dirToTarget = (target.position - transform.position).normalized;
 
-        // 3. QuÃ¡i váº­t thÆ°á»ng di chuyá»ƒn bÃ¡m theo má»¥c tiÃªu
-        theRB.linearVelocity = (target.position - transform.position).normalized * moveSpeed;
+            if (isSpitterTelegraphing)
+            {
+                theRB.linearVelocity = Vector2.zero;
+                spitterTelegraphTimer -= Time.deltaTime;
+                if (spriteRenderer != null)
+                {
+                    spriteRenderer.color = Color.Lerp(new Color(0.20f, 0.95f, 0.35f), Color.white, Mathf.PingPong(Time.time * 16f, 1f));
+                }
+
+                if (spitterTelegraphTimer <= 0f)
+                {
+                    isSpitterTelegraphing = false;
+                    spitterCooldownTimer = Random.Range(2.8f, 4.0f);
+                    if (spriteRenderer != null) spriteRenderer.color = new Color(0.20f, 0.95f, 0.35f);
+
+                    BossProjectile.Spawn(transform.position, dirToTarget * 7.5f, damage * 0.9f, null,
+                        new Color(0.3f, 1f, 0.25f, 0.95f), spriteRenderer != null ? spriteRenderer.sortingLayerID : 0, 10, 0.45f, 5f);
+
+                    if (SFXManager.instance != null) SFXManager.instance.PlaySFXPitched(0);
+                }
+                return;
+            }
+
+            spitterCooldownTimer -= Time.deltaTime;
+            if (spitterCooldownTimer <= 0f && distSqr <= 49f) // Cự ly trong 7m
+            {
+                isSpitterTelegraphing = true;
+                spitterTelegraphTimer = 0.45f;
+                return;
+            }
+
+            // Kiting AI: duy trì khoảng cách 4.5m - 6.5m
+            if (distSqr < 16f)
+            {
+                theRB.linearVelocity = -dirToTarget * (baseMoveSpeed * 0.8f);
+            }
+            else if (distSqr > 36f)
+            {
+                theRB.linearVelocity = dirToTarget * moveSpeed;
+            }
+            else
+            {
+                Vector2 perpendicular = new Vector2(-dirToTarget.y, dirToTarget.x);
+                theRB.linearVelocity = perpendicular * (baseMoveSpeed * 0.5f);
+            }
+            return;
+        }
+
+        // 4. Pháp sư Chiêu Hồn (Necromancer Alien)
+        if (specialType == EnemySpecialType.Necromancer)
+        {
+            theRB.linearVelocity = CalculateFlockingDirection(target.position) * moveSpeed;
+            necromancerSummonTimer -= Time.deltaTime;
+            if (necromancerSummonTimer <= 0f)
+            {
+                necromancerSummonTimer = Random.Range(5.5f, 7.5f);
+                StartCoroutine(NecromancerSummonRoutine());
+            }
+            return;
+        }
+
+        // 5. Quái Huyết Thuẫn (VampiricShield Alien)
+        if (specialType == EnemySpecialType.VampiricShield)
+        {
+            theRB.linearVelocity = CalculateFlockingDirection(target.position) * moveSpeed;
+            if (shieldOrbsContainer != null)
+            {
+                shieldOrbsContainer.transform.Rotate(0f, 0f, 220f * Time.deltaTime);
+            }
+            return;
+        }
+
+        // 6. Bóng Ma Hư Vô (GhostPhaser Alien)
+        if (specialType == EnemySpecialType.GhostPhaser)
+        {
+            if (isPhasing)
+            {
+                theRB.linearVelocity = (target.position - transform.position).normalized * (baseMoveSpeed * 1.75f);
+                ghostPhaseDurationTimer -= Time.deltaTime;
+                if (ghostPhaseDurationTimer <= 0f)
+                {
+                    isPhasing = false;
+                    ghostPhaseTimer = Random.Range(3.5f, 5.5f);
+                    if (spriteRenderer != null)
+                    {
+                        spriteRenderer.color = new Color(0.45f, 0.88f, 1f, 0.95f);
+                    }
+                    Collider2D pCol = GetComponent<Collider2D>();
+                    if (pCol != null) pCol.isTrigger = false;
+                }
+                return;
+            }
+
+            theRB.linearVelocity = CalculateFlockingDirection(target.position) * moveSpeed;
+            ghostPhaseTimer -= Time.deltaTime;
+            if (ghostPhaseTimer <= 0f)
+            {
+                isPhasing = true;
+                ghostPhaseDurationTimer = 2.2f;
+                if (spriteRenderer != null)
+                {
+                    spriteRenderer.color = new Color(0.45f, 0.88f, 1f, 0.28f); // Xuyên thấu
+                }
+                Collider2D pCol = GetComponent<Collider2D>();
+                if (pCol != null) pCol.isTrigger = true;
+            }
+            return;
+        }
+
+        // 7. Quái vật thường di chuyển bám theo mục tiêu
+        theRB.linearVelocity = CalculateFlockingDirection(target.position) * moveSpeed;
     }
 
     /// <summary>
@@ -371,6 +613,11 @@ public class EnemyController : MonoBehaviour
             if (isCharging) dmg *= 1.5f;
             PlayerHealthController.instance.TakeDamage(dmg); // Take damage. AK
 
+            if (specialType == EnemySpecialType.VampiricShield)
+            {
+                health = Mathf.Min(baseHealth * 1.6f, health + 15f); // Hồi máu hút huyết
+            }
+
             hitCounter = hitWaitTime; // Set the hit counter to the hit wait time. AK
         }
     }
@@ -382,6 +629,11 @@ public class EnemyController : MonoBehaviour
             float dmg = damage;
             if (isCharging) dmg *= 1.5f;
             PlayerHealthController.instance.TakeDamage(dmg);
+
+            if (specialType == EnemySpecialType.VampiricShield)
+            {
+                health = Mathf.Min(baseHealth * 1.6f, health + 15f); // Hồi máu hút huyết
+            }
 
             hitCounter = hitWaitTime;
         }
@@ -398,6 +650,17 @@ public class EnemyController : MonoBehaviour
         if (globalFreezeTimer > 0f)
         {
             damageToTake *= 1.35f; // Quái bị đóng băng nhận thêm 35% sát thương vỡ vụn
+        }
+
+        if (vampiricShieldActive && specialType == EnemySpecialType.VampiricShield)
+        {
+            damageToTake *= 0.35f; // Khiên máu hấp thụ 65% sát thương
+            shieldHealth -= damageToTake;
+            if (shieldHealth <= 0f)
+            {
+                vampiricShieldActive = false;
+                DestroyShieldOrbs();
+            }
         }
 
         health -= damageToTake;
@@ -547,7 +810,11 @@ public class EnemyController : MonoBehaviour
         {
             spriteRenderer.color = isMiniBoss ? new Color(1f, 0.45f, 0.45f, 1f) : 
                                   (specialType == EnemySpecialType.Charger ? new Color(1f, 0.65f, 0.2f) :
-                                  (specialType == EnemySpecialType.Exploder ? new Color(0.35f, 1f, 0.45f) : Color.white));
+                                  (specialType == EnemySpecialType.Exploder ? new Color(0.35f, 1f, 0.45f) :
+                                  (specialType == EnemySpecialType.Spitter ? new Color(0.20f, 0.95f, 0.35f) :
+                                  (specialType == EnemySpecialType.Necromancer ? new Color(0.75f, 0.25f, 0.95f) :
+                                  (specialType == EnemySpecialType.VampiricShield ? new Color(0.95f, 0.20f, 0.25f) :
+                                  (specialType == EnemySpecialType.GhostPhaser ? new Color(0.45f, 0.88f, 1f, isPhasing ? 0.28f : 0.95f) : Color.white))))));
         }
     }
 
@@ -577,5 +844,95 @@ public class EnemyController : MonoBehaviour
             return;
         }
         EnemySpawner.instance.ReturnEnemyToPool(sourcePrefab, gameObject); // Deactivate it and add it back to its pool. AK
+    }
+
+    private IEnumerator NecromancerSummonRoutine()
+    {
+        theRB.linearVelocity = Vector2.zero;
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = Color.white;
+        }
+
+        yield return new WaitForSeconds(0.4f);
+
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = new Color(0.75f, 0.25f, 0.95f);
+        }
+
+        if (EnemySpawner.instance != null && sourcePrefab != null)
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                Vector3 spawnOffset = (Vector3)(Random.insideUnitCircle.normalized * 1.4f);
+                GameObject minion = EnemySpawner.instance.SpawnEnemy(sourcePrefab, transform.position + spawnOffset);
+                if (minion != null)
+                {
+                    minion.transform.localScale = baseScale * 0.7f;
+                    EnemyController mec = minion.GetComponent<EnemyController>();
+                    if (mec != null)
+                    {
+                        mec.health = baseHealth * 0.4f;
+                        mec.moveSpeed = baseMoveSpeed * 1.35f;
+                    }
+                }
+            }
+        }
+    }
+
+    private void AttachBloodShieldOrbs()
+    {
+        DestroyShieldOrbs();
+        shieldOrbsContainer = new GameObject("BloodShieldOrbs");
+        shieldOrbsContainer.transform.SetParent(transform, false);
+
+        for (int i = 0; i < 2; i++)
+        {
+            GameObject orb = new GameObject("Orb_" + i, typeof(SpriteRenderer));
+            orb.transform.SetParent(shieldOrbsContainer.transform, false);
+            float angle = i * 180f * Mathf.Deg2Rad;
+            orb.transform.localPosition = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * 0.95f;
+            orb.transform.localScale = Vector3.one * 0.45f;
+
+            SpriteRenderer osr = orb.GetComponent<SpriteRenderer>();
+            osr.sprite = EnvironmentDecorManager.GetOrCreateSoftShadowSprite();
+            osr.color = new Color(1f, 0.15f, 0.2f, 0.95f);
+            osr.sortingLayerName = spriteRenderer != null ? spriteRenderer.sortingLayerName : "Default";
+            osr.sortingOrder = (spriteRenderer != null ? spriteRenderer.sortingOrder : 10) + 2;
+        }
+    }
+
+    private void DestroyShieldOrbs()
+    {
+        if (shieldOrbsContainer != null)
+        {
+            Destroy(shieldOrbsContainer);
+            shieldOrbsContainer = null;
+        }
+    }
+
+    private void AttachSummoningRune()
+    {
+        DestroySummoningRune();
+        summonRuneObj = new GameObject("SummonRune", typeof(SpriteRenderer));
+        summonRuneObj.transform.SetParent(transform, false);
+        summonRuneObj.transform.localPosition = new Vector3(0f, -0.35f, 0f);
+        summonRuneObj.transform.localScale = new Vector3(1.3f, 0.5f, 1f);
+
+        SpriteRenderer rsr = summonRuneObj.GetComponent<SpriteRenderer>();
+        rsr.sprite = EnvironmentDecorManager.GetOrCreateSoftShadowSprite();
+        rsr.color = new Color(0.75f, 0.2f, 1f, 0.55f);
+        rsr.sortingLayerName = spriteRenderer != null ? spriteRenderer.sortingLayerName : "Default";
+        rsr.sortingOrder = (spriteRenderer != null ? spriteRenderer.sortingOrder : 2) - 1;
+    }
+
+    private void DestroySummoningRune()
+    {
+        if (summonRuneObj != null)
+        {
+            Destroy(summonRuneObj);
+            summonRuneObj = null;
+        }
     }
 }

@@ -162,6 +162,11 @@ public class EnemyDamager : MonoBehaviour
         bool isCrit = Random.value < critChance;
         float finalDmg = isCrit ? damageAmount * critMultiplier : damageAmount;
 
+        if (PlayerController.instance != null && PlayerController.instance.HasBloodFrenzy)
+        {
+            finalDmg *= 1.30f;
+        }
+
         enemy.TakeDamage(finalDmg, shouldKnockBack, isCrit);
 
         // Hiệu ứng tia lửa va chạm (Hit Sparks)

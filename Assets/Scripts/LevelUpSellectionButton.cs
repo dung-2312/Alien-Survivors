@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -55,7 +55,7 @@ public class LevelUpSellectionButton : MonoBehaviour, IPointerEnterHandler, IPoi
 
         if (rectTransform != null)
         {
-            rectTransform.sizeDelta = new Vector2(800f, 170f); // Wide row card: icon left, name + description right.
+            rectTransform.sizeDelta = new Vector2(840f, 172f); // Wide row card: icon left, name + description right.
             initialScale = rectTransform.localScale != Vector3.zero ? rectTransform.localScale : Vector3.one;
             targetScale = initialScale;
             originalAnchoredPosition = rectTransform.anchoredPosition;
@@ -74,26 +74,27 @@ public class LevelUpSellectionButton : MonoBehaviour, IPointerEnterHandler, IPoi
             buttonImage.color = Color.white;
         }
 
-        // Căn chỉnh vị trí Header (Tên kỹ năng)
-        if (nameLevelText != null)
+        // Khung viền đá trang trí cho Icon kỹ năng
+        Transform frameT = transform.Find("IconSlotFrame");
+        GameObject frameGO = frameT != null ? frameT.gameObject : new GameObject("IconSlotFrame", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        if (frameT == null)
         {
-            RectTransform nrt = nameLevelText.GetComponent<RectTransform>();
-            if (nrt != null)
-            {
-                nrt.anchorMin = new Vector2(0.19f, 0.56f);
-                nrt.anchorMax = new Vector2(0.97f, 0.95f);
-                nrt.offsetMin = Vector2.zero;
-                nrt.offsetMax = Vector2.zero;
-            }
-            nameLevelText.alignment = TextAlignmentOptions.MidlineLeft;
-            nameLevelText.color = nameColor;
-            nameLevelText.enableAutoSizing = true;
-            nameLevelText.fontSizeMin = 24;
-            nameLevelText.fontSizeMax = 42;
-            nameLevelText.textWrappingMode = TextWrappingModes.NoWrap;
+            frameGO.transform.SetParent(transform, false);
+            if (weaponIcon != null) frameGO.transform.SetSiblingIndex(weaponIcon.transform.GetSiblingIndex());
         }
+        RectTransform frt = frameGO.GetComponent<RectTransform>();
+        frt.anchorMin = new Vector2(0f, 0.5f);
+        frt.anchorMax = new Vector2(0f, 0.5f);
+        frt.pivot = new Vector2(0.5f, 0.5f);
+        frt.anchoredPosition = new Vector2(84f, 0f);
+        frt.sizeDelta = new Vector2(116f, 116f);
+        Image frtImg = frameGO.GetComponent<Image>();
+        frtImg.sprite = Resources.Load<Sprite>("UI/VS_HUD_Slot") ?? cardNormalSprite;
+        frtImg.type = Image.Type.Sliced;
+        frtImg.color = new Color(0.12f, 0.12f, 0.18f, 0.95f);
+        frtImg.raycastTarget = false;
 
-        // Căn chỉnh Icon trung tâm
+        // Căn chỉnh Icon trung tâm bên trong khung viền
         if (weaponIcon != null)
         {
             RectTransform irt = weaponIcon.GetComponent<RectTransform>();
@@ -103,10 +104,30 @@ public class LevelUpSellectionButton : MonoBehaviour, IPointerEnterHandler, IPoi
                 irt.anchorMax = new Vector2(0f, 0.5f);
                 irt.pivot = new Vector2(0.5f, 0.5f);
                 irt.anchoredPosition = new Vector2(84f, 0f);
-                irt.sizeDelta = new Vector2(112f, 112f);
+                irt.sizeDelta = new Vector2(96f, 96f);
             }
             weaponIcon.preserveAspect = true;
             weaponIcon.raycastTarget = false;
+        }
+
+        // Căn chỉnh vị trí Header (Tên kỹ năng & Level badge & Level Pips)
+        if (nameLevelText != null)
+        {
+            RectTransform nrt = nameLevelText.GetComponent<RectTransform>();
+            if (nrt != null)
+            {
+                nrt.anchorMin = new Vector2(0.19f, 0.52f);
+                nrt.anchorMax = new Vector2(0.97f, 0.96f);
+                nrt.offsetMin = Vector2.zero;
+                nrt.offsetMax = Vector2.zero;
+            }
+            nameLevelText.alignment = TextAlignmentOptions.MidlineLeft;
+            nameLevelText.color = nameColor;
+            nameLevelText.enableAutoSizing = true;
+            nameLevelText.fontSizeMin = 22;
+            nameLevelText.fontSizeMax = 38;
+            nameLevelText.textWrappingMode = TextWrappingModes.Normal;
+            nameLevelText.richText = true;
         }
 
         // Căn chỉnh Body (Mô tả hiệu ứng)
@@ -115,17 +136,18 @@ public class LevelUpSellectionButton : MonoBehaviour, IPointerEnterHandler, IPoi
             RectTransform drt = upgradeDescText.GetComponent<RectTransform>();
             if (drt != null)
             {
-                drt.anchorMin = new Vector2(0.19f, 0.06f);
-                drt.anchorMax = new Vector2(0.97f, 0.57f);
+                drt.anchorMin = new Vector2(0.19f, 0.05f);
+                drt.anchorMax = new Vector2(0.97f, 0.52f);
                 drt.offsetMin = Vector2.zero;
                 drt.offsetMax = Vector2.zero;
             }
             upgradeDescText.alignment = TextAlignmentOptions.TopLeft;
             upgradeDescText.color = descColor;
             upgradeDescText.enableAutoSizing = true;
-            upgradeDescText.fontSizeMin = 20;
-            upgradeDescText.fontSizeMax = 32;
+            upgradeDescText.fontSizeMin = 18;
+            upgradeDescText.fontSizeMax = 28;
             upgradeDescText.textWrappingMode = TextWrappingModes.Normal;
+            upgradeDescText.richText = true;
         }
 
         // The pixel (Kenney) font turns to blocks at this size, so card text uses the smooth Liberation font.
@@ -137,6 +159,20 @@ public class LevelUpSellectionButton : MonoBehaviour, IPointerEnterHandler, IPoi
         }
 
         isSetup = true;
+    }
+
+    public static string BuildLevelPips(int currentLevel, int maxLevel = 8)
+    {
+        if (maxLevel <= 1) return "";
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        for (int i = 1; i <= maxLevel; i++)
+        {
+            if (i <= currentLevel)
+                sb.Append("<color=#FFD700><b>◆</b></color> ");
+            else
+                sb.Append("<color=#404B5E><b>◇</b></color> ");
+        }
+        return sb.ToString().TrimEnd();
     }
 
     public void SetLayout(Vector2 size, Vector2 position) // Called by UIController to place this row in the window.
@@ -198,7 +234,7 @@ public class LevelUpSellectionButton : MonoBehaviour, IPointerEnterHandler, IPoi
     }
 
     /// <summary>
-    /// Cập nhật hiển thị thẻ nâng cấp Data-Driven với Highlight số liệu Neon.
+    /// Cập nhật hiển thị thẻ nâng cấp Data-Driven với Highlight số liệu Neon và thanh Level Pips phong cách Vampire Survivors.
     /// </summary>
     public void UpdateButtonDisplay(UpgradeData upgrade)
     {
@@ -208,20 +244,37 @@ public class LevelUpSellectionButton : MonoBehaviour, IPointerEnterHandler, IPoi
 
         if (upgrade == null) return;
 
-        // 1. Tên nâng cấp (Màu vàng ánh kim hoặc xanh neon)
+        // 1. Tên nâng cấp + Badge + Level Pips chuẩn Vampire Survivors
         if (nameLevelText != null)
         {
-            string suffix = upgrade.upgradeType switch
+            string badge = "";
+            string pips = "";
+            string displayName = upgrade.upgradeName.ToUpper();
+
+            if (upgrade is UpgradeStatUpgradeData statUp)
             {
-                UpgradeType.UnlockWeapon => "  <color=#FFD700><size=65%>* NEW ARTIFACT</size></color>",
-                UpgradeType.UpgradeStat => "  <color=#66FFAA><size=65%>* PASSIVE BLESSING</size></color>",
-                UpgradeType.WeaponEvolution => "  <color=#FF3344><size=65%>* FORBIDDEN EVOLUTION</size></color>",
-                _ => ""
-            };
-            nameLevelText.text = $"{upgrade.GetDisplayName()}{suffix}";
+                badge = $"  <color=#FFE040><b>[ LV {statUp.currentLevel + 1} ]</b></color>";
+                pips = $"  <size=65%>{BuildLevelPips(statUp.currentLevel + 1, statUp.maxLevel)}</size>";
+            }
+            else if (upgrade is WeaponEvolutionUpgradeData)
+            {
+                badge = "  <color=#FF3344><b>[ FORBIDDEN EVOLUTION ]</b></color>";
+                pips = "  <size=65%><color=#FF3344>★ ★ ★ ★ ★</color></size>";
+            }
+            else if (upgrade.upgradeType == UpgradeType.UnlockWeapon)
+            {
+                badge = "  <color=#00FFAA><b>[ NEW! ]</b></color>";
+                pips = $"  <size=65%>{BuildLevelPips(1, 8)}</size>";
+            }
+            else
+            {
+                badge = "  <color=#FFE040><b>[ UPGRADE ]</b></color>";
+            }
+
+            nameLevelText.text = $"<color=#FFE040><b>{displayName}</b></color>{badge}{pips}";
         }
 
-        // 2. Mô tả chỉ số tự động tô màu xanh Neon (#00FFA3) cho các con số
+        // 2. Mô tả chỉ số tự động tô màu vàng hoàng kim cho các con số
         if (upgradeDescText != null)
         {
             string rawDesc = upgrade.GetDescription();
@@ -254,7 +307,7 @@ public class LevelUpSellectionButton : MonoBehaviour, IPointerEnterHandler, IPoi
     }
 
     /// <summary>
-    /// Tương thích ngược với hệ thống vũ khí cũ.
+    /// Tương thích ngược với hệ thống vũ khí cũ: hiển thị tên vàng, cấp độ và thanh Pips Vampire Survivors.
     /// </summary>
     public void UpdateButtonDisplay(Weapon theWeapon)
     {
@@ -264,21 +317,32 @@ public class LevelUpSellectionButton : MonoBehaviour, IPointerEnterHandler, IPoi
 
         if (theWeapon == null) return;
 
+        int maxLvl = (theWeapon.stats != null && theWeapon.stats.Count > 0) ? theWeapon.stats.Count : 8;
+
         if (theWeapon.gameObject.activeSelf == true)
         {
-            string raw = theWeapon.stats[theWeapon.weaponLevel].upgradeText;
+            string raw = (theWeapon.stats != null && theWeapon.weaponLevel < theWeapon.stats.Count) ? theWeapon.stats[theWeapon.weaponLevel].upgradeText : "Improves combat stats.";
             if (upgradeDescText != null)
             {
                 upgradeDescText.text = Regex.Replace(raw, @"(\+?\-?\d+(\.\d+)?%?|\b[xX]\d+(\.\d+)?)", "<color=#FFE040><b>$1</b></color>");
             }
             if (weaponIcon != null) weaponIcon.sprite = theWeapon.icon;
-            if (nameLevelText != null) nameLevelText.text = $"{theWeapon.name}  <color=#FFE040><size=65%>Lv {theWeapon.weaponLevel + 1}</size></color>";
+            if (nameLevelText != null)
+            {
+                int nextLvl = theWeapon.weaponLevel + 1;
+                string pips = BuildLevelPips(nextLvl, maxLvl);
+                nameLevelText.text = $"<color=#FFE040><b>{theWeapon.name.ToUpper()}</b></color>  <color=#FFE040><b>[ LV {nextLvl} ]</b></color>  <size=65%>{pips}</size>";
+            }
         }
         else
         {
             if (upgradeDescText != null) upgradeDescText.text = $"Unlocks and equips <color=#FFE040>{theWeapon.name}</color>.";
             if (weaponIcon != null) weaponIcon.sprite = theWeapon.icon;
-            if (nameLevelText != null) nameLevelText.text = $"{theWeapon.name}  <color=#FFE040><size=65%>New!</size></color>";
+            if (nameLevelText != null)
+            {
+                string pips = BuildLevelPips(1, maxLvl);
+                nameLevelText.text = $"<color=#FFE040><b>{theWeapon.name.ToUpper()}</b></color>  <color=#00FFAA><b>[ NEW! ]</b></color>  <size=65%>{pips}</size>";
+            }
         }
 
         if (weaponIcon != null) weaponIcon.gameObject.SetActive(weaponIcon.sprite != null);
