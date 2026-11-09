@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -101,6 +101,9 @@ public class AncientShrine : MonoBehaviour
     private void ActivateShrine()
     {
         isActivated = true;
+
+        VFXImpactManager.PlayShockwaveRing(transform.position, shrineColor, 4.5f, 0.45f);
+        VFXImpactManager.PlayPickupSparkles(transform.position, shrineColor, 12);
 
         if (SFXManager.instance != null) SFXManager.instance.PlaySFXPitched(0);
         if (CameraController.instance != null) CameraController.instance.Shake(0.25f, 0.35f);

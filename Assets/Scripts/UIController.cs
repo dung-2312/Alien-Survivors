@@ -395,7 +395,14 @@ public class UIController : MonoBehaviour
         stageSubtitleText.fontStyle = FontStyles.Bold;
         stageSubtitleText.raycastTarget = false;
         stageSubtitleText.enableAutoSizing = false;
-        stageSubtitleText.text = "<color=#88FF88>✦ STAGE I: THE TOXIC MEADOW ✦</color>";
+        if (MapSelectionManager.CurrentStage == MapStage.InfernoPurgatory)
+        {
+            stageSubtitleText.text = "<color=#FF5533>" + MapSelectionManager.CurrentStageInfo.subtitle + "</color>";
+        }
+        else
+        {
+            stageSubtitleText.text = "<color=#88FF88>" + MapSelectionManager.CurrentStageInfo.subtitle + "</color>";
+        }
 
         // 6. Retro Pause Button ("||" on far right of HUD row)
         Transform existingPauseBtn = canvasT.Find("HUD Pause Button");

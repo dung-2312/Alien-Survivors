@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 public class TreasureChest : MonoBehaviour
@@ -75,6 +75,7 @@ public class TreasureChest : MonoBehaviour
         {
             SFXManager.instance.PlaySFXPitched(0);
         }
+        ProceduralSFX.PlayChestOpen();
 
         Destroy(gameObject);
     }

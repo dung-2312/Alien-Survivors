@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -118,8 +118,8 @@ public class BossController : MonoBehaviour
                 boss.chargeSpeed = 12f;
                 boss.novaBullets = 14;
 
-                ec.health = 950f; // Stage 1 Boss
-                ec.damage = 16f;
+                ec.health = 220f; // Easy-going first boss
+                ec.damage = 14f;
                 ec.moveSpeed = 1.6f;
                 ec.hitWaitTime = 0.8f;
                 ec.knockBackTime = 0f;
@@ -150,8 +150,8 @@ public class BossController : MonoBehaviour
                 boss.novaBullets = 18;
                 boss.spiralArms = 4;
 
-                ec.health = 2100f;
-                ec.damage = 22f;
+                ec.health = 520f;
+                ec.damage = 18f;
                 ec.moveSpeed = 2.2f;
                 ec.hitWaitTime = 0.7f;
                 ec.knockBackTime = 0f;
@@ -180,8 +180,8 @@ public class BossController : MonoBehaviour
                 boss.novaBullets = 20;
                 boss.spiralArms = 4;
 
-                ec.health = 3600f;
-                ec.damage = 26f;
+                ec.health = 850f;
+                ec.damage = 22f;
                 ec.moveSpeed = 1.8f;
                 ec.hitWaitTime = 0.75f;
                 ec.knockBackTime = 0f;
@@ -210,8 +210,8 @@ public class BossController : MonoBehaviour
                 boss.novaBullets = 24;
                 boss.spiralArms = 5;
 
-                ec.health = 5400f;
-                ec.damage = 30f;
+                ec.health = 1250f;
+                ec.damage = 26f;
                 ec.moveSpeed = 2.0f;
                 ec.hitWaitTime = 0.7f;
                 ec.knockBackTime = 0f;
@@ -242,8 +242,8 @@ public class BossController : MonoBehaviour
                 boss.novaBullets = 28;
                 boss.spiralArms = 5;
 
-                ec.health = 8000f;
-                ec.damage = 38f;
+                ec.health = 1950f;
+                ec.damage = 32f;
                 ec.moveSpeed = 2.1f;
                 ec.hitWaitTime = 0.65f;
                 ec.knockBackTime = 0f;
@@ -325,6 +325,7 @@ public class BossController : MonoBehaviour
         BuildBossAura();
         BuildBossCrown();
         BuildHealthBar();
+        ProceduralSFX.PlayBossRoar();
         StartCoroutine(Brain());
     }
 
@@ -899,36 +900,11 @@ public class BossController : MonoBehaviour
         if (telegraph != null) telegraph.enabled = false;
         BossProjectile.ClearAll();
 
-        // 1. Slow-mo impact & dramatic screen shake
-        if (CameraController.instance != null) CameraController.instance.Shake(0.6f, 0.5f);
-        if (UIController.instance != null)
-        {
-            UIController.instance.StartCoroutine(UIController.instance.BossSlowMoEffect(0.25f, 1.0f));
-        }
-
-        // 2. Screen-Clearing Holy Shockwave: tiêu diệt quái thường trên màn hình thành ngọc EXP & tiền vàng!
-        Collider2D[] allHits = Physics2D.OverlapCircleAll(transform.position, 28f);
-        foreach (var hit in allHits)
-        {
-            if (hit != null && hit.TryGetComponent<EnemyController>(out var enemyCol))
-            {
-                if (enemyCol != this.enemy && !enemyCol.isMiniBoss && !enemyCol.movementOverridden)
-                {
-                    enemyCol.TakeDamage(9999f, true, true);
-                }
-            }
-        }
-
-        // 3. Volcanic Coin Fountain (30+ đồng tiền vàng phun trào hình xoắn ốc)
-        int coinCount = Mathf.Max(bonusCoins, 30);
         if (CoinController.instance != null)
         {
-            for (int i = 0; i < coinCount; i++)
+            for (int i = 0; i < bonusCoins; i++)
             {
-                float angle = (float)i / coinCount * 360f * Mathf.Deg2Rad;
-                float r = Random.Range(1.0f, 3.8f);
-                Vector3 offset = new Vector3(Mathf.Cos(angle) * r, Mathf.Sin(angle) * r, 0f);
-                CoinController.instance.DropCoin(transform.position + offset, enemy.coinValue);
+                CoinController.instance.DropCoin(transform.position + (Vector3)(Random.insideUnitCircle * 2.5f), enemy.coinValue);
             }
         }
 
@@ -936,30 +912,23 @@ public class BossController : MonoBehaviour
         if (bossAuraObj != null) Destroy(bossAuraObj);
         if (bossCrownT != null) Destroy(bossCrownT.gameObject);
 
-        // 4. Rơi Rương Hoàng Gia Royal Gothic Treasure Chest
+        // Spawn scaled Royal Treasure Chest
         TreasureChest.SpawnChest(transform.position, chestTier);
 
-        // 5. Trao Buff Thánh Thần 20s Celestial Frenzy cho người chơi
-        if (PlayerController.instance != null)
+        if (bossType == BossType.GoldenDragon)
         {
-            PlayerController.instance.ApplyCelestialFrenzy(20f);
+            ShowBanner("✦ VICTORY! FINAL BOSS PYROCLAST SLAIN! ✦", new Color(1f, 0.9f, 0.3f));
+            if (SFXManager.instance != null) SFXManager.instance.PlaySFXPitched(8);
+            if (LevelManager.instance != null) LevelManager.instance.TriggerVictory();
+        }
+        else
+        {
+            ShowBanner("✦ " + bossName + " DEFEATED ✦", new Color(1f, 0.88f, 0.35f));
         }
 
-        // 6. Hiển thị Banner Chiến Thắng Hoàng Gia giữa màn hình
-        if (UIController.instance != null)
-        {
-            UIController.instance.ShowBossDefeatedBanner(bossName, coinCount);
-        }
-
-        if (SFXManager.instance != null)
-        {
-            SFXManager.instance.PlaySFXPitched(8);
-        }
-
-        // 7. Thông báo cho spawner và kích hoạt tiến trình triệu hồi Boss tiếp theo sau 45s
         if (EnemySpawner.instance != null)
         {
-            EnemySpawner.instance.OnBossDefeated(this);
+            EnemySpawner.instance.OnBossDefeated();
         }
     }
 
@@ -1102,10 +1071,7 @@ public class BossController : MonoBehaviour
         hpValueText.rectTransform.offsetMin = Vector2.zero;
         hpValueText.rectTransform.offsetMax = Vector2.zero;
 
-        if (UIController.instance != null)
-        {
-            UIController.instance.ShowBossIntroBanner(bossName, bossSubtitle, barColor);
-        }
+        ShowBanner("⚠ APPROACHING: " + bossName + " ⚠", new Color(1f, 0.35f, 0.25f));
     }
 
     private void UpdateHealthBar()
