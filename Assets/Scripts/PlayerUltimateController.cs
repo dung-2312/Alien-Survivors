@@ -9,8 +9,8 @@ public class PlayerUltimateController : MonoBehaviour
     [Header("Rage / Energy Stats")]
     public float currentRage = 0f;
     public float maxRage = 100f;
-    public float ragePerKill = 3.5f;
-    public float passiveRageRegen = 1.5f;
+    public float ragePerKill = 1.2f;
+    public float passiveRageRegen = 0.8f;
 
     [Header("Ultimate State")]
     public bool isCasting = false;
@@ -184,7 +184,7 @@ public class PlayerUltimateController : MonoBehaviour
             {
                 float angle = (i * angleStep) + (w * 18f);
                 Vector3 dir = Quaternion.Euler(0, 0, angle) * Vector3.right;
-                SpawnEnergyBlade(transform.position, dir, 120f, new Color(1f, 0.85f, 0.2f, 1f));
+                SpawnEnergyBlade(transform.position, dir, 50f, new Color(1f, 0.85f, 0.2f, 1f));
             }
             if (CameraController.instance != null) CameraController.instance.Shake(0.2f, 0.3f);
             yield return new WaitForSeconds(0.25f);
@@ -258,7 +258,7 @@ public class PlayerUltimateController : MonoBehaviour
         col.radius = 2.4f;
 
         EnemyDamager ed = meteorExplosion.GetComponent<EnemyDamager>();
-        ed.damageAmount = 140f;
+        ed.damageAmount = 85f;
         ed.destroyOnImpact = false;
         ed.lifeTime = 0.5f;
 
@@ -296,7 +296,7 @@ public class PlayerUltimateController : MonoBehaviour
             col.radius = 0.6f;
 
             EnemyDamager ed = axe.GetComponent<EnemyDamager>();
-            ed.damageAmount = 95f;
+            ed.damageAmount = 45f;
             ed.destroyOnImpact = false;
             ed.lifeTime = 1.6f;
 
@@ -352,7 +352,7 @@ public class PlayerUltimateController : MonoBehaviour
             {
                 // Dash ảo ảnh tới quái và chém chí mạng
                 Vector3 strikePos = targetEnemy.transform.position;
-                SpawnShadowSlash(strikePos, 160f);
+                SpawnShadowSlash(strikePos, 70f);
                 if (CameraController.instance != null) CameraController.instance.Shake(0.08f, 0.15f);
             }
             yield return new WaitForSeconds(0.07f);
@@ -395,7 +395,7 @@ public class PlayerUltimateController : MonoBehaviour
         col.radius = 9f;
 
         EnemyDamager ed = blast.GetComponent<EnemyDamager>();
-        ed.damageAmount = 150f;
+        ed.damageAmount = 90f;
         ed.destroyOnImpact = false;
         ed.lifeTime = 0.6f;
 
@@ -432,7 +432,7 @@ public class PlayerUltimateController : MonoBehaviour
             {
                 float spread = Random.Range(-35f, 35f);
                 Vector3 dir = Quaternion.Euler(0, 0, baseAngle + spread) * Vector3.right;
-                SpawnSpiritArrow(transform.position, dir, 85f);
+                SpawnSpiritArrow(transform.position, dir, 38f);
             }
             if (CameraController.instance != null) CameraController.instance.Shake(0.15f, 0.2f);
             yield return new WaitForSeconds(0.1f);

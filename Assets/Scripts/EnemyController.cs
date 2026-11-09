@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -99,6 +99,7 @@ public class EnemyController : MonoBehaviour
     public float MaxHealth => baseHealth; // The health this enemy spawned with.
 
     private float animPhaseOffset;
+    private float bossHitIFrame = 0f;
 
     void Awake()
     {
@@ -336,6 +337,11 @@ public class EnemyController : MonoBehaviour
             if (hitCounter > 0) // If the hit counter is greater than 0. AK
             {
                 hitCounter -= Time.deltaTime; // Decrease the hit counter. AK
+            }
+
+            if (bossHitIFrame > 0f)
+            {
+                bossHitIFrame -= Time.deltaTime;
             }
         }
         else if (!movementOverridden)
@@ -660,6 +666,28 @@ public class EnemyController : MonoBehaviour
             {
                 vampiricShieldActive = false;
                 DestroyShieldOrbs();
+            }
+        }
+
+        // Boss & Elite Armor & Tenacity:
+        // Chống tình trạng Boss bị xóa sổ / one-shot ngay lập tức khi người chơi xả skill E
+        if (movementOverridden || isMiniBoss)
+        {
+            // 1. Giới hạn sát thương tối đa trên 1 đòn đánh cho Boss (tối đa 5% máu tối đa)
+            float maxDamagePerHit = Mathf.Max(35f, MaxHealth * 0.05f);
+            if (damageToTake > maxDamagePerHit)
+            {
+                damageToTake = maxDamagePerHit;
+            }
+
+            // 2. Chống dồn sát thương tức thì (Shotgun I-Frame): khi nhiều đạn va chạm cùng lúc trong 0.06s
+            if (bossHitIFrame > 0f)
+            {
+                damageToTake *= 0.35f;
+            }
+            else
+            {
+                bossHitIFrame = 0.06f;
             }
         }
 

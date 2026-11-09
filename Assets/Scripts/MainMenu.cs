@@ -8,6 +8,7 @@ using UnityEngine.UI;
 
 public class MainMenu : MonoBehaviour
 {
+    public static MainMenu instance;
     public string firstLevelName; // The first level name. GK
 
     private TMP_FontAsset retroPixelFont;
@@ -15,6 +16,12 @@ public class MainMenu : MonoBehaviour
     private RectTransform titleShadowRect;
     private Vector2 titleBasePos;
     private Vector2 shadowBasePos;
+    private TextMeshProUGUI coinCountText;
+
+    void Awake()
+    {
+        instance = this;
+    }
 
     void Start()
     {
@@ -23,6 +30,7 @@ public class MainMenu : MonoBehaviour
         CreateGothicEmbersOverlay();
         ShowMainMenuFirst();
         SetupTitle();
+        SetupTopCoinCapsule();
         SetupMenuButtons();
     }
 
@@ -72,7 +80,7 @@ public class MainMenu : MonoBehaviour
         rt.offsetMax = Vector2.zero;
 
         Image img = vignetteGO.GetComponent<Image>();
-        img.color = new Color(0.04f, 0.02f, 0.06f, 0.45f); // Lớp sương mù ma mị
+        img.color = new Color(0.04f, 0.02f, 0.06f, 0.45f);
         img.raycastTarget = false;
     }
 
@@ -86,7 +94,7 @@ public class MainMenu : MonoBehaviour
 
         GameObject embersGO = new GameObject("Gothic Embers Layer", typeof(RectTransform));
         embersGO.transform.SetParent(transform, false);
-        embersGO.transform.SetSiblingIndex(1); // Nằm trên nền lâu đài, dưới các nút bấm
+        embersGO.transform.SetSiblingIndex(1);
 
         RectTransform rt = embersGO.GetComponent<RectTransform>();
         rt.anchorMin = Vector2.zero;
@@ -102,14 +110,10 @@ public class MainMenu : MonoBehaviour
         Transform panel = transform.Find("CharacterSelectionPanel");
         if (panel != null) panel.gameObject.SetActive(false);
 
-        foreach (string buttonName in new[] { "Start Game", "Quit Game", "Continue Button" })
-        {
-            Transform t = transform.Find(buttonName);
-            if (t != null) t.gameObject.SetActive(true);
-        }
+        SetMainMenuVisible(true);
     }
 
-    // Title: Phong cách Gothic cổ điển với sắc Đỏ Huyết Dụ ma mị và Vàng Cổ Hoàng Gia
+    // Tiêu đề: Đỏ Thẫm Huyết Dụ kết hợp Vàng Kim Hoàng Gia
     void SetupTitle()
     {
         Transform logo = transform.Find("VS_Image");
@@ -125,10 +129,7 @@ public class MainMenu : MonoBehaviour
             shadow.name = "Title Shadow";
         }
 
-        // Bóng đen hắc ám sâu thẳm
         ConfigureTitle(shadow, "<color=#070104>ALIEN\nSURVIVORS</color>", new Vector2(8f, -8f));
-
-        // Tiêu đề: Đỏ thẫm máu ma mị kết hợp vàng hoàng kim cổ kính
         ConfigureTitle(title, "<color=#E8254A>ALIEN</color>\n<color=#FFD700>SURVIVORS</color>", new Vector2(0f, 0f));
         shadow.SetSiblingIndex(title.GetSiblingIndex());
 
@@ -149,7 +150,7 @@ public class MainMenu : MonoBehaviour
         RectTransform srt = (RectTransform)subtitle;
         srt.anchorMin = srt.anchorMax = srt.pivot = new Vector2(0.5f, 0.5f);
         srt.sizeDelta = new Vector2(900f, 50f);
-        srt.anchoredPosition = new Vector2(0f, 65f);
+        srt.anchoredPosition = new Vector2(0f, 75f);
 
         TextMeshProUGUI stmp = subtitle.GetComponent<TextMeshProUGUI>();
         if (retroPixelFont != null) stmp.font = retroPixelFont;
@@ -195,29 +196,85 @@ public class MainMenu : MonoBehaviour
         rt.anchoredPosition = new Vector2(-centerX + position.x, 220f + position.y);
     }
 
-    public void StartGame()
+    /// <summary>
+    /// Thanh hiển thị Tiền Vàng ở đỉnh giữa màn hình (Ảnh 3)
+    /// </summary>
+    private void SetupTopCoinCapsule()
     {
-        SceneManager.LoadScene(firstLevelName);
+        Transform capT = transform.Find("TopCoinCapsule");
+        GameObject capGO = capT != null ? capT.gameObject : new GameObject("TopCoinCapsule", typeof(RectTransform), typeof(Image));
+        if (capT == null) capGO.transform.SetParent(transform, false);
+
+        RectTransform ccrt = capGO.GetComponent<RectTransform>();
+        ccrt.anchorMin = new Vector2(0.5f, 1f);
+        ccrt.anchorMax = new Vector2(0.5f, 1f);
+        ccrt.pivot = new Vector2(0.5f, 1f);
+        ccrt.anchoredPosition = new Vector2(0f, -20f);
+        ccrt.sizeDelta = new Vector2(230f, 50f);
+
+        Image ccImg = capGO.GetComponent<Image>();
+        ccImg.sprite = UIController.GetGothicBanishButtonSprite();
+        ccImg.type = Image.Type.Sliced;
+        ccImg.color = new Color(0.12f, 0.10f, 0.15f, 0.95f);
+
+        Transform txtT = capGO.transform.Find("CoinText");
+        GameObject txtGO = txtT != null ? txtT.gameObject : new GameObject("CoinText", typeof(RectTransform), typeof(TextMeshProUGUI));
+        if (txtT == null) txtGO.transform.SetParent(capGO.transform, false);
+
+        RectTransform ctrt = txtGO.GetComponent<RectTransform>();
+        ctrt.anchorMin = Vector2.zero;
+        ctrt.anchorMax = Vector2.one;
+        ctrt.offsetMin = Vector2.zero;
+        ctrt.offsetMax = Vector2.zero;
+
+        coinCountText = txtGO.GetComponent<TextMeshProUGUI>();
+        if (retroPixelFont != null) coinCountText.font = retroPixelFont;
+        coinCountText.fontSize = 28f;
+        coinCountText.alignment = TextAlignmentOptions.Center;
+        UpdateCoinCapsule();
+
+        // Nút OPTIONS ở góc trên bên phải
+        Transform optT = transform.Find("OptionsButton");
+        GameObject optGO = optT != null ? optT.gameObject : new GameObject("OptionsButton", typeof(RectTransform), typeof(Image), typeof(Button));
+        if (optT == null) optGO.transform.SetParent(transform, false);
+
+        RectTransform oprt = optGO.GetComponent<RectTransform>();
+        oprt.anchorMin = new Vector2(0.5f, 1f);
+        oprt.anchorMax = new Vector2(0.5f, 1f);
+        oprt.pivot = new Vector2(0.5f, 1f);
+        oprt.anchoredPosition = new Vector2(210f, -20f);
+        oprt.sizeDelta = new Vector2(130f, 50f);
+
+        Image opImg = optGO.GetComponent<Image>();
+        opImg.sprite = UIController.GetGothicBanishButtonSprite();
+        opImg.type = Image.Type.Sliced;
+
+        Transform optTxtT = optGO.transform.Find("Text");
+        GameObject optTxtGO = optTxtT != null ? optTxtT.gameObject : new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+        if (optTxtT == null) optTxtGO.transform.SetParent(optGO.transform, false);
+        RectTransform ort = optTxtGO.GetComponent<RectTransform>();
+        ort.anchorMin = Vector2.zero;
+        ort.anchorMax = Vector2.one;
+        TextMeshProUGUI optTmp = optTxtGO.GetComponent<TextMeshProUGUI>();
+        if (retroPixelFont != null) optTmp.font = retroPixelFont;
+        optTmp.text = "OPTIONS";
+        optTmp.fontSize = 22f;
+        optTmp.alignment = TextAlignmentOptions.Center;
+        optTmp.color = new Color(1f, 0.92f, 0.85f);
     }
 
-    public void ContinueGame()
+    public void UpdateCoinCapsule()
     {
-        RunSaveData saved = RunSave.Load();
-        if (saved == null) return;
-
-        PlayerPrefs.SetInt("SelectedCharacterIndex", saved.characterIndex);
-        PlayerPrefs.Save();
-        RunSave.continueRequested = true;
-        SceneManager.LoadScene(string.IsNullOrEmpty(firstLevelName) ? "Main" : firstLevelName);
+        if (coinCountText == null) return;
+        int coins = PlayerPrefs.GetInt("SavedCoins", PlayerPrefs.GetInt("Coins", 0));
+        if (CoinController.instance != null) coins = CoinController.instance.currentCoins;
+        coinCountText.text = $"💰 <color=#FFD700><b>{coins}</b></color>";
     }
 
-    public void QuitGame()
-    {
-        Application.Quit();
-        Debug.Log("I'm Quitting");
-    }
-
-    // Nút bấm phong cách Gothic Retro cổ kính với viền vàng son và đá quý chạm khắc
+    // ====================================================================================
+    // HỆ THỐNG NÚT BẤM CHUẨN VAMPIRE SURVIVORS (ẢNH 3):
+    // START ở giữa -> Hàng 3 nút [COLLECTION | POWER UP | ACHIEVEMENTS] -> QUIT GAME
+    // ====================================================================================
     void SetupMenuButtons()
     {
         Transform start = transform.Find("Start Game");
@@ -227,54 +284,113 @@ public class MainMenu : MonoBehaviour
         RunSaveData saved = RunSave.Load();
         bool canContinue = saved != null;
 
+        // 1. Nút CONTINUE RUN (nếu có save)
         Transform cont = transform.Find("Continue Button");
         if (canContinue && cont == null)
         {
             cont = Instantiate(start.gameObject, start.parent).transform;
             cont.name = "Continue Button";
-            cont.SetSiblingIndex(start.GetSiblingIndex() + 1);
+            cont.SetSiblingIndex(start.GetSiblingIndex());
             Button b = cont.GetComponent<Button>();
             b.onClick = new Button.ButtonClickedEvent();
             b.onClick.AddListener(ContinueGame);
         }
         if (cont != null) cont.gameObject.SetActive(canContinue);
 
-        // Tạo các nút 9-slice Hoàng Gia Gothic với viền vàng kim, góc đính đá quý Ruby/Emerald/Sapphire
-        Sprite goldButton = CreateRoyalGothicButton(
-            new Color(0.08f, 0.09f, 0.16f), // Đáy nhung Dạ Lam tối
-            new Color(0.18f, 0.20f, 0.32f), // Đỉnh nhung ánh tím xanh
-            new Color(0.86f, 0.68f, 0.22f), // Viền vàng hoàng kim
-            new Color(1.0f, 0.92f, 0.48f),  // Ánh kim rực sáng
-            new Color(0.90f, 0.18f, 0.22f)   // Ngọc Ruby góc
+        // Nút xanh lam hoàng gia
+        Sprite blueButton = CreateRoyalGothicButton(
+            new Color(0.08f, 0.12f, 0.28f),
+            new Color(0.16f, 0.24f, 0.48f),
+            new Color(0.88f, 0.72f, 0.25f),
+            new Color(1.0f, 0.95f, 0.65f),
+            new Color(0.35f, 0.75f, 1.0f)
         );
 
+        // Nút xanh lục bảo
         Sprite emeraldButton = CreateRoyalGothicButton(
-            new Color(0.04f, 0.18f, 0.09f), // Đáy nhung Lục Bảo sâu thẳm
-            new Color(0.10f, 0.36f, 0.18f), // Đỉnh nhung ngọc bích
-            new Color(0.88f, 0.74f, 0.25f), // Viền vàng hoàng gia
-            new Color(1.0f, 0.96f, 0.55f),  // Ánh kim chói rạng
-            new Color(0.20f, 0.98f, 0.45f)  // Ngọc Lục Bảo góc
+            new Color(0.04f, 0.18f, 0.09f),
+            new Color(0.10f, 0.36f, 0.18f),
+            new Color(0.88f, 0.74f, 0.25f),
+            new Color(1.0f, 0.96f, 0.55f),
+            new Color(0.20f, 0.98f, 0.45f)
         );
 
+        // Nút đỏ huyết tế
         Sprite crimsonButton = CreateRoyalGothicButton(
-            new Color(0.22f, 0.05f, 0.07f), // Đáy nhung Đỏ Huyết Tế
-            new Color(0.44f, 0.10f, 0.14f), // Đỉnh nhung đỏ rực
-            new Color(0.82f, 0.62f, 0.20f), // Viền vàng cổ
-            new Color(0.98f, 0.84f, 0.42f), // Ánh kim lấp lánh
-            new Color(0.95f, 0.22f, 0.22f)  // Ngọc Hồng Ngọc góc
+            new Color(0.22f, 0.05f, 0.07f),
+            new Color(0.44f, 0.10f, 0.14f),
+            new Color(0.82f, 0.62f, 0.20f),
+            new Color(0.98f, 0.84f, 0.42f),
+            new Color(0.95f, 0.22f, 0.22f)
         );
 
-        float[] y = canContinue ? new[] { -100f, -225f, -350f } : new[] { -10f, -145f, -270f };
-        if (canContinue) StyleButton(cont, emeraldButton, "✦  CONTINUE RUN  ✦\n<size=52%>" + RunSave.Describe(saved) + "</size>", y[0], new Color(0.95f, 1f, 0.92f));
-        StyleButton(start, goldButton, canContinue ? "✦  NEW GAME  ✦" : "✦  START GAME  ✦", y[1], new Color(1f, 0.94f, 0.58f));
-        StyleButton(quit, crimsonButton, "✦  QUIT GAME  ✦", y[2], new Color(1f, 0.88f, 0.88f));
+        // 2. Nút START GAME (Ảnh 3: Nút lớn ở giữa)
+        float startY = canContinue ? -45f : -35f;
+        if (canContinue && cont != null)
+        {
+            StyleButton(cont, emeraldButton, "✦  CONTINUE RUN  ✦\n<size=52%>" + RunSave.Describe(saved) + "</size>", 40f, new Color(0.95f, 1f, 0.92f), new Vector2(480f, 85f), 38f);
+        }
+
+        StyleButton(start, blueButton, "✦  S T A R T  ✦", startY, new Color(1f, 0.94f, 0.58f), new Vector2(400f, 85f), 46f);
+        Button sBtn = start.GetComponent<Button>();
+        sBtn.onClick.RemoveAllListeners();
+        sBtn.onClick.AddListener(OpenCharacterSelection);
+
+        // 3. Hàng 3 nút: [ COLLECTION | POWER UP | ACHIEVEMENTS ] (Ảnh 3)
+        float rowY = startY - 95f;
+
+        // Collection Button
+        Transform collT = transform.Find("Collection Button");
+        if (collT == null)
+        {
+            collT = Instantiate(start.gameObject, start.parent).transform;
+            collT.name = "Collection Button";
+        }
+        StyleButton(collT, blueButton, "COLLECTION", rowY, new Color(1f, 0.92f, 0.85f), new Vector2(210f, 65f), 24f, -220f);
+        Button collBtn = collT.GetComponent<Button>();
+        collBtn.onClick.RemoveAllListeners();
+        collBtn.onClick.AddListener(OpenCollection);
+
+        // Power Up Button
+        Transform pwrT = transform.Find("PowerUp Button");
+        if (pwrT == null)
+        {
+            pwrT = Instantiate(start.gameObject, start.parent).transform;
+            pwrT.name = "PowerUp Button";
+        }
+        StyleButton(pwrT, emeraldButton, "POWER UP", rowY, new Color(0.95f, 1f, 0.92f), new Vector2(210f, 65f), 24f, 0f);
+        Button pwrBtn = pwrT.GetComponent<Button>();
+        pwrBtn.onClick.RemoveAllListeners();
+        pwrBtn.onClick.AddListener(OpenCharacterSelection);
+
+        // Achievements Button
+        Transform achT = transform.Find("Achievements Button");
+        if (achT == null)
+        {
+            achT = Instantiate(start.gameObject, start.parent).transform;
+            achT.name = "Achievements Button";
+        }
+        StyleButton(achT, blueButton, "ACHIEVEMENTS", rowY, new Color(1f, 0.92f, 0.85f), new Vector2(210f, 65f), 24f, 220f);
+        Button achBtn = achT.GetComponent<Button>();
+        achBtn.onClick.RemoveAllListeners();
+        achBtn.onClick.AddListener(OpenAchievements);
+
+        // 4. Nút QUIT GAME
+        StyleButton(quit, crimsonButton, "QUIT GAME", rowY - 85f, new Color(1f, 0.88f, 0.88f), new Vector2(260f, 52f), 24f, 0f);
+        Button qBtn = quit.GetComponent<Button>();
+        qBtn.onClick.RemoveAllListeners();
+        qBtn.onClick.AddListener(QuitGame);
     }
 
-    private void StyleButton(Transform t, Sprite sprite, string label, float y, Color textColor)
+    private void StyleButton(Transform t, Sprite sprite, string label, float y, Color textColor, Vector2 size, float fontSize = 40f, float x = 0f)
     {
+        t.gameObject.SetActive(true);
         RectTransform rt = (RectTransform)t;
-        rt.sizeDelta = new Vector2(510f, 105f);
-        rt.anchoredPosition = new Vector2(0f, y);
+        rt.anchorMin = new Vector2(0.5f, 0.5f);
+        rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.sizeDelta = size;
+        rt.anchoredPosition = new Vector2(x, y);
 
         Image img = t.GetComponent<Image>();
         if (img != null && sprite != null)
@@ -297,20 +413,90 @@ public class MainMenu : MonoBehaviour
             }
 
             text.enableAutoSizing = false;
-            text.fontSize = 44f;
+            text.fontSize = fontSize;
             text.fontStyle = FontStyles.Bold;
-            text.characterSpacing = 3.5f;
+            text.characterSpacing = 3f;
             text.alignment = TextAlignmentOptions.Center;
             text.color = textColor;
             text.text = label;
         }
 
-        // Thêm hiệu ứng tương tác Hover mượt mà, phóng to nhẹ và âm thanh phản hồi
         GothicMenuButtonEffects effects = t.GetComponent<GothicMenuButtonEffects>();
         if (effects == null)
         {
             effects = t.gameObject.AddComponent<GothicMenuButtonEffects>();
         }
+    }
+
+    public void OpenCharacterSelection()
+    {
+        Transform panel = transform.Find("CharacterSelectionPanel");
+        if (panel != null)
+        {
+            panel.gameObject.SetActive(true);
+            SetMainMenuVisible(false);
+        }
+        else
+        {
+            StartGame();
+        }
+    }
+
+    public void OpenCollection()
+    {
+        SetMainMenuVisible(false);
+        CollectionManager.OpenPanel(transform, () => SetMainMenuVisible(true));
+    }
+
+    public void OpenAchievements()
+    {
+        SetMainMenuVisible(false);
+        AchievementsManager.OpenPanel(transform, () => SetMainMenuVisible(true));
+    }
+
+    public void SetMainMenuVisible(bool visible)
+    {
+        foreach (string n in new[] { "Start Game", "Quit Game", "Continue Button", "Collection Button", "PowerUp Button", "Achievements Button", "Title", "Title Shadow", "Title Subtitle", "TopCoinCapsule", "OptionsButton" })
+        {
+            Transform t = transform.Find(n);
+            if (t != null)
+            {
+                // Continue chỉ hiện nếu có save
+                if (n == "Continue Button" && visible)
+                {
+                    RunSaveData saved = RunSave.Load();
+                    t.gameObject.SetActive(saved != null);
+                }
+                else
+                {
+                    t.gameObject.SetActive(visible);
+                }
+            }
+        }
+
+        if (visible) UpdateCoinCapsule();
+    }
+
+    public void StartGame()
+    {
+        SceneManager.LoadScene(firstLevelName);
+    }
+
+    public void ContinueGame()
+    {
+        RunSaveData saved = RunSave.Load();
+        if (saved == null) return;
+
+        PlayerPrefs.SetInt("SelectedCharacterIndex", saved.characterIndex);
+        PlayerPrefs.Save();
+        RunSave.continueRequested = true;
+        SceneManager.LoadScene(string.IsNullOrEmpty(firstLevelName) ? "Main" : firstLevelName);
+    }
+
+    public void QuitGame()
+    {
+        Application.Quit();
+        Debug.Log("I'm Quitting");
     }
 
     /// <summary>
@@ -335,15 +521,12 @@ public class MainMenu : MonoBehaviour
 
             for (int x = 0; x < w; x++)
             {
-                // 1. Viền ngoài sắt đen Dark Iron
                 if (x == 0 || x == w - 1 || y == 0 || y == h - 1)
                 {
                     p[y * w + x] = darkIron;
                 }
-                // 2. Viền vàng kim vát 3D (Golden Bevel)
                 else if (x <= 3 || x >= w - 4 || y <= 3 || y >= h - 4)
                 {
-                    // Đính ngọc quý 4 góc
                     bool isCornerGem = (x >= 2 && x <= 4 && y >= 2 && y <= 4) ||
                                        (x >= w - 5 && x <= w - 3 && y >= 2 && y <= 4) ||
                                        (x >= 2 && x <= 4 && y >= h - 5 && y <= h - 3) ||
@@ -351,7 +534,6 @@ public class MainMenu : MonoBehaviour
 
                     if (isCornerGem)
                     {
-                        // Điểm sáng trắng trung tâm ngọc
                         if ((x == 3 && y == 3) || (x == w - 4 && y == 3) || (x == 3 && y == h - 4) || (x == w - 4 && y == h - 4))
                         {
                             p[y * w + x] = Color.white;
@@ -363,23 +545,21 @@ public class MainMenu : MonoBehaviour
                     }
                     else if (y >= h - 3 || x <= 2)
                     {
-                        p[y * w + x] = highlightGold; // Cạnh trên & trái đón ánh sáng
+                        p[y * w + x] = highlightGold;
                     }
                     else if (y <= 2 || x >= w - 3)
                     {
-                        p[y * w + x] = shadowBronze; // Cạnh dưới & phải đổ bóng
+                        p[y * w + x] = shadowBronze;
                     }
                     else
                     {
                         p[y * w + x] = borderGold;
                     }
                 }
-                // 3. Đường chỉ vàng thanh tao bên trong (Inner Filigree Hairline)
                 else if (x == 5 || x == w - 6 || y == 5 || y == h - 6)
                 {
                     p[y * w + x] = borderGold * 0.72f;
                 }
-                // 4. Lớp nền nhung sang trọng
                 else
                 {
                     p[y * w + x] = currentInner;
@@ -507,10 +687,10 @@ public class GothicMenuEmbers : MonoBehaviour
     {
         Color[] emberColors = new[]
         {
-            new Color(1.0f, 0.42f, 0.15f), // Cam lửa
-            new Color(1.0f, 0.22f, 0.28f), // Đỏ huyết tế
-            new Color(1.0f, 0.88f, 0.35f), // Vàng hoàng kim
-            new Color(0.95f, 0.12f, 0.18f)  // Đỏ rực
+            new Color(1.0f, 0.42f, 0.15f),
+            new Color(1.0f, 0.22f, 0.28f),
+            new Color(1.0f, 0.88f, 0.35f),
+            new Color(0.95f, 0.12f, 0.18f)
         };
 
         for (int i = 0; i < EMBER_COUNT; i++)
@@ -559,7 +739,6 @@ public class GothicMenuEmbers : MonoBehaviour
             pos.y += ep.speedY * dt;
             pos.x += Mathf.Sin(Time.time * ep.driftSpeedX + ep.driftOffset) * (dt * 18f);
 
-            // Tái sinh tàn lửa khi bay vượt màn hình
             if (pos.y > 580f)
             {
                 pos.y = -580f;
@@ -568,7 +747,6 @@ public class GothicMenuEmbers : MonoBehaviour
 
             ep.rt.anchoredPosition = pos;
 
-            // Chớp nháy lấp lánh tự nhiên
             if (ep.img != null)
             {
                 float shimmer = Mathf.Sin(Time.time * 4f + ep.driftOffset) * 0.2f;
