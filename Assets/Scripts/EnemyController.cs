@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -113,10 +113,11 @@ public class EnemyController : MonoBehaviour
 
         float configuredSpeed = Mathf.Abs(moveSpeed);
         // TÄƒng tá»‘c Ä‘á»™ cÆ¡ báº£n Ä‘á»ƒ quÃ¡i khÃ´ng bá»‹ rá» rÃ , Ä‘Æ¡ cá»©ng; chuáº©n Vampire Survivors dá»“n dáº­p
-        baseMoveSpeed = Mathf.Max(configuredSpeed * 2.4f, 2.85f);
+        baseMoveSpeed = Mathf.Max(configuredSpeed * 2.4f, 2.85f) * MapSelectionManager.GetEnemySpeedMultiplier();
         moveSpeed = baseMoveSpeed;
 
-        baseHealth = health;
+        baseHealth = health * MapSelectionManager.GetEnemyHealthMultiplier();
+        health = baseHealth;
         baseDamage = damage;
         baseExpToGive = expToGive;
         baseCoinValue = coinValue;

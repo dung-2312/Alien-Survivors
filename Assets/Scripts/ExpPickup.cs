@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -145,6 +145,9 @@ public class ExpPickup : MonoBehaviour
     {
         if (collision.CompareTag("Player"))
         {
+            Color sparkleColor = (spriteRenderer != null) ? spriteRenderer.color : new Color(0.35f, 0.85f, 1f);
+            VFXImpactManager.PlayPickupSparkles(transform.position, sparkleColor, 6);
+
             if (ExperienceLevelController.instance != null)
             {
                 ExperienceLevelController.instance.GetExp(expValue);

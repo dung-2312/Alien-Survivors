@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -162,12 +162,20 @@ public class EnemyDamager : MonoBehaviour
         bool isCrit = Random.value < critChance;
         float finalDmg = isCrit ? damageAmount * critMultiplier : damageAmount;
 
+        // Apply Meta Might damage bonus
+        finalDmg *= MetaProgression.GetDamageMultiplier();
+
         if (PlayerController.instance != null && PlayerController.instance.HasBloodFrenzy)
         {
             finalDmg *= 1.30f;
         }
 
         enemy.TakeDamage(finalDmg, shouldKnockBack, isCrit);
+
+        if (isCrit)
+        {
+            VFXImpactManager.PlayShockwaveRing(hitPos, new Color(1f, 0.85f, 0.2f), 2.2f, 0.25f);
+        }
 
         // Hiệu ứng tia lửa va chạm (Hit Sparks)
         SpawnHitSparks(hitPos, isCrit);

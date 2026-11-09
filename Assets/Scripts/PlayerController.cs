@@ -83,6 +83,8 @@ public class PlayerController : MonoBehaviour
 
     public float DashCooldownProgress => Mathf.Clamp01(dashCooldownTimer / dashCooldown);
     public bool IsDashReady => dashCooldownTimer <= 0f && !isDashing;
+    public void ResetDashCooldown() { dashCooldownTimer = 0f; }
+    public void AddMoveSpeedBonus(float amount) { moveSpeed += amount; }
 
     public void Awake()
     {
@@ -251,8 +253,8 @@ public class PlayerController : MonoBehaviour
         {
             AssignSignatureWeapon();
         }
-        moveSpeed = PlayerStatController.instance.moveSpeed[0].value; // Set the move speed to the player stat controller move speed. GK
-        pickupRange = PlayerStatController.instance.pickupRange[0].value; // Set the pickup range to the player stat controller pickup range. GK
+        moveSpeed = PlayerStatController.instance.moveSpeed[0].value * (1f + MetaProgression.GetBonusSpeed()); // Set the move speed to the player stat controller move speed. GK
+        pickupRange = PlayerStatController.instance.pickupRange[0].value + MetaProgression.GetBonusPickupRange(); // Set the pickup range to the player stat controller pickup range. GK
         maxWeapons = Mathf.RoundToInt(PlayerStatController.instance.maxWeapons[0].value); // Set the max weapons to the player stat controller max weapons. GK
     }
 
@@ -754,6 +756,7 @@ public class PlayerController : MonoBehaviour
         {
             SFXManager.instance.PlaySFXPitched(1);
         }
+        ProceduralSFX.PlayDash();
 
         SpawnGhostAfterimage();
     }
@@ -891,17 +894,19 @@ public class PlayerController : MonoBehaviour
     }
     public float GetCriticalStrikeChance()
     {
+        float baseChance = 0.12f;
         string cName = (currentCharacterData != null) ? currentCharacterData.characterName.ToLowerInvariant() : "";
-        if (cName.Contains("bandit")) return 0.35f;
-        if (cName.Contains("antonio"))
+        if (cName.Contains("bandit")) baseChance = 0.35f;
+        else if (cName.Contains("antonio"))
         {
             float hpPct = (PlayerHealthController.instance != null && PlayerHealthController.instance.maxHealth > 0)
                 ? (PlayerHealthController.instance.currentHealth / PlayerHealthController.instance.maxHealth)
                 : 1f;
-            return 0.15f + (1f - hpPct) * 0.25f;
+            baseChance = 0.15f + (1f - hpPct) * 0.25f;
         }
-        if (cName.Contains("archer") || cName.Contains("forest")) return 0.22f;
-        return 0.12f;
+        else if (cName.Contains("archer") || cName.Contains("forest")) baseChance = 0.22f;
+
+        return baseChance + MetaProgression.GetBonusCritChance();
     }
 
     public float GetCriticalStrikeMultiplier()
@@ -965,6 +970,13 @@ public class PlayerController : MonoBehaviour
     private void UpdateCharacterPassives()
     {
         if (divineAegisCooldownTimer > 0f) divineAegisCooldownTimer -= Time.deltaTime;
+
+        // Permanent Recovery Meta Stat passive regen
+        float metaRegen = MetaProgression.GetBonusRegenPerSecond();
+        if (metaRegen > 0f && PlayerHealthController.instance != null && PlayerHealthController.instance.currentHealth < PlayerHealthController.instance.maxHealth)
+        {
+            PlayerHealthController.instance.Heal(metaRegen * Time.deltaTime);
+        }
 
         string cName = (currentCharacterData != null) ? currentCharacterData.characterName.ToLowerInvariant() : "";
 

@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using TMPro;
 using UnityEngine;
 
@@ -218,7 +218,7 @@ public class GameOverScreen : MonoBehaviour
             UnityEngine.UI.Image rImg = restart.GetComponent<UnityEngine.UI.Image>();
             if (rImg != null) { rImg.sprite = emeraldButton; rImg.type = UnityEngine.UI.Image.Type.Sliced; rImg.color = Color.white; }
             TMP_Text rText = restart.GetComponentInChildren<TMP_Text>(true);
-            if (rText != null) { rText.text = "✦  TRY AGAIN  ✦"; rText.color = new Color(0.94f, 1f, 0.95f); rText.fontSize = 32f; }
+            if (rText != null) { rText.text = survived ? "✦  PLAY AGAIN  ✦" : "✦  TRY AGAIN  ✦"; rText.color = new Color(0.94f, 1f, 0.95f); rText.fontSize = 32f; }
             if (restart.GetComponent<GothicMenuButtonEffects>() == null) restart.gameObject.AddComponent<GothicMenuButtonEffects>();
         }
 

@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -64,6 +64,7 @@ public class CoinPickup : MonoBehaviour
     {
         if (collision.CompareTag("Player")) // If the player collides with the experience. GK
         {
+            VFXImpactManager.PlayPickupSparkles(transform.position, new Color(1f, 0.88f, 0.25f), 7);
             CoinController.instance.AddCoins(coinAmount);
             CoinController.instance.ReturnToPool(this); // Return the pickup to the pool instead of destroying it. GK
         }

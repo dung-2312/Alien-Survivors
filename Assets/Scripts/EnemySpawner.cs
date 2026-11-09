@@ -354,6 +354,7 @@ public class EnemySpawner : MonoBehaviour
             if (currentEncounterIndex == bossEncounters.Count - 1)
             {
                 bossDefeated = true;
+                if (LevelManager.instance != null) LevelManager.instance.TriggerVictory();
             }
             else
             {
@@ -377,6 +378,102 @@ public class EnemySpawner : MonoBehaviour
         activeBoss = null;
     }
 
+    /// <summary>
+    /// Triệu hồi trực tiếp Boss theo loại (cho Demo/Báo cáo đồ án)
+    /// </summary>
+    public BossController SpawnBossDirectly(BossType type)
+    {
+        if (target == null && PlayerHealthController.instance != null)
+        {
+            target = PlayerHealthController.instance.transform;
+        }
+
+        if (activeBoss != null)
+        {
+            Destroy(activeBoss.gameObject);
+            activeBoss = null;
+        }
+
+        int waveIdx = 0;
+        string stageTitle = "STAGE I: THE TOXIC MEADOW";
+        string bossTitle = "THE BROOD QUEEN";
+
+        switch (type)
+        {
+            case BossType.BroodQueen:
+                waveIdx = 0;
+                stageTitle = "STAGE I: THE TOXIC MEADOW";
+                bossTitle = "THE BROOD QUEEN";
+                break;
+            case BossType.FrostfangFenrir:
+                waveIdx = 1;
+                stageTitle = "STAGE II: THE FROSTBITE TUNDRA";
+                bossTitle = "FROSTFANG FENRIR";
+                break;
+            case BossType.SkeletonWarlord:
+                waveIdx = 3;
+                stageTitle = "STAGE III: THE CURSED CATACOMBS";
+                bossTitle = "WARLORD MALAKOR";
+                break;
+            case BossType.DeathPhantom:
+                waveIdx = 4;
+                stageTitle = "STAGE IV: THE VOID NETHERWORLD";
+                bossTitle = "THANATOS THE DEATH PHANTOM";
+                break;
+            case BossType.GoldenDragon:
+                waveIdx = 5;
+                stageTitle = "STAGE V: THE INFERNAL CATACLYSM";
+                bossTitle = "PYROCLAST THE GOLDEN DRAGON";
+                break;
+        }
+
+        GameObject prefab = (waves != null && waves.Count > waveIdx) ? waves[waveIdx].enemyToSpawn : enemyToSpawn;
+        if (prefab == null) prefab = enemyToSpawn;
+        if (prefab == null) return null;
+
+        Vector3 spawnPoint = SelectSpawnPoint();
+        GameObject holder = new GameObject("Boss Holder");
+        holder.SetActive(false);
+        GameObject bossObj = Instantiate(prefab, spawnPoint, Quaternion.identity, holder.transform);
+        activeBoss = BossController.ConfigureBoss(bossObj, type, prefab);
+        bossObj.transform.SetParent(null, true);
+        Destroy(holder);
+
+        if (CameraController.instance != null) CameraController.instance.Shake(0.5f, 0.45f);
+        if (UIController.instance != null)
+        {
+            UIController.instance.ShowWarning($"⚠ {stageTitle} ⚠\n{bossTitle} HAS AWAKENED!", 3.5f);
+        }
+
+        return activeBoss;
+    }
+
+    /// <summary>
+    /// Tiêu diệt toàn bộ quái vật thường đang có trên màn hình (Demo Nuke)
+    /// </summary>
+    public void KillAllEnemies(bool dropLoot = true)
+    {
+        EnemyController[] allEnemies = FindObjectsByType<EnemyController>();
+        foreach (var enemy in allEnemies)
+        {
+            if (enemy != null && enemy.gameObject.activeInHierarchy && enemy != activeBoss)
+            {
+                if (dropLoot)
+                {
+                    enemy.TakeDamage(99999f, true);
+                }
+                else
+                {
+                    enemy.gameObject.SetActive(false);
+                }
+            }
+        }
+    }
+
+    public void TriggerHordeRush()
+    {
+        StartCoroutine(TriggerHordeRushCo());
+    }
     public GameObject SpawnMinion(GameObject prefab, Vector3 position) // Lets a boss summon regular, pooled enemies.
     {
         GameObject minion = SpawnEnemy(prefab, position);
@@ -463,7 +560,7 @@ public class EnemySpawner : MonoBehaviour
     /// <summary>
     /// Sự kiện Đột Biến: Vòng vây tử thần khép kín (Circle Ambush).
     /// </summary>
-    private void TriggerCircleAmbush()
+    public void TriggerCircleAmbush()
     {
         if (target == null && PlayerHealthController.instance != null)
         {

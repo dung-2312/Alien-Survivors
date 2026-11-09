@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -13,6 +13,8 @@ public class LevelManager : MonoBehaviour
 
     public float timer;
     public float waitToShowEndScreen = 1f;
+    public bool IsGameActive => gameActive;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -28,12 +30,76 @@ public class LevelManager : MonoBehaviour
             UIController.instance.UpdateTimer(timer); // Update the timer. GK
         }
     }
+
     public void EndLevel() // End the level. GK
     {
+        if (!gameActive) return;
         gameActive = false; // The game is not active. GK
         RunSave.Clear(); // A finished run can't be continued.
         StartCoroutine(EndLevelCo()); // Start the coroutine. GK
+    }
 
+    /// <summary>
+    /// Kích hoạt chuỗi sự kiện Chiến Thắng (Victory Flow) khi hoàn thành mục tiêu hoặc diệt Boss cuối.
+    /// </summary>
+    public void TriggerVictory(float waitTime = 3.5f)
+    {
+        if (!gameActive) return;
+        StartCoroutine(VictoryCo(waitTime));
+    }
+
+    private IEnumerator VictoryCo(float waitTime)
+    {
+        // 1. Rung lắc màn hình & thông báo chiến thắng rực rỡ
+        if (CameraController.instance != null) CameraController.instance.Shake(0.5f, 0.7f);
+        if (UIController.instance != null)
+        {
+            UIController.instance.ShowWarning("✦ VICTORY! FINAL BOSS PYROCLAST VANQUISHED! ✦", 4.0f);
+            ProceduralSFX.PlayVictory();
+            StartCoroutine(UIController.instance.BossSlowMoEffect(0.35f, 2.5f));
+        }
+
+        // 2. Tự động thu hút toàn bộ ngọc kinh nghiệm và trao thưởng vàng thắng trận
+        if (ExpManager.instance != null) ExpManager.instance.AttractAllGems();
+        if (CoinController.instance != null)
+        {
+            CoinController.instance.AddCoins(500); // Thưởng 500 vàng chiến thắng
+        }
+
+        // 3. Đợi một chút để người chơi tận hưởng khoảnh khắc chiến thắng và nhặt đồ
+        yield return new WaitForSecondsRealtime(waitTime);
+
+        gameActive = false;
+        RunSave.Clear();
+
+        float bestTime = PlayerPrefs.GetFloat("BestSurvivalTime", 0f);
+        bool isNewBest = timer > bestTime;
+        if (isNewBest)
+        {
+            bestTime = timer;
+            PlayerPrefs.SetFloat("BestSurvivalTime", bestTime);
+        }
+        PlayerPrefs.Save();
+
+        GameOverScreen gameOverScreen = UIController.instance != null && UIController.instance.levelEndScreen != null
+            ? UIController.instance.levelEndScreen.GetComponent<GameOverScreen>()
+            : null;
+
+        if (gameOverScreen != null)
+        {
+            gameOverScreen.Show(timer, bestTime, isNewBest,
+                ExperienceLevelController.instance != null ? ExperienceLevelController.instance.currentLevel : 1,
+                CoinController.instance != null ? CoinController.instance.coinsCollectedThisRun : 0);
+        }
+        else if (UIController.instance != null && UIController.instance.levelEndScreen != null)
+        {
+            UIController.instance.levelEndScreen.SetActive(true);
+        }
+    }
+
+    public void ResumeAfterEndless()
+    {
+        gameActive = true;
     }
     
     IEnumerator EndLevelCo() // Coroutine to end the level. GK
