@@ -21,8 +21,11 @@ public class CoinController : MonoBehaviour
 
     public void AddCoins(int coinsToAdd) // Add coins. D
     {
-        currentCoins += coinsToAdd; // Add the coins. D
-        coinsCollectedThisRun += coinsToAdd;
+        float greedMult = MetaProgression.GetGreedMultiplier();
+        float mapGoldMult = MapSelectionManager.GetGoldMultiplier();
+        int finalCoins = Mathf.Max(1, Mathf.RoundToInt(coinsToAdd * greedMult * mapGoldMult));
+        currentCoins += finalCoins; // Add the coins with Greed & Stage bonus. D
+        coinsCollectedThisRun += finalCoins;
         PlayerPrefs.SetInt("SavedCoins", currentCoins);
         UIController.instance.UpdateCoins(); // Update the coins. D
         SFXManager.instance.PlaySFXPitched(2); // Play the sound effect. GK

@@ -54,7 +54,7 @@ public class InfiniteBackground : MonoBehaviour
 
         if (spriteRenderer != null)
         {
-            spriteRenderer.color = tintColor;
+            spriteRenderer.color = Application.isPlaying ? MapSelectionManager.CurrentStageInfo.backgroundTint : tintColor;
             spriteRenderer.size = backgroundSize;
             if (!string.IsNullOrEmpty(sortingLayerName))
             {
@@ -108,7 +108,7 @@ public class InfiniteBackground : MonoBehaviour
 
             spriteRenderer.drawMode = SpriteDrawMode.Tiled;
             spriteRenderer.size = backgroundSize;
-            spriteRenderer.color = tintColor;
+            spriteRenderer.color = Application.isPlaying ? MapSelectionManager.CurrentStageInfo.backgroundTint : tintColor;
             
             // Set sorting layer and order to guarantee rendering behind all entities
             if (!string.IsNullOrEmpty(sortingLayerName))
@@ -215,7 +215,7 @@ public class InfiniteBackground : MonoBehaviour
                 vsr.sprite = GetOrCreateVignetteSprite();
                 vsr.sortingLayerName = "Default";
                 vsr.sortingOrder = 999; // Phủ viền màn hình nhưng nằm dưới Canvas UI
-                vsr.color = new Color(0.02f, 0.03f, 0.06f, 0.42f);
+                vsr.color = MapSelectionManager.CurrentStageInfo.vignetteColor;
             }
         }
 
@@ -318,9 +318,19 @@ public class GothicMotesController : MonoBehaviour
             msr.sortingLayerName = "Default";
             msr.sortingOrder = -85; // Nổi trên nền cỏ và vũng nước
 
-            Color moteColor = (i % 3 == 0) ? new Color(0.35f, 0.85f, 1f, 0.45f) :
-                              ((i % 3 == 1) ? new Color(0.75f, 0.45f, 1f, 0.40f) :
-                              new Color(1f, 0.85f, 0.4f, 0.35f));
+            Color moteColor;
+            if (MapSelectionManager.CurrentStage == MapStage.InfernoPurgatory)
+            {
+                moteColor = (i % 3 == 0) ? MapSelectionManager.CurrentStageInfo.emberColor :
+                            ((i % 3 == 1) ? new Color(1f, 0.55f, 0.15f, 0.8f) :
+                            new Color(1f, 0.25f, 0.1f, 0.9f));
+            }
+            else
+            {
+                moteColor = (i % 3 == 0) ? new Color(0.35f, 0.85f, 1f, 0.45f) :
+                            ((i % 3 == 1) ? new Color(0.75f, 0.45f, 1f, 0.40f) :
+                            new Color(1f, 0.85f, 0.4f, 0.35f));
+            }
             msr.color = moteColor;
 
             MoteData md = new MoteData

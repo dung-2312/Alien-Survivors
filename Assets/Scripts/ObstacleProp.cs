@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -213,6 +213,9 @@ public class ObstacleProp : MonoBehaviour
     {
         if (isDestroyed) return;
         isDestroyed = true;
+
+        VFXImpactManager.PlayDebrisExplosion(transform.position, originalColor, 10);
+        VFXImpactManager.PlayShockwaveRing(transform.position, new Color(1f, 0.9f, 0.5f), 1.6f, 0.2f);
 
         // 1. Rơi tiền vàng
         int coinsToDrop = Random.Range(minCoins, maxCoins + 1);

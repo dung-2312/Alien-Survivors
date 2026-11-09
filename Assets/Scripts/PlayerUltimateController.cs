@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -91,6 +91,7 @@ public class PlayerUltimateController : MonoBehaviour
         {
             SFXManager.instance.PlaySFXPitched(0);
         }
+        ProceduralSFX.PlayUltimate();
 
         // Xác định chiêu cuối theo tên tướng
         string charName = "Antonio";

@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -109,6 +109,7 @@ public class LevelUpManager : MonoBehaviour
         {
             SFXManager.instance.PlaySFXPitched(2);
         }
+        ProceduralSFX.PlayLevelUp();
 
         // 5. Chạy hiệu ứng trượt xuất hiện (Staggered Slide-up + Fade-in)
         if (introCoroutine != null) StopCoroutine(introCoroutine);

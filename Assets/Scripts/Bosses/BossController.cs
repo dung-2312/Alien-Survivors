@@ -325,6 +325,7 @@ public class BossController : MonoBehaviour
         BuildBossAura();
         BuildBossCrown();
         BuildHealthBar();
+        ProceduralSFX.PlayBossRoar();
         StartCoroutine(Brain());
     }
 
@@ -918,6 +919,7 @@ public class BossController : MonoBehaviour
         {
             ShowBanner("✦ VICTORY! FINAL BOSS PYROCLAST SLAIN! ✦", new Color(1f, 0.9f, 0.3f));
             if (SFXManager.instance != null) SFXManager.instance.PlaySFXPitched(8);
+            if (LevelManager.instance != null) LevelManager.instance.TriggerVictory();
         }
         else
         {

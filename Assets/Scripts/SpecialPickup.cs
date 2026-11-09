@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -93,6 +93,9 @@ public class SpecialPickup : MonoBehaviour
 
     public void Collect()
     {
+        VFXImpactManager.PlayPickupSparkles(transform.position, new Color(1f, 0.9f, 0.3f), 10);
+        VFXImpactManager.PlayShockwaveRing(transform.position, new Color(0.85f, 0.95f, 1f), 2.5f, 0.3f);
+
         switch (pickupType)
         {
             case SpecialPickupType.HealthMeat:
