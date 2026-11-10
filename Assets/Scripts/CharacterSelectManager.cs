@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -229,7 +229,12 @@ public class CharacterSelectManager : MonoBehaviour
     private void ApplyFont(TMP_Text txt)
     {
         if (txt == null) return;
-        if (fontAsset != null)
+        TMP_FontAsset smooth = MainMenu.GetSmoothFont();
+        if (smooth != null)
+        {
+            txt.font = smooth;
+        }
+        else if (fontAsset != null)
         {
             txt.font = fontAsset;
             if (fontAsset.material != null)
@@ -415,7 +420,8 @@ public class CharacterSelectManager : MonoBehaviour
                 dTr.anchoredPosition = new Vector2(205f, -14f);
                 dTr.sizeDelta = new Vector2(-385f, 130f);
 
-                descriptionText.fontSize = 24f;
+                descriptionText.fontSize = 20f;
+                descriptionText.lineSpacing = -10f;
                 descriptionText.color = Color.white;
                 descriptionText.textWrappingMode = TextWrappingModes.Normal;
                 descriptionText.alignment = TextAlignmentOptions.MidlineLeft;
@@ -900,6 +906,20 @@ public class CharacterSelectManager : MonoBehaviour
         }
     }
 
+    private string GetCharacterUltimateDescription(int index)
+    {
+        switch (index)
+        {
+            case 0: return "AXE TEMPEST - Summons 20 rotating battleaxes in dual concentric rings spinning at 1200 deg/s, expanding into a lethal cyclone.";
+            case 1: return "EXCALIBUR STORM - Summons 18 holy blades, launching them in 3 spiral piercing volleys with holy shockwaves.";
+            case 2: return "SHADOW DANCE - Blinks phantom clones across 20 foes executing double crescent slashes with guaranteed CRIT.";
+            case 3: return "METEOR CALAMITY - Rains down 16 molten meteors, leaving scorched craters that burn enemies over time.";
+            case 4: return "DIVINE SANCTUARY - Beams down holy light, granting invincibility, healing HP, smiting foes, and pulling all gems.";
+            case 5: return "SPIRIT BARRAGE - 6 waves of 10 radiant spirit arrows that detonate into homing stardust shards seeking foes.";
+            default: return "Summons holy blades to pierce and crush surrounding enemies.";
+        }
+    }
+
     public void SelectCharacter(int index)
     {
         if (characters == null || index < 0 || index >= characters.Length) return;
@@ -932,21 +952,21 @@ public class CharacterSelectManager : MonoBehaviour
         // Cập nhật Mô tả / Hướng dẫn mở khóa
         if (descriptionText != null)
         {
+            string ultDesc = GetCharacterUltimateDescription(currentSelectedIndex);
             if (isUnlocked)
             {
-                descriptionText.text = !string.IsNullOrEmpty(data.passiveDescription)
-                    ? data.passiveDescription
-                    : "Select a character to view stats and unlock or Generic stats & lore details...";
+                string passive = !string.IsNullOrEmpty(data.passiveDescription) ? data.passiveDescription : "";
+                descriptionText.text = $"{passive}\n<color=#FFD700><b>Ultimate [E / Right-Click]:</b></color> <color=#AEEEEE>{ultDesc}</color>";
             }
             else
             {
                 if (currentCoins >= cost)
                 {
-                    descriptionText.text = $"Unlock Cost: <color=#FFD700>{cost:N0} Coins</color>\n<color=#66FF66>You have {currentCoins:N0} Coins. Click Unlock to play with this character!</color>";
+                    descriptionText.text = $"Unlock Cost: <color=#FFD700>{cost:N0} Coins</color> | <color=#AEEEEE>Ult: {ultDesc}</color>\n<color=#66FF66>You have {currentCoins:N0} Coins. Click Unlock to play with this character!</color>";
                 }
                 else
                 {
-                    descriptionText.text = $"Unlock Cost: <color=#FFD700>{cost:N0} Coins</color>\n<color=#FF7777>You need {cost - currentCoins:N0} more Coins to unlock.</color>";
+                    descriptionText.text = $"Unlock Cost: <color=#FFD700>{cost:N0} Coins</color> | <color=#AEEEEE>Ult: {ultDesc}</color>\n<color=#FF7777>You need {cost - currentCoins:N0} more Coins to unlock.</color>";
                 }
             }
         }

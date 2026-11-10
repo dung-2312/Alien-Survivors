@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -11,6 +11,7 @@ public class MainMenu : MonoBehaviour
     public string firstLevelName; // The first level name. GK
 
     private TMP_FontAsset retroPixelFont;
+    private static TMP_FontAsset smoothFont;
     private RectTransform titleRect;
     private RectTransform titleShadowRect;
     private Vector2 titleBasePos;
@@ -42,6 +43,347 @@ public class MainMenu : MonoBehaviour
         }
     }
 
+    private static Dictionary<MetaStat, Sprite> cachedStatSprites = new Dictionary<MetaStat, Sprite>();
+    private static Dictionary<int, Sprite> cachedCodexSprites = new Dictionary<int, Sprite>();
+
+    public static TMP_FontAsset GetSmoothFont()
+    {
+        if (smoothFont == null)
+        {
+            smoothFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+            if (smoothFont == null) smoothFont = Resources.Load<TMP_FontAsset>("LiberationSans SDF");
+            if (smoothFont == null) smoothFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/Roboto-Bold SDF");
+            if (smoothFont == null)
+            {
+                var fonts = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
+                foreach (var f in fonts)
+                {
+                    if (f != null && (f.name.Contains("LiberationSans") || f.name.Contains("Roboto")))
+                    {
+                        smoothFont = f;
+                        break;
+                    }
+                }
+            }
+        }
+        return smoothFont;
+    }
+
+    public static Sprite GetGothicStatIconSprite(MetaStat stat)
+    {
+        if (cachedStatSprites.TryGetValue(stat, out Sprite s) && s != null) return s;
+
+        int size = 48;
+        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Point;
+        Color[] p = new Color[size * size];
+        for (int i = 0; i < p.Length; i++) p[i] = Color.clear;
+
+        int mid = size / 2;
+
+        switch (stat)
+        {
+            case MetaStat.Might: // Two crossed silver swords with golden hilts
+                for (int i = 8; i < 40; i++)
+                {
+                    p[i * size + i] = Color.white;
+                    if (i > 8 && i < 39) { p[i * size + i - 1] = new Color(0.7f, 0.8f, 0.95f); p[(i - 1) * size + i] = new Color(0.7f, 0.8f, 0.95f); }
+                    int j = 47 - i;
+                    p[i * size + j] = Color.white;
+                    if (i > 8 && i < 39) { p[i * size + j - 1] = new Color(0.7f, 0.8f, 0.95f); p[(i - 1) * size + j] = new Color(0.7f, 0.8f, 0.95f); }
+                }
+                for (int dx = -2; dx <= 2; dx++)
+                {
+                    for (int dy = -2; dy <= 2; dy++)
+                    {
+                        if (Mathf.Abs(dx) + Mathf.Abs(dy) <= 2)
+                        {
+                            p[(12 + dy) * size + (12 + dx)] = new Color(1f, 0.85f, 0.2f);
+                            p[(12 + dy) * size + (35 + dx)] = new Color(1f, 0.85f, 0.2f);
+                        }
+                    }
+                }
+                p[mid * size + mid] = new Color(1f, 0.3f, 0.3f);
+                break;
+
+            case MetaStat.Health: // Radiant Red Heart
+                for (int y = 8; y < 40; y++)
+                {
+                    for (int x = 8; x < 40; x++)
+                    {
+                        float nx = (x - 24f) / 14f;
+                        float ny = (y - 22f) / 14f;
+                        float a = nx * nx + ny * ny - 1f;
+                        if (a * a * a - nx * nx * ny * ny * ny <= 0.05f)
+                        {
+                            if (nx < -0.3f && ny > 0.3f && nx > -0.7f && ny < 0.7f)
+                                p[y * size + x] = Color.white;
+                            else
+                                p[y * size + x] = new Color(0.92f, 0.15f, 0.25f);
+                        }
+                        else if (a * a * a - nx * nx * ny * ny * ny <= 0.35f)
+                        {
+                            p[y * size + x] = new Color(0.4f, 0.05f, 0.1f);
+                        }
+                    }
+                }
+                break;
+
+            case MetaStat.Recovery: // Emerald Potion Bottle
+                for (int y = 8; y < 38; y++)
+                {
+                    for (int x = 12; x < 36; x++)
+                    {
+                        float distCenter = Mathf.Abs(x - 24f);
+                        if (y <= 24)
+                        {
+                            float r = Mathf.Sqrt(distCenter * distCenter + (y - 20) * (y - 20));
+                            if (r <= 12f)
+                            {
+                                if (r <= 10f)
+                                {
+                                    if (distCenter < 3f && y == 20) p[y * size + x] = Color.white;
+                                    else p[y * size + x] = new Color(0.2f, 0.95f, 0.45f);
+                                }
+                                else p[y * size + x] = new Color(0.7f, 1f, 0.85f);
+                            }
+                        }
+                        else if (y <= 33 && distCenter <= 4f)
+                        {
+                            p[y * size + x] = (distCenter <= 3f) ? new Color(0.6f, 0.95f, 0.8f) : new Color(0.2f, 0.4f, 0.3f);
+                        }
+                        else if (y > 33 && distCenter <= 5f)
+                        {
+                            p[y * size + x] = new Color(0.85f, 0.6f, 0.25f);
+                        }
+                    }
+                }
+                break;
+
+            case MetaStat.Swiftness: // Winged Golden Boot
+                for (int y = 10; y < 38; y++)
+                {
+                    for (int x = 10; x < 38; x++)
+                    {
+                        if (y >= 12 && y <= 16 && x >= 12 && x <= 36) p[y * size + x] = new Color(0.95f, 0.80f, 0.2f);
+                        else if (y >= 16 && y <= 28 && x >= 22 && x <= 32) p[y * size + x] = new Color(1f, 0.90f, 0.3f);
+                        else if (y >= 20 && y <= 35 && x >= 10 && x <= 26 && (x + y) % 3 == 0) p[y * size + x] = new Color(0.3f, 0.9f, 1f);
+                    }
+                }
+                break;
+
+            case MetaStat.Magnet: // Red & Silver Horseshoe Magnet
+                for (int y = 10; y < 38; y++)
+                {
+                    for (int x = 12; x < 36; x++)
+                    {
+                        float dx = Mathf.Abs(x - 24f);
+                        if (dx >= 6f && dx <= 11f && y >= 14 && y <= 36)
+                        {
+                            if (y >= 28) p[y * size + x] = new Color(0.88f, 0.92f, 0.98f);
+                            else p[y * size + x] = new Color(0.92f, 0.18f, 0.22f);
+                        }
+                        else if (y <= 14 && y >= 9 && dx <= 11f)
+                        {
+                            p[y * size + x] = new Color(0.92f, 0.18f, 0.22f);
+                        }
+                    }
+                }
+                p[33 * size + 24] = new Color(1f, 0.9f, 0.2f);
+                p[31 * size + 24] = new Color(1f, 0.9f, 0.2f);
+                break;
+
+            case MetaStat.Greed: // Golden Coin with Star
+                for (int y = 10; y < 38; y++)
+                {
+                    for (int x = 10; x < 38; x++)
+                    {
+                        float dist = Vector2.Distance(new Vector2(x, y), new Vector2(24, 24));
+                        if (dist <= 13f)
+                        {
+                            if (dist > 11f) p[y * size + x] = new Color(0.72f, 0.52f, 0.12f);
+                            else if (dist <= 4f) p[y * size + x] = new Color(1f, 0.98f, 0.75f);
+                            else p[y * size + x] = new Color(1f, 0.85f, 0.25f);
+                        }
+                    }
+                }
+                break;
+
+            case MetaStat.Crit: // Radiant Lightning Bolt
+                int[] lx = { 28, 26, 24, 22, 28, 26, 24, 22, 20, 18, 16 };
+                int[] ly = { 36, 33, 30, 27, 27, 24, 21, 18, 15, 12,  9 };
+                for (int k = 0; k < lx.Length; k++)
+                {
+                    for (int ox = -2; ox <= 2; ox++)
+                    {
+                        for (int oy = -2; oy <= 2; oy++)
+                        {
+                            int px = lx[k] + ox;
+                            int py = ly[k] + oy;
+                            if (px >= 0 && px < size && py >= 0 && py < size)
+                            {
+                                if (Mathf.Abs(ox) <= 1 && Mathf.Abs(oy) <= 1)
+                                    p[py * size + px] = new Color(1f, 0.98f, 0.6f);
+                                else
+                                    p[py * size + px] = new Color(1f, 0.65f, 0.1f);
+                            }
+                        }
+                    }
+                }
+                break;
+
+            case MetaStat.Revival: // Golden Wings / Holy Halo
+                for (int y = 10; y < 38; y++)
+                {
+                    for (int x = 10; x < 38; x++)
+                    {
+                        float dx = Mathf.Abs(x - 24f);
+                        if ((dx <= 2f && y >= 14 && y <= 34) || (Mathf.Abs(y - 26f) <= 2f && dx <= 12f))
+                        {
+                            p[y * size + x] = new Color(1f, 0.92f, 0.45f);
+                        }
+                        float haloDist = Vector2.Distance(new Vector2(x, y), new Vector2(24, 32));
+                        if (haloDist >= 4f && haloDist <= 6f)
+                        {
+                            p[y * size + x] = new Color(1f, 1f, 0.7f);
+                        }
+                    }
+                }
+                break;
+        }
+
+        tex.SetPixels(p);
+        tex.Apply();
+        Sprite spr = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        cachedStatSprites[stat] = spr;
+        return spr;
+    }
+
+    public static Sprite GetCodexIconSprite(int index)
+    {
+        if (cachedCodexSprites.TryGetValue(index, out Sprite s) && s != null) return s;
+
+        int size = 48;
+        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Point;
+        Color[] p = new Color[size * size];
+        for (int i = 0; i < p.Length; i++) p[i] = Color.clear;
+
+        switch (index)
+        {
+            case 0: // Thousand Blades: Greatsword
+                for (int y = 10; y < 38; y++)
+                {
+                    for (int x = 20; x <= 28; x++)
+                    {
+                        if (y >= 14 && y <= 34 && Mathf.Abs(x - 24) <= 2) p[y * size + x] = Color.white;
+                        else if (y == 14 && Mathf.Abs(x - 24) <= 5) p[y * size + x] = new Color(1f, 0.85f, 0.2f);
+                        else if (y <= 13 && x == 24) p[y * size + x] = new Color(0.7f, 0.4f, 0.2f);
+                    }
+                }
+                break;
+
+            case 1: // Solar Flare Ring: Sunburst
+                for (int y = 10; y < 38; y++)
+                {
+                    for (int x = 10; x < 38; x++)
+                    {
+                        float dist = Vector2.Distance(new Vector2(x, y), new Vector2(24, 24));
+                        if (dist <= 8f) p[y * size + x] = new Color(1f, 0.95f, 0.4f);
+                        else if (dist <= 13f && ((x + y) % 4 == 0 || (x - y) % 4 == 0)) p[y * size + x] = new Color(1f, 0.55f, 0.1f);
+                    }
+                }
+                break;
+
+            case 2: // Spiral Cyclone Axes: Battleaxe
+                for (int y = 10; y < 38; y++)
+                {
+                    for (int x = 12; x < 36; x++)
+                    {
+                        if (x == 24 && y >= 10 && y <= 36) p[y * size + x] = new Color(0.7f, 0.5f, 0.3f);
+                        else if (y >= 22 && y <= 34 && (Mathf.Abs(x - 24) >= 4 && Mathf.Abs(x - 24) <= 10)) p[y * size + x] = new Color(0.3f, 0.85f, 1f);
+                    }
+                }
+                break;
+
+            case 3: // Celestial Arrow: Bow & Arrow
+                for (int y = 10; y < 38; y++)
+                {
+                    for (int x = 10; x < 38; x++)
+                    {
+                        float dist = Vector2.Distance(new Vector2(x, y), new Vector2(16, 24));
+                        if (dist >= 11f && dist <= 13f && x >= 16) p[y * size + x] = new Color(1f, 0.85f, 0.25f);
+                        if (y == 24 && x >= 16 && x <= 34) p[y * size + x] = new Color(0.4f, 1f, 0.8f);
+                    }
+                }
+                break;
+
+            case 4: // Sanctuary of Light: Divine Star
+                for (int y = 10; y < 38; y++)
+                {
+                    for (int x = 10; x < 38; x++)
+                    {
+                        float distCenter = Vector2.Distance(new Vector2(x, y), new Vector2(24, 24));
+                        if (distCenter <= 4f) p[y * size + x] = Color.white;
+                        else if (Mathf.Abs(x - 24) <= 2 && y >= 12 && y <= 36) p[y * size + x] = new Color(1f, 0.95f, 0.4f);
+                        else if (Mathf.Abs(y - 24) <= 2 && x >= 12 && x <= 36) p[y * size + x] = new Color(1f, 0.95f, 0.4f);
+                    }
+                }
+                break;
+
+            case 5: // Survival Time: Stopwatch
+                for (int y = 10; y < 38; y++)
+                {
+                    for (int x = 10; x < 38; x++)
+                    {
+                        float dist = Vector2.Distance(new Vector2(x, y), new Vector2(24, 23));
+                        if (dist <= 11f && dist >= 9f) p[y * size + x] = new Color(1f, 0.85f, 0.25f);
+                        else if (y == 23 && x >= 24 && x <= 29) p[y * size + x] = Color.white;
+                        else if (x == 24 && y >= 23 && y <= 29) p[y * size + x] = Color.white;
+                        else if (y >= 33 && y <= 36 && Mathf.Abs(x - 24) <= 2) p[y * size + x] = new Color(0.8f, 0.8f, 0.8f);
+                    }
+                }
+                break;
+
+            case 6: // Treasury Gold: Gold Chest
+                for (int y = 12; y <= 32; y++)
+                {
+                    for (int x = 12; x <= 36; x++)
+                    {
+                        if (y == 12 || y == 32 || x == 12 || x == 36) p[y * size + x] = new Color(1f, 0.85f, 0.2f);
+                        else if (y == 22) p[y * size + x] = new Color(0.8f, 0.6f, 0.15f);
+                        else p[y * size + x] = new Color(0.55f, 0.32f, 0.12f);
+                    }
+                }
+                break;
+
+            case 7: // Might
+                return GetGothicStatIconSprite(MetaStat.Might);
+
+            case 8: // Revival
+                return GetGothicStatIconSprite(MetaStat.Revival);
+
+            default: // Dragon / Boss
+                for (int y = 10; y < 38; y++)
+                {
+                    for (int x = 10; x < 38; x++)
+                    {
+                        float dx = Mathf.Abs(x - 24);
+                        if (y >= 14 && y <= 28 && dx <= (y - 12)) p[y * size + x] = new Color(0.9f, 0.2f, 0.2f);
+                        if (y == 22 && (x == 20 || x == 28)) p[y * size + x] = new Color(1f, 0.95f, 0.2f);
+                        if (y >= 26 && dx >= 6 && dx <= 12) p[y * size + x] = new Color(0.3f, 0.1f, 0.1f);
+                    }
+                }
+                break;
+        }
+
+        tex.SetPixels(p);
+        tex.Apply();
+        Sprite spr = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        cachedCodexSprites[index] = spr;
+        return spr;
+    }
+
     private void CacheRetroFont()
     {
         Transform title = transform.Find("Title");
@@ -53,6 +395,7 @@ public class MainMenu : MonoBehaviour
                 retroPixelFont = tmp.font;
             }
         }
+        GetSmoothFont();
     }
 
     /// <summary>
@@ -156,11 +499,8 @@ public class MainMenu : MonoBehaviour
         TextMeshProUGUI stmp = subtitle.GetComponent<TextMeshProUGUI>();
         if (retroPixelFont != null) stmp.font = retroPixelFont;
         stmp.enableAutoSizing = false;
-        stmp.fontSize = 28f;
-        stmp.alignment = TextAlignmentOptions.Center;
-        stmp.characterSpacing = 4.5f;
         stmp.color = new Color(0.95f, 0.86f, 0.58f, 0.95f);
-        stmp.text = "✦  A GOTHIC SURVIVAL NIGHTMARE  ✦";
+        stmp.text = "A GOTHIC SURVIVAL NIGHTMARE";
         stmp.raycastTarget = false;
     }
 
@@ -267,9 +607,9 @@ public class MainMenu : MonoBehaviour
         );
 
         float[] y = canContinue ? new[] { -90f, -210f, -330f } : new[] { 0f, -120f, -240f };
-        if (canContinue) StyleButton(cont, emeraldButton, "✦  CONTINUE RUN  ✦\n<size=52%>" + RunSave.Describe(saved) + "</size>", y[0], new Color(0.95f, 1f, 0.92f));
-        StyleButton(start, goldButton, canContinue ? "✦  NEW GAME  ✦" : "✦  START GAME  ✦", y[1], new Color(1f, 0.94f, 0.58f));
-        StyleButton(quit, crimsonButton, "✦  QUIT GAME  ✦", y[2], new Color(1f, 0.88f, 0.88f));
+        if (canContinue) StyleButton(cont, emeraldButton, "CONTINUE RUN\n<size=52%>" + RunSave.Describe(saved) + "</size>", y[0], new Color(0.95f, 1f, 0.92f));
+        StyleButton(start, goldButton, canContinue ? "NEW GAME" : "START GAME", y[1], new Color(1f, 0.94f, 0.58f));
+        StyleButton(quit, crimsonButton, "QUIT GAME", y[2], new Color(1f, 0.88f, 0.88f));
 
         SetupAuxiliaryButtons(start, canContinue);
     }
@@ -353,11 +693,11 @@ public class MainMenu : MonoBehaviour
         codex.gameObject.SetActive(true);
 
         float auxY = canContinue ? -415f : -345f;
-        StyleAuxButton(howToPlay, sapphireButton, "✦  HOW TO PLAY  ✦", -135f, auxY, new Color(0.88f, 0.95f, 1f));
-        StyleAuxButton(settings, obsidianButton, "✦  SETTINGS  ✦", 135f, auxY, new Color(1f, 0.95f, 0.85f));
+        StyleAuxButton(howToPlay, sapphireButton, "HOW TO PLAY", -135f, auxY, new Color(0.88f, 0.95f, 1f));
+        StyleAuxButton(settings, obsidianButton, "SETTINGS", 135f, auxY, new Color(1f, 0.95f, 0.85f));
 
-        StyleAuxButton(powerUp, amberButton, "✦  POWER UP  ✦", -135f, auxY - 68f, new Color(1f, 0.92f, 0.50f));
-        StyleAuxButton(codex, amethystButton, "✦  CODEX & FEATS  ✦", 135f, auxY - 68f, new Color(0.95f, 0.85f, 1f));
+        StyleAuxButton(powerUp, amberButton, "POWER UP", -135f, auxY - 68f, new Color(1f, 0.92f, 0.50f));
+        StyleAuxButton(codex, amethystButton, "CODEX & FEATS", 135f, auxY - 68f, new Color(0.95f, 0.85f, 1f));
 
         Transform stageBtn = transform.Find("Stage Select Button");
         if (stageBtn == null)
@@ -553,48 +893,159 @@ public class MainMenu : MonoBehaviour
         ort.anchorMax = Vector2.one;
         ort.sizeDelta = Vector2.zero;
         Image oimg = overlay.GetComponent<Image>();
-        oimg.color = new Color(0f, 0f, 0f, 0.82f);
+        oimg.color = new Color(0f, 0f, 0f, 0.85f);
 
         GameObject win = new GameObject("HowToPlayWindow", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         win.transform.SetParent(overlay.transform, false);
         RectTransform wrt = win.GetComponent<RectTransform>();
         wrt.anchorMin = wrt.anchorMax = wrt.pivot = new Vector2(0.5f, 0.5f);
-        wrt.sizeDelta = new Vector2(860f, 640f);
+        wrt.sizeDelta = new Vector2(980f, 680f);
         wrt.anchoredPosition = Vector2.zero;
         Image wimg = win.GetComponent<Image>();
         wimg.sprite = UIController.GetGothicWindowSprite();
         wimg.type = Image.Type.Sliced;
 
-        CreateModalText(win.transform, "✦ HOW TO PLAY & COMBAT GUIDE ✦", new Vector2(0f, 260f), 32f, new Color(1f, 0.88f, 0.25f), FontStyles.Bold);
-        CreateModalText(win.transform, "✦ MASTER THE ART OF NIGHTMARE SURVIVAL ✦", new Vector2(0f, 226f), 18f, new Color(0.92f, 0.82f, 0.55f), FontStyles.Normal);
+        CreateModalText(win.transform, "HOW TO PLAY & COMBAT GUIDE", new Vector2(0f, 290f), 30f, new Color(1f, 0.88f, 0.25f), FontStyles.Bold);
+        CreateModalText(win.transform, "BÍ KÍP ĐIỀU KHIỂN & CƠ CHẾ SINH TỒN ĐÊM ÁC MỘNG", new Vector2(0f, 258f), 16f, new Color(0.92f, 0.82f, 0.55f), FontStyles.Normal, true);
+        CreateGothicDividerLine(win.transform, new Vector2(0f, 236f), 900f);
 
-        string body = "<b>🎮 DI CHUYỂN:</b> <color=#FFE040>[W, A, S, D]</color> hoặc <color=#FFE040>[Phím Mũi Tên]</color>\n" +
-                      "<b>💨 LƯỚT NÉ ĐÒN (DASH):</b> <color=#FFE040>[Phím Space]</color> (Tăng tốc tức thì & bất tử i-Frames né đòn)\n" +
-                      "<b>⚡ CHIÊU CUỐI (ULTIMATE):</b> <color=#FFE040>[Phím E]</color> hoặc <color=#FFE040>[Chuột Phải]</color> (Kích hoạt khi đầy 100% Nộ)\n" +
-                      "<b>⏸ TẠM DỪNG & LƯU TRẬN:</b> <color=#FFE040>[Phím Esc]</color> (Lưu ván đấu hiện tại để chơi tiếp sau)\n" +
-                      "<b>🏛 ĐÀN TẾ CỔ (SHRINES):</b> Bước vào đàn tế để nhận chúc phúc (Đóng băng, Mưa vàng, Cuồng nộ)\n" +
-                      "<b>🏺 CHƯỚNG NGẠI VẬT:</b> Đánh vỡ bia mộ, bình gốm để nhặt Vàng và Thịt nướng hồi máu\n" +
-                      "<b>🔥 TIẾN HÓA THẦN THOẠI (RECIPES):</b>\n" +
-                      "   • <color=#66FFAA>Sword + Damage Multiplier</color> ➔ <color=#FF5566>Thousand Blades (Kiếm Bão)</color>\n" +
-                      "   • <color=#66FFAA>Fireball + Pickup Range</color> ➔ <color=#FFD700>Solar Flare Ring (Vành Hào Quang)</color>\n" +
-                      "<b>🛠 BẢNG DEMO BÁO CÁO:</b> <color=#00FFAA>[Phím F1]</color> hoặc <color=#00FFAA>[Phím ~]</color> để gọi nhanh Boss, God Mode, Vàng...";
+        // Cột Trái: BỘ PHÍM ĐIỀU KHIỂN & SINH TỒN
+        CreateSectionHeader(win.transform, new Vector2(-232f, 212f), "BỘ PHÍM ĐIỀU KHIỂN & SINH TỒN");
 
-        GameObject textGO = new GameObject("GuideText", typeof(RectTransform), typeof(TextMeshProUGUI));
-        textGO.transform.SetParent(win.transform, false);
-        RectTransform trt = textGO.GetComponent<RectTransform>();
-        trt.anchorMin = trt.anchorMax = trt.pivot = new Vector2(0.5f, 0.5f);
-        trt.sizeDelta = new Vector2(780f, 380f);
-        trt.anchoredPosition = new Vector2(0f, 15f);
-        TextMeshProUGUI tmp = textGO.GetComponent<TextMeshProUGUI>();
-        tmp.text = body;
-        tmp.fontSize = 20f;
-        tmp.lineSpacing = 12f;
-        tmp.color = Color.white;
-        tmp.alignment = TextAlignmentOptions.TopLeft;
+        var controls = new (string key, string title, string desc)[]
+        {
+            ("[W, A, S, D] / [MŨI TÊN]", "DI CHUYỂN", "Di chuyển nhân vật né tránh đàn quái vật bao vây, nhặt ngọc kinh nghiệm và giữ cự ly sinh tồn."),
+            ("[PHÍM SPACE]", "LƯỚT NÉ ĐÒN (DASH)", "Lướt nhanh tức thì kèm thời gian Bất Tử (i-Frames), né đòn đánh chí tử và thoát khỏi vòng vây."),
+            ("[PHÍM E] / [CHUỘT PHẢI]", "CHIÊU CUỐI (ULTIMATE)", "Kích hoạt khi thanh Nộ Khí tích tụ đầy 100%. Quét sạch kẻ thù diện rộng và tạo khoảng trống an toàn!"),
+            ("[PHÍM ESC]", "TẠM DỪNG & LƯU GAME", "Tạm dừng trận đấu, kiểm tra thông số vũ khí và lưu lại tiến trình ván đấu hiện tại để chơi tiếp sau."),
+            ("[ĐÀN TẾ & VẬT CẢN]", "TẾ ĐÀN & KHO BÁU BÍ ẨN", "Vào Tế đàn nhận chúc phúc (Đóng băng, Mưa vàng, Cuồng nộ). Đánh vỡ bia mộ, bình gốm nhặt Vàng & Thịt hồi HP.")
+        };
 
-        CreateModalCloseButton(win.transform, new Vector2(0f, -255f), "✦  CLOSE  ✦");
+        float[] cardYs = new float[] { 152f, 68f, -16f, -100f, -184f };
+        for (int i = 0; i < controls.Length; i++)
+        {
+            CreateGuideCard(win.transform, new Vector2(-232f, cardYs[i]), controls[i].key, controls[i].title, controls[i].desc, new Color(0.35f, 0.85f, 1f));
+        }
+
+        // Cột Phải: TIẾN HÓA VŨ KHÍ & MẸO CHIẾN ĐẤU
+        CreateSectionHeader(win.transform, new Vector2(232f, 212f), "TIẾN HÓA VŨ KHÍ & MẸO CHIẾN ĐẤU");
+
+        var evolutions = new (string key, string title, string desc)[]
+        {
+            ("SWORD + MIGHT", "VẠN KIẾM QUY TÔNG", "Bắn bão kiếm xoay tròn 360 độ xé nát toàn bộ kẻ thù trong tầm mắt. Sát thương diện rộng cực lớn."),
+            ("FIREBALL + MAGNET", "NHẬT LUÂN HÀO QUANG", "Quả cầu lửa hợp nhất thành vành đai mặt trời thiêu rụi kẻ địch tiếp cận liên tục không ngừng nghỉ."),
+            ("AXES + SWIFTNESS", "CUỒNG PHONG PHI PHỦ", "Bão rìu cuồng nộ xoay liên hồi không ngừng, tạo tường chắn đẩy lùi và băm nhỏ đàn quái vật áp sát."),
+            ("ZONE + VITALITY", "THÁNH ĐỊA TRẤN HỒN", "Hào quang thần thánh mở rộng tối đa, liên tục hồi sinh lực cho chủ nhân và giáng sấm sét hủy diệt."),
+            ("[PHÍM F1] / [PHÍM ~]", "BẢNG BÁO CÁO & DEBUG", "Mở menu thử nghiệm tính năng nhanh: Triệu hồi Boss, Bất tử God Mode, Thêm Vàng và Nâng cấp vũ khí.")
+        };
+
+        for (int i = 0; i < evolutions.Length; i++)
+        {
+            CreateGuideCard(win.transform, new Vector2(232f, cardYs[i]), evolutions[i].key, evolutions[i].title, evolutions[i].desc, new Color(1f, 0.75f, 0.2f));
+        }
+
+        CreateModalCloseButton(win.transform, new Vector2(0f, -288f), "CLOSE (ĐÓNG)");
 
         currentModal = overlay;
+    }
+
+    private void CreateGuideCard(Transform parent, Vector2 pos, string keyBadge, string title, string desc, Color badgeColor)
+    {
+        GameObject card = new GameObject("Card_" + title, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        card.transform.SetParent(parent, false);
+        RectTransform crt = card.GetComponent<RectTransform>();
+        crt.anchorMin = crt.anchorMax = crt.pivot = new Vector2(0.5f, 0.5f);
+        crt.anchoredPosition = pos;
+        crt.sizeDelta = new Vector2(445f, 78f);
+
+        Image cimg = card.GetComponent<Image>();
+        cimg.sprite = LevelUpSellectionButton.GetGothicCardSprite(false);
+        cimg.type = Image.Type.Sliced;
+
+        TMP_FontAsset font = GetSmoothFont();
+
+        // Key Badge Pill (Góc trên trái)
+        GameObject badgeGO = new GameObject("Badge", typeof(RectTransform), typeof(TextMeshProUGUI));
+        badgeGO.transform.SetParent(card.transform, false);
+        RectTransform brt = badgeGO.GetComponent<RectTransform>();
+        brt.anchorMin = new Vector2(0f, 1f);
+        brt.anchorMax = new Vector2(0f, 1f);
+        brt.pivot = new Vector2(0f, 1f);
+        brt.anchoredPosition = new Vector2(14f, -8f);
+        brt.sizeDelta = new Vector2(210f, 22f);
+        TextMeshProUGUI btmp = badgeGO.GetComponent<TextMeshProUGUI>();
+        if (font != null) { btmp.font = font; if (font.material != null) btmp.fontSharedMaterial = font.material; }
+        btmp.fontSize = 13.5f;
+        btmp.fontStyle = FontStyles.Bold;
+        btmp.color = badgeColor;
+        btmp.alignment = TextAlignmentOptions.MidlineLeft;
+        btmp.text = keyBadge;
+
+        // Title (Góc trên phải)
+        GameObject titleGO = new GameObject("Title", typeof(RectTransform), typeof(TextMeshProUGUI));
+        titleGO.transform.SetParent(card.transform, false);
+        RectTransform trt = titleGO.GetComponent<RectTransform>();
+        trt.anchorMin = new Vector2(1f, 1f);
+        trt.anchorMax = new Vector2(1f, 1f);
+        trt.pivot = new Vector2(1f, 1f);
+        trt.anchoredPosition = new Vector2(-14f, -8f);
+        trt.sizeDelta = new Vector2(200f, 22f);
+        TextMeshProUGUI ttmp = titleGO.GetComponent<TextMeshProUGUI>();
+        if (font != null) { ttmp.font = font; if (font.material != null) ttmp.fontSharedMaterial = font.material; }
+        ttmp.fontSize = 14f;
+        ttmp.fontStyle = FontStyles.Bold;
+        ttmp.color = new Color(1f, 0.90f, 0.55f);
+        ttmp.alignment = TextAlignmentOptions.MidlineRight;
+        ttmp.text = title;
+
+        // Description Body (Hàng dưới độc lập hoàn toàn, không đè lên hàng trên)
+        GameObject descGO = new GameObject("Desc", typeof(RectTransform), typeof(TextMeshProUGUI));
+        descGO.transform.SetParent(card.transform, false);
+        RectTransform drt = descGO.GetComponent<RectTransform>();
+        drt.anchorMin = new Vector2(0f, 0f);
+        drt.anchorMax = new Vector2(1f, 0f);
+        drt.pivot = new Vector2(0f, 0f);
+        drt.anchoredPosition = new Vector2(14f, 8f);
+        drt.sizeDelta = new Vector2(-28f, 38f);
+        TextMeshProUGUI dtmp = descGO.GetComponent<TextMeshProUGUI>();
+        if (font != null) { dtmp.font = font; if (font.material != null) dtmp.fontSharedMaterial = font.material; }
+        dtmp.fontSize = 12.5f;
+        dtmp.lineSpacing = 1.5f;
+        dtmp.color = new Color(0.85f, 0.88f, 0.94f, 0.95f);
+        dtmp.alignment = TextAlignmentOptions.TopLeft;
+        dtmp.textWrappingMode = TextWrappingModes.Normal;
+        dtmp.text = desc;
+    }
+
+    private void CreateSectionHeader(Transform parent, Vector2 pos, string title)
+    {
+        GameObject go = new GameObject("Header_" + title, typeof(RectTransform), typeof(TextMeshProUGUI));
+        go.transform.SetParent(parent, false);
+        RectTransform rt = go.GetComponent<RectTransform>();
+        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = pos;
+        rt.sizeDelta = new Vector2(445f, 28f);
+        TextMeshProUGUI tmp = go.GetComponent<TextMeshProUGUI>();
+        TMP_FontAsset font = GetSmoothFont();
+        if (font != null) { tmp.font = font; if (font.material != null) tmp.fontSharedMaterial = font.material; }
+        tmp.text = title;
+        tmp.fontSize = 16.5f;
+        tmp.fontStyle = FontStyles.Bold;
+        tmp.color = new Color(1f, 0.88f, 0.35f);
+        tmp.alignment = TextAlignmentOptions.Center;
+    }
+
+    private void CreateGothicDividerLine(Transform parent, Vector2 pos, float width)
+    {
+        GameObject line = new GameObject("DividerLine", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        line.transform.SetParent(parent, false);
+        RectTransform rt = line.GetComponent<RectTransform>();
+        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = pos;
+        rt.sizeDelta = new Vector2(width, 2f);
+        Image img = line.GetComponent<Image>();
+        img.color = new Color(0.85f, 0.70f, 0.25f, 0.45f);
+        img.raycastTarget = false;
     }
 
     public void OpenSettingsModal()
@@ -621,8 +1072,8 @@ public class MainMenu : MonoBehaviour
         wimg.sprite = UIController.GetGothicWindowSprite();
         wimg.type = Image.Type.Sliced;
 
-        CreateModalText(win.transform, "✦ AUDIO & DISPLAY SETTINGS ✦", new Vector2(0f, 215f), 32f, new Color(1f, 0.88f, 0.25f), FontStyles.Bold);
-        CreateModalText(win.transform, "✦ CONFIGURATION PREFERENCES ✦", new Vector2(0f, 182f), 18f, new Color(0.92f, 0.82f, 0.55f), FontStyles.Normal);
+        CreateModalText(win.transform, "AUDIO & DISPLAY SETTINGS", new Vector2(0f, 215f), 30f, new Color(1f, 0.88f, 0.25f), FontStyles.Bold);
+        CreateModalText(win.transform, "TÙY CHỈNH ÂM THANH & CHẾ ĐỘ HIỂN THỊ", new Vector2(0f, 182f), 16f, new Color(0.92f, 0.82f, 0.55f), FontStyles.Normal, true);
 
         CreateVolumeRow(win.transform, "MASTER VOLUME", 100f, () => GameSettings.MasterVolume, v => GameSettings.MasterVolume = v);
         CreateVolumeRow(win.transform, "BGM MUSIC", 30f, () => GameSettings.BGMVolume, v => GameSettings.BGMVolume = v);
@@ -630,26 +1081,32 @@ public class MainMenu : MonoBehaviour
 
         CreateDisplayToggleRow(win.transform, -115f);
 
-        CreateModalCloseButton(win.transform, new Vector2(0f, -205f), "✦  SAVE & CLOSE  ✦");
+        CreateModalCloseButton(win.transform, new Vector2(0f, -205f), "SAVE & CLOSE");
 
         currentModal = overlay;
     }
 
-    private void CreateModalText(Transform parent, string text, Vector2 pos, float fontSize, Color color, FontStyles style)
+    private TextMeshProUGUI CreateModalText(Transform parent, string text, Vector2 pos, float fontSize, Color color, FontStyles style, bool useSmooth = false)
     {
         GameObject go = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
         go.transform.SetParent(parent, false);
         RectTransform rt = go.GetComponent<RectTransform>();
         rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
         rt.anchoredPosition = pos;
-        rt.sizeDelta = new Vector2(700f, 40f);
+        rt.sizeDelta = new Vector2(900f, 40f);
         TextMeshProUGUI tmp = go.GetComponent<TextMeshProUGUI>();
-        if (retroPixelFont != null) tmp.font = retroPixelFont;
+        TMP_FontAsset fontToUse = (useSmooth && smoothFont != null) ? smoothFont : (retroPixelFont ?? smoothFont);
+        if (fontToUse != null)
+        {
+            tmp.font = fontToUse;
+            if (fontToUse.material != null) tmp.fontSharedMaterial = fontToUse.material;
+        }
         tmp.text = text;
         tmp.fontSize = fontSize;
         tmp.fontStyle = style;
         tmp.color = color;
         tmp.alignment = TextAlignmentOptions.Center;
+        return tmp;
     }
 
     private void CreateVolumeRow(Transform parent, string title, float y, System.Func<float> getter, System.Action<float> setter)
@@ -670,9 +1127,11 @@ public class MainMenu : MonoBehaviour
         lrt.anchoredPosition = new Vector2(30f, 0f);
         lrt.sizeDelta = new Vector2(250f, 40f);
         TextMeshProUGUI ltmp = lbl.GetComponent<TextMeshProUGUI>();
-        if (retroPixelFont != null) ltmp.font = retroPixelFont;
+        TMP_FontAsset sFont = GetSmoothFont() ?? retroPixelFont;
+        if (sFont != null) { ltmp.font = sFont; if (sFont.material != null) ltmp.fontSharedMaterial = sFont.material; }
         ltmp.text = title;
-        ltmp.fontSize = 24f;
+        ltmp.fontSize = 20f;
+        ltmp.fontStyle = FontStyles.Bold;
         ltmp.color = new Color(0.95f, 0.88f, 0.65f);
         ltmp.alignment = TextAlignmentOptions.MidlineLeft;
 
@@ -683,8 +1142,8 @@ public class MainMenu : MonoBehaviour
         vrt.anchoredPosition = new Vector2(100f, 0f);
         vrt.sizeDelta = new Vector2(100f, 40f);
         TextMeshProUGUI vtmp = valGO.GetComponent<TextMeshProUGUI>();
-        if (retroPixelFont != null) vtmp.font = retroPixelFont;
-        vtmp.fontSize = 26f;
+        if (sFont != null) { vtmp.font = sFont; if (sFont.material != null) vtmp.fontSharedMaterial = sFont.material; }
+        vtmp.fontSize = 20f;
         vtmp.fontStyle = FontStyles.Bold;
         vtmp.color = Color.white;
         vtmp.alignment = TextAlignmentOptions.Center;
@@ -732,8 +1191,10 @@ public class MainMenu : MonoBehaviour
         trt.anchorMax = Vector2.one;
         trt.sizeDelta = Vector2.zero;
         TextMeshProUGUI tmp = txt.GetComponent<TextMeshProUGUI>();
+        TMP_FontAsset sFont = GetSmoothFont() ?? retroPixelFont;
+        if (sFont != null) { tmp.font = sFont; if (sFont.material != null) tmp.fontSharedMaterial = sFont.material; }
         tmp.text = label;
-        tmp.fontSize = 24f;
+        tmp.fontSize = 22f;
         tmp.fontStyle = FontStyles.Bold;
         tmp.color = Color.white;
         tmp.alignment = TextAlignmentOptions.Center;
@@ -767,15 +1228,16 @@ public class MainMenu : MonoBehaviour
         trt.anchorMax = Vector2.one;
         trt.sizeDelta = Vector2.zero;
         TextMeshProUGUI tmp = txt.GetComponent<TextMeshProUGUI>();
-        if (retroPixelFont != null) tmp.font = retroPixelFont;
-        tmp.fontSize = 24f;
+        TMP_FontAsset sFont = GetSmoothFont() ?? retroPixelFont;
+        if (sFont != null) { tmp.font = sFont; if (sFont.material != null) tmp.fontSharedMaterial = sFont.material; }
+        tmp.fontSize = 20f;
         tmp.fontStyle = FontStyles.Bold;
         tmp.color = new Color(0.95f, 0.95f, 1f);
         tmp.alignment = TextAlignmentOptions.Center;
 
         void UpdateLabel()
         {
-            tmp.text = Screen.fullScreen ? "🖥 DISPLAY MODE: FULLSCREEN" : "🪟 DISPLAY MODE: WINDOWED";
+            tmp.text = Screen.fullScreen ? "DISPLAY MODE: FULLSCREEN" : "DISPLAY MODE: WINDOWED";
         }
         UpdateLabel();
 
@@ -817,9 +1279,10 @@ public class MainMenu : MonoBehaviour
         trt.anchorMax = Vector2.one;
         trt.sizeDelta = Vector2.zero;
         TextMeshProUGUI tmp = txt.GetComponent<TextMeshProUGUI>();
-        if (retroPixelFont != null) tmp.font = retroPixelFont;
+        TMP_FontAsset font = GetSmoothFont();
+        if (font != null) { tmp.font = font; if (font.material != null) tmp.fontSharedMaterial = font.material; }
         tmp.text = label;
-        tmp.fontSize = 24f;
+        tmp.fontSize = 20f;
         tmp.fontStyle = FontStyles.Bold;
         tmp.color = new Color(1f, 0.92f, 0.92f);
         tmp.alignment = TextAlignmentOptions.Center;
@@ -850,9 +1313,10 @@ public class MainMenu : MonoBehaviour
         trt.anchorMax = Vector2.one;
         trt.sizeDelta = Vector2.zero;
         TextMeshProUGUI tmp = txt.GetComponent<TextMeshProUGUI>();
-        if (retroPixelFont != null) tmp.font = retroPixelFont;
+        TMP_FontAsset font = GetSmoothFont();
+        if (font != null) { tmp.font = font; if (font.material != null) tmp.fontSharedMaterial = font.material; }
         tmp.text = label;
-        tmp.fontSize = 22f;
+        tmp.fontSize = 19f;
         tmp.fontStyle = FontStyles.Bold;
         tmp.color = Color.white;
         tmp.alignment = TextAlignmentOptions.Center;
@@ -874,7 +1338,7 @@ public class MainMenu : MonoBehaviour
         rt.anchorMin = rt.anchorMax = new Vector2(1f, 1f);
         rt.pivot = new Vector2(1f, 1f);
         rt.anchoredPosition = new Vector2(-28f, -24f);
-        rt.sizeDelta = new Vector2(230f, 52f);
+        rt.sizeDelta = new Vector2(240f, 52f);
 
         Image img = pill.GetComponent<Image>();
         img.sprite = CreateRoyalGothicButton(
@@ -887,19 +1351,32 @@ public class MainMenu : MonoBehaviour
         Button b = pill.GetComponent<Button>();
         b.onClick.AddListener(OpenPowerUpModal);
 
+        GameObject icoGO = new GameObject("CoinIcon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        icoGO.transform.SetParent(pill.transform, false);
+        RectTransform icort = icoGO.GetComponent<RectTransform>();
+        icort.anchorMin = icort.anchorMax = icort.pivot = new Vector2(0f, 0.5f);
+        icort.anchoredPosition = new Vector2(16f, 0f);
+        icort.sizeDelta = new Vector2(30f, 30f);
+        Image icoImg = icoGO.GetComponent<Image>();
+        icoImg.sprite = GetGothicStatIconSprite(MetaStat.Greed);
+        icoImg.preserveAspect = true;
+        icoImg.raycastTarget = false;
+
         GameObject txt = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
         txt.transform.SetParent(pill.transform, false);
         RectTransform trt = txt.GetComponent<RectTransform>();
         trt.anchorMin = Vector2.zero;
         trt.anchorMax = Vector2.one;
-        trt.sizeDelta = Vector2.zero;
+        trt.offsetMin = new Vector2(50f, 0f);
+        trt.offsetMax = new Vector2(-12f, 0f);
         TextMeshProUGUI tmp = txt.GetComponent<TextMeshProUGUI>();
-        if (retroPixelFont != null) tmp.font = retroPixelFont;
-        tmp.text = $"🪙 {coins} GOLD";
-        tmp.fontSize = 24f;
+        TMP_FontAsset font = GetSmoothFont();
+        if (font != null) { tmp.font = font; if (font.material != null) tmp.fontSharedMaterial = font.material; }
+        tmp.text = $"{coins:N0} VÀNG";
+        tmp.fontSize = 20f;
         tmp.fontStyle = FontStyles.Bold;
         tmp.color = new Color(1f, 0.92f, 0.45f);
-        tmp.alignment = TextAlignmentOptions.Center;
+        tmp.alignment = TextAlignmentOptions.MidlineLeft;
 
         pill.AddComponent<GothicMenuButtonEffects>();
     }
@@ -922,39 +1399,69 @@ public class MainMenu : MonoBehaviour
         win.transform.SetParent(overlay.transform, false);
         RectTransform wrt = win.GetComponent<RectTransform>();
         wrt.anchorMin = wrt.anchorMax = wrt.pivot = new Vector2(0.5f, 0.5f);
-        wrt.sizeDelta = new Vector2(920f, 660f);
+        wrt.sizeDelta = new Vector2(980f, 700f);
         wrt.anchoredPosition = Vector2.zero;
         Image wimg = win.GetComponent<Image>();
         wimg.sprite = UIController.GetGothicWindowSprite();
         wimg.type = Image.Type.Sliced;
 
-        CreateModalText(win.transform, "✦ POWER-UP SANCTUARY ✦", new Vector2(0f, 280f), 32f, new Color(1f, 0.88f, 0.25f), FontStyles.Bold);
-        CreateModalText(win.transform, "✦ PERMANENT ENHANCEMENTS FOR ALL CHARACTERS ✦", new Vector2(0f, 248f), 17f, new Color(0.92f, 0.82f, 0.55f), FontStyles.Normal);
+        CreateModalText(win.transform, "POWER-UP SANCTUARY", new Vector2(0f, 298f), 30f, new Color(1f, 0.88f, 0.25f), FontStyles.Bold);
+        CreateModalText(win.transform, "THÁNH ĐIỆN NÂNG CẤP VĨNH VIỄN CHO TẤT CẢ TƯỚNG", new Vector2(0f, 266f), 16f, new Color(0.92f, 0.82f, 0.55f), FontStyles.Normal, true);
+
+        // Treasury Balance Container Pill
+        GameObject treasuryPill = new GameObject("TreasuryPillContainer", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        treasuryPill.transform.SetParent(win.transform, false);
+        RectTransform tprt = treasuryPill.GetComponent<RectTransform>();
+        tprt.anchorMin = tprt.anchorMax = tprt.pivot = new Vector2(0.5f, 0.5f);
+        tprt.anchoredPosition = new Vector2(0f, 226f);
+        tprt.sizeDelta = new Vector2(480f, 40f);
+        Image tpImg = treasuryPill.GetComponent<Image>();
+        tpImg.sprite = CreateRoyalGothicButton(
+            new Color(0.18f, 0.12f, 0.04f), new Color(0.36f, 0.24f, 0.08f),
+            new Color(1f, 0.82f, 0.25f), new Color(1f, 0.95f, 0.60f),
+            new Color(1f, 0.70f, 0.10f)
+        );
+        tpImg.type = Image.Type.Sliced;
+
+        GameObject tpIco = new GameObject("CoinIcon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        tpIco.transform.SetParent(treasuryPill.transform, false);
+        RectTransform tpIcoRt = tpIco.GetComponent<RectTransform>();
+        tpIcoRt.anchorMin = tpIcoRt.anchorMax = tpIcoRt.pivot = new Vector2(0f, 0.5f);
+        tpIcoRt.anchoredPosition = new Vector2(18f, 0f);
+        tpIcoRt.sizeDelta = new Vector2(24f, 24f);
+        Image tpIcoImg = tpIco.GetComponent<Image>();
+        tpIcoImg.sprite = GetGothicStatIconSprite(MetaStat.Greed);
+        tpIcoImg.preserveAspect = true;
+        tpIcoImg.raycastTarget = false;
 
         GameObject treasuryGO = new GameObject("TreasuryText", typeof(RectTransform), typeof(TextMeshProUGUI));
-        treasuryGO.transform.SetParent(win.transform, false);
+        treasuryGO.transform.SetParent(treasuryPill.transform, false);
         RectTransform trt = treasuryGO.GetComponent<RectTransform>();
-        trt.anchorMin = trt.anchorMax = trt.pivot = new Vector2(0.5f, 0.5f);
-        trt.anchoredPosition = new Vector2(0f, 215f);
-        trt.sizeDelta = new Vector2(700f, 32f);
+        trt.anchorMin = Vector2.zero;
+        trt.anchorMax = Vector2.one;
+        trt.offsetMin = new Vector2(46f, 0f);
+        trt.offsetMax = new Vector2(-16f, 0f);
         TextMeshProUGUI treasuryTmp = treasuryGO.GetComponent<TextMeshProUGUI>();
-        if (retroPixelFont != null) treasuryTmp.font = retroPixelFont;
-        treasuryTmp.fontSize = 22f;
+        TMP_FontAsset smooth = GetSmoothFont();
+        if (smooth != null) { treasuryTmp.font = smooth; if (smooth.material != null) treasuryTmp.fontSharedMaterial = smooth.material; }
+        treasuryTmp.fontSize = 16f;
         treasuryTmp.fontStyle = FontStyles.Bold;
         treasuryTmp.color = new Color(1f, 0.92f, 0.45f);
-        treasuryTmp.alignment = TextAlignmentOptions.Center;
+        treasuryTmp.alignment = TextAlignmentOptions.MidlineLeft;
+
+        CreateGothicDividerLine(win.transform, new Vector2(0f, 200f), 900f);
 
         GameObject gridContainer = new GameObject("StatGrid", typeof(RectTransform));
         gridContainer.transform.SetParent(win.transform, false);
         RectTransform grt = gridContainer.GetComponent<RectTransform>();
         grt.anchorMin = grt.anchorMax = grt.pivot = new Vector2(0.5f, 0.5f);
-        grt.sizeDelta = new Vector2(880f, 400f);
-        grt.anchoredPosition = new Vector2(0f, 15f);
+        grt.sizeDelta = new Vector2(930f, 365f);
+        grt.anchoredPosition = new Vector2(0f, 6f);
 
         void RefreshShopUI()
         {
             int currentCoins = PlayerPrefs.GetInt("SavedCoins", 0);
-            treasuryTmp.text = $"✦ TREASURY BALANCE: <color=#FFE259>{currentCoins}</color> GOLD ✦";
+            treasuryTmp.text = $"KHO BÁU HIỆN CÓ: <color=#FFE040><b>{currentCoins:N0}</b></color> VÀNG";
 
             for (int i = gridContainer.transform.childCount - 1; i >= 0; i--)
             {
@@ -962,8 +1469,8 @@ public class MainMenu : MonoBehaviour
             }
 
             MetaStat[] stats = (MetaStat[])System.Enum.GetValues(typeof(MetaStat));
-            float[] colX = new float[] { -220f, 220f };
-            float[] rowY = new float[] { 135f, 50f, -35f, -120f };
+            float[] colX = new float[] { -232f, 232f };
+            float[] rowY = new float[] { 126f, 42f, -42f, -126f };
 
             for (int i = 0; i < stats.Length; i++)
             {
@@ -987,13 +1494,13 @@ public class MainMenu : MonoBehaviour
             new Color(0.85f, 0.70f, 0.25f), new Color(1.0f, 0.95f, 0.55f),
             new Color(0.70f, 0.80f, 0.95f)
         );
-        CreateCustomModalButton(win.transform, new Vector2(-150f, -270f), new Vector2(240f, 52f), "✦  REFUND ALL  ✦", obsidianBtn, () => {
+        CreateCustomModalButton(win.transform, new Vector2(-160f, -288f), new Vector2(250f, 50f), "REFUND ALL (TẨY ĐIỂM)", obsidianBtn, () => {
             MetaProgression.RefundAll();
             ProceduralSFX.PlayLevelUp();
             RefreshShopUI();
         });
 
-        CreateModalCloseButton(win.transform, new Vector2(150f, -270f), "✦  CLOSE  ✦");
+        CreateModalCloseButton(win.transform, new Vector2(160f, -288f), "CLOSE (ĐÓNG)");
 
         currentModal = overlay;
     }
@@ -1010,51 +1517,110 @@ public class MainMenu : MonoBehaviour
         RectTransform crt = card.GetComponent<RectTransform>();
         crt.anchorMin = crt.anchorMax = crt.pivot = new Vector2(0.5f, 0.5f);
         crt.anchoredPosition = pos;
-        crt.sizeDelta = new Vector2(420f, 74f);
+        crt.sizeDelta = new Vector2(445f, 76f);
 
         Image cimg = card.GetComponent<Image>();
-        cimg.sprite = CreateRoyalGothicButton(
-            new Color(0.06f, 0.06f, 0.09f), new Color(0.12f, 0.13f, 0.18f),
-            new Color(0.65f, 0.52f, 0.20f), new Color(0.92f, 0.82f, 0.45f),
-            canAfford ? new Color(0.2f, 0.9f, 0.4f) : new Color(0.5f, 0.5f, 0.5f)
-        );
+        cimg.sprite = LevelUpSellectionButton.GetGothicCardSprite(canAfford);
         cimg.type = Image.Type.Sliced;
 
-        string pips = "";
-        for (int p = 0; p < info.maxLevel; p++)
-        {
-            pips += (p < lvl) ? "<color=#FFD700>■</color>" : "<color=#4A4A5A>□</color>";
-        }
+        TMP_FontAsset font = GetSmoothFont();
 
+        // 1. Icon Slot bên trái với ảnh pixel sắc nét
+        GameObject iconSlot = new GameObject("IconSlot", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        iconSlot.transform.SetParent(card.transform, false);
+        RectTransform irt = iconSlot.GetComponent<RectTransform>();
+        irt.anchorMin = irt.anchorMax = irt.pivot = new Vector2(0f, 0.5f);
+        irt.anchoredPosition = new Vector2(14f, 0f);
+        irt.sizeDelta = new Vector2(48f, 48f);
+        Image isImg = iconSlot.GetComponent<Image>();
+        isImg.sprite = LevelUpSellectionButton.GetGothicIconSlotSprite();
+        isImg.type = Image.Type.Sliced;
+
+        GameObject icoGO = new GameObject("StatIcon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        icoGO.transform.SetParent(iconSlot.transform, false);
+        RectTransform icoRt = icoGO.GetComponent<RectTransform>();
+        icoRt.anchorMin = Vector2.zero;
+        icoRt.anchorMax = Vector2.one;
+        icoRt.offsetMin = new Vector2(6f, 6f);
+        icoRt.offsetMax = new Vector2(-6f, -6f);
+        Image icoImg = icoGO.GetComponent<Image>();
+        icoImg.sprite = GetGothicStatIconSprite(stat);
+        icoImg.preserveAspect = true;
+
+        // 2. Khu vực thông tin ở giữa (Stat Name + Diamond Pips + Bonus text)
+        GameObject infoGO = new GameObject("InfoContainer", typeof(RectTransform));
+        infoGO.transform.SetParent(card.transform, false);
+        RectTransform infort = infoGO.GetComponent<RectTransform>();
+        infort.anchorMin = new Vector2(0f, 0f);
+        infort.anchorMax = new Vector2(1f, 1f);
+        infort.pivot = new Vector2(0f, 0.5f);
+        infort.offsetMin = new Vector2(70f, 6f);
+        infort.offsetMax = new Vector2(-114f, -6f);
+
+        // Hàng trên: Display Name (height 20px)
         GameObject titleGO = new GameObject("TitleText", typeof(RectTransform), typeof(TextMeshProUGUI));
-        titleGO.transform.SetParent(card.transform, false);
+        titleGO.transform.SetParent(infoGO.transform, false);
         RectTransform trt = titleGO.GetComponent<RectTransform>();
-        trt.anchorMin = new Vector2(0f, 0.5f);
-        trt.anchorMax = new Vector2(0f, 0.5f);
-        trt.pivot = new Vector2(0f, 0.5f);
-        trt.anchoredPosition = new Vector2(16f, 13f);
-        trt.sizeDelta = new Vector2(275f, 30f);
+        trt.anchorMin = new Vector2(0f, 1f);
+        trt.anchorMax = new Vector2(1f, 1f);
+        trt.pivot = new Vector2(0f, 1f);
+        trt.anchoredPosition = new Vector2(0f, 0f);
+        trt.sizeDelta = new Vector2(0f, 20f);
         TextMeshProUGUI ttmp = titleGO.GetComponent<TextMeshProUGUI>();
-        if (retroPixelFont != null) ttmp.font = retroPixelFont;
-        ttmp.fontSize = 19f;
+        if (font != null) { ttmp.font = font; if (font.material != null) ttmp.fontSharedMaterial = font.material; }
+        ttmp.fontSize = 14f;
         ttmp.fontStyle = FontStyles.Bold;
         ttmp.color = new Color(1f, 0.90f, 0.55f);
-        ttmp.text = $"{info.displayName}  {pips}";
+        ttmp.alignment = TextAlignmentOptions.MidlineLeft;
+        ttmp.text = info.displayName;
 
+        // Hàng giữa: Visual Diamond Pips (height 16px)
+        GameObject pipsGO = new GameObject("DiamondPips", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+        pipsGO.transform.SetParent(infoGO.transform, false);
+        RectTransform prt = pipsGO.GetComponent<RectTransform>();
+        prt.anchorMin = new Vector2(0f, 0.5f);
+        prt.anchorMax = new Vector2(1f, 0.5f);
+        prt.pivot = new Vector2(0f, 0.5f);
+        prt.anchoredPosition = new Vector2(0f, -2f);
+        prt.sizeDelta = new Vector2(0f, 16f);
+
+        HorizontalLayoutGroup hlg = pipsGO.GetComponent<HorizontalLayoutGroup>();
+        hlg.childAlignment = TextAnchor.MiddleLeft;
+        hlg.spacing = 4f;
+        hlg.childForceExpandWidth = false;
+        hlg.childForceExpandHeight = false;
+        hlg.childControlWidth = false;
+        hlg.childControlHeight = false;
+
+        for (int p = 0; p < info.maxLevel; p++)
+        {
+            GameObject pip = new GameObject($"Pip_{p}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            pip.transform.SetParent(pipsGO.transform, false);
+            RectTransform pipRt = pip.GetComponent<RectTransform>();
+            pipRt.sizeDelta = new Vector2(16f, 16f);
+            Image pImg = pip.GetComponent<Image>();
+            bool filled = p < lvl;
+            pImg.sprite = LevelUpSellectionButton.GetPipDiamondSprite(filled);
+            pImg.color = filled ? Color.white : new Color(0.6f, 0.6f, 0.75f, 0.7f);
+            pImg.raycastTarget = false;
+        }
+
+        // Hàng dưới: Description / Bonus (height 18px)
         GameObject descGO = new GameObject("DescText", typeof(RectTransform), typeof(TextMeshProUGUI));
-        descGO.transform.SetParent(card.transform, false);
+        descGO.transform.SetParent(infoGO.transform, false);
         RectTransform drt = descGO.GetComponent<RectTransform>();
-        drt.anchorMin = new Vector2(0f, 0.5f);
-        drt.anchorMax = new Vector2(0f, 0.5f);
-        drt.pivot = new Vector2(0f, 0.5f);
-        drt.anchoredPosition = new Vector2(16f, -14f);
-        drt.sizeDelta = new Vector2(275f, 24f);
+        drt.anchorMin = new Vector2(0f, 0f);
+        drt.anchorMax = new Vector2(1f, 0f);
+        drt.pivot = new Vector2(0f, 0f);
+        drt.anchoredPosition = new Vector2(0f, 0f);
+        drt.sizeDelta = new Vector2(0f, 18f);
         TextMeshProUGUI dtmp = descGO.GetComponent<TextMeshProUGUI>();
-        if (retroPixelFont != null) dtmp.font = retroPixelFont;
-        dtmp.fontSize = 15.5f;
-        dtmp.color = new Color(0.80f, 0.85f, 0.90f, 0.9f);
-        dtmp.text = isMax ? $"<color=#FFE066>Cực Đại (Max Level {lvl}/{info.maxLevel})</color>" : $"{info.bonusPerLevel}";
+        if (font != null) { dtmp.font = font; if (font.material != null) dtmp.fontSharedMaterial = font.material; }
+        dtmp.fontSize = 12f;
+        dtmp.alignment = TextAlignmentOptions.MidlineLeft;
+        dtmp.text = isMax ? $"<color=#55FF99>MAX LEVEL ({lvl}/{info.maxLevel})</color>" : $"<color=#99E5FF>{info.bonusPerLevel}</color>";
 
+        // 3. Nút mua bên phải (Buy Button)
         GameObject btnGO = new GameObject("BuyBtn", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
         btnGO.transform.SetParent(card.transform, false);
         RectTransform brt = btnGO.GetComponent<RectTransform>();
@@ -1062,7 +1628,7 @@ public class MainMenu : MonoBehaviour
         brt.anchorMax = new Vector2(1f, 0.5f);
         brt.pivot = new Vector2(1f, 0.5f);
         brt.anchoredPosition = new Vector2(-12f, 0f);
-        brt.sizeDelta = new Vector2(105f, 44f);
+        brt.sizeDelta = new Vector2(96f, 44f);
 
         Image bimg = btnGO.GetComponent<Image>();
         Sprite btnSprite = isMax ?
@@ -1095,11 +1661,11 @@ public class MainMenu : MonoBehaviour
         btrt.anchorMax = Vector2.one;
         btrt.sizeDelta = Vector2.zero;
         TextMeshProUGUI btmp = btnTxtGO.GetComponent<TextMeshProUGUI>();
-        if (retroPixelFont != null) btmp.font = retroPixelFont;
-        btmp.fontSize = 17f;
+        if (font != null) { btmp.font = font; if (font.material != null) btmp.fontSharedMaterial = font.material; }
+        btmp.fontSize = 15f;
         btmp.fontStyle = FontStyles.Bold;
         btmp.alignment = TextAlignmentOptions.Center;
-        btmp.color = isMax ? new Color(0.7f, 0.7f, 0.7f) : (canAfford ? new Color(1f, 0.95f, 0.6f) : new Color(0.8f, 0.45f, 0.45f));
+        btmp.color = isMax ? new Color(0.7f, 0.7f, 0.7f) : (canAfford ? new Color(1f, 0.95f, 0.6f) : new Color(0.85f, 0.5f, 0.5f));
         btmp.text = isMax ? "MAX" : $"{cost} G";
     }
 
@@ -1121,28 +1687,36 @@ public class MainMenu : MonoBehaviour
         win.transform.SetParent(overlay.transform, false);
         RectTransform wrt = win.GetComponent<RectTransform>();
         wrt.anchorMin = wrt.anchorMax = wrt.pivot = new Vector2(0.5f, 0.5f);
-        wrt.sizeDelta = new Vector2(940f, 660f);
+        wrt.sizeDelta = new Vector2(980f, 680f);
         wrt.anchoredPosition = Vector2.zero;
         Image wimg = win.GetComponent<Image>();
         wimg.sprite = UIController.GetGothicWindowSprite();
         wimg.type = Image.Type.Sliced;
 
-        CreateModalText(win.transform, "✦ WEAPON EVOLUTION CODEX & FEATS ✦", new Vector2(0f, 280f), 30f, new Color(1f, 0.88f, 0.25f), FontStyles.Bold);
-        CreateModalText(win.transform, "✦ GRIMOIRE OF FORBIDDEN ALCHEMY & SURVIVAL ACHIEVEMENTS ✦", new Vector2(0f, 248f), 17f, new Color(0.92f, 0.82f, 0.55f), FontStyles.Normal);
+        CreateModalText(win.transform, "WEAPON EVOLUTION CODEX & FEATS", new Vector2(0f, 290f), 30f, new Color(1f, 0.88f, 0.25f), FontStyles.Bold);
+        CreateModalText(win.transform, "KINH ĐIỂN TIẾN HÓA VŨ KHÍ & CHIẾN TÍCH SINH TỒN", new Vector2(0f, 258f), 16f, new Color(0.92f, 0.82f, 0.55f), FontStyles.Normal, true);
+        CreateGothicDividerLine(win.transform, new Vector2(0f, 236f), 900f);
 
-        string codexText =
-            "<color=#FFD700><b>🔥 HUYỀN THOẠI TIẾN HÓA VŨ KHÍ (EVOLUTION RECIPES):</b></color>\n" +
-            " • ⚔️ <color=#66FFBB>Giant Sword (Lvl Max)</color> + <color=#FF8866>Might</color> ➔ <color=#FF4466><b>Thousand Blades (Vạn Kiếm Quy Tông)</b></color>\n" +
-            "   <i>Bắn bão kiếm xoay tròn 360 độ xé nát toàn bộ kẻ thù trong tầm mắt.</i>\n\n" +
-            " • 🔥 <color=#66FFBB>Magic Fireball (Lvl Max)</color> + <color=#FF8866>Magnet</color> ➔ <color=#FFAA00><b>Solar Flare Ring (Nhật Luân Hào Quang)</b></color>\n" +
-            "   <i>Quả cầu lửa hợp nhất thành vành đai mặt trời thiêu rụi toàn diện xung quanh.</i>\n\n" +
-            " • 🪓 <color=#66FFBB>Throwing Axes (Lvl Max)</color> + <color=#FF8866>Swiftness</color> ➔ <color=#00E5FF><b>Spiral Cyclone Axes (Cuồng Phong Phì Phủ)</b></color>\n" +
-            "   <i>Bão rìu cuồng nộ xoay tròn liên hồi không ngừng nghỉ, đẩy lùi đàn quái.</i>\n\n" +
-            " • 🏹 <color=#66FFBB>Forest Bow (Lvl Max)</color> + <color=#FF8866>Critical</color> ➔ <color=#E066FF><b>Celestial Piercing Arrow (Thần Tiễn Xuyên Không)</b></color>\n" +
-            "   <i>Tên ánh sáng xuyên thấu toàn màn hình gây sát thương chí mạng cực đại.</i>\n\n" +
-            " • 🕊️ <color=#66FFBB>Bright Zone (Lvl Max)</color> + <color=#FF8866>Vitality</color> ➔ <color=#FFFF66><b>Sanctuary of Light (Thánh Địa Trấn Hồn)</b></color>\n" +
-            "   <i>Vòng hào quang cực đại liên tục hồi phục sinh lực và giáng sấm sét hủy diệt.</i>\n\n" +
-            "<color=#FFD700><b>🏆 CHIẾN TÍCH & KỶ LỤC CÁ NHÂN (SURVIVAL FEATS):</b></color>\n";
+        // Cột Trái: CÔNG THỨC TIẾN HÓA VŨ KHÍ
+        CreateSectionHeader(win.transform, new Vector2(-232f, 212f), "HUYỀN THOẠI TIẾN HÓA VŨ KHÍ");
+
+        float[] cardYs = new float[] { 152f, 68f, -16f, -100f, -184f };
+        var recipes = new (int iconIdx, string title, string formula, string desc)[]
+        {
+            (0, "Thousand Blades", "<color=#66FFBB>Sword</color> + <color=#FFAA55>Might</color>", "Bắn bão kiếm xoay 360° xé nát quái vật trong tầm mắt. Sát thương cực lớn."),
+            (1, "Solar Flare Ring", "<color=#66FFBB>Fireball</color> + <color=#FFAA55>Magnet</color>", "Quả cầu lửa hợp nhất thành vành đai mặt trời thiêu rụi toàn diện xung quanh."),
+            (2, "Spiral Cyclone Axes", "<color=#66FFBB>Axes</color> + <color=#FFAA55>Swiftness</color>", "Bão rìu cuồng nộ xoay liên hồi không ngừng, tạo tường chắn đẩy lùi đàn quái vật."),
+            (3, "Celestial Arrow", "<color=#66FFBB>Forest Bow</color> + <color=#FFAA55>Critical</color>", "Tên ánh sáng xuyên thấu toàn màn hình gây sát thương chí mạng cực đại."),
+            (4, "Sanctuary of Light", "<color=#66FFBB>Bright Zone</color> + <color=#FFAA55>Vitality</color>", "Vòng hào quang cực đại hồi phục sinh lực và giáng sấm sét trừng phạt.")
+        };
+
+        for (int i = 0; i < recipes.Length; i++)
+        {
+            CreateCodexCard(win.transform, new Vector2(-232f, cardYs[i]), recipes[i].iconIdx, recipes[i].title, recipes[i].formula, recipes[i].desc);
+        }
+
+        // Cột Phải: CHIẾN TÍCH & KỶ LỤC CÁ NHÂN
+        CreateSectionHeader(win.transform, new Vector2(232f, 212f), "CHIẾN TÍCH & KỶ LỤC CÁ NHÂN");
 
         float bestTime = PlayerPrefs.GetFloat("BestSurvivalTime", 0f);
         int minutes = Mathf.FloorToInt(bestTime / 60f);
@@ -1152,29 +1726,105 @@ public class MainMenu : MonoBehaviour
         int mightLvl = MetaProgression.GetLevel(MetaStat.Might);
         int revivalLvl = MetaProgression.GetLevel(MetaStat.Revival);
 
-        string featsText =
-            $" • ⏱️ <b>Thời Gian Sống Sót Kỷ Lục:</b> <color=#FFE040>{timeStr}</color> " + (bestTime >= 900f ? "✦ <color=#00FF99>[SURVIVOR MASTER]</color>" : "") + "\n" +
-            $" • 💰 <b>Kho Báu Tích Lũy:</b> <color=#FFE040>{coins} Vàng</color> " + (coins >= 1000 ? "✦ <color=#00FF99>[GOLDEN HOARDER]</color>" : "") + "\n" +
-            $" • ⚔️ <b>Chiến Tướng Sát Thần:</b> Might Cấp {mightLvl}/5 " + (mightLvl >= 5 ? "✦ <color=#00FF99>[GOD OF WAR]</color>" : "") + "\n" +
-            $" • 🕊️ <b>Hồi Sinh Phượng Hoàng:</b> " + (revivalLvl > 0 ? "<color=#00FF99>ĐÃ MỞ KHÓA [PHOENIX REBIRTH]</color>" : "<color=#888888>Chưa mở khóa</color>") + "\n" +
-            $" • 🐉 <b>Đại Chiến Hỏa Long:</b> Sống sót 15 phút triệu hồi và đánh bại Trùm Cuối Pyroclast!";
+        var feats = new (int iconIdx, string title, string status, string desc)[]
+        {
+            (5, "Thời Gian Sống Sót", $"<color=#FFE040><b>{timeStr}</b></color>", bestTime >= 900f ? "<color=#00FF99>[ĐÃ ĐẠT: SURVIVOR MASTER (15 PHÚT)]</color>" : "<color=#8899AA>Mục tiêu: Sống sót 15:00 để đối đầu Hỏa Long</color>"),
+            (6, "Kho Báu Tích Lũy", $"<color=#FFE040><b>{coins} Vàng</b></color>", coins >= 1000 ? "<color=#00FF99>[ĐÃ ĐẠT: GOLDEN HOARDER (1,000+ VÀNG)]</color>" : "<color=#8899AA>Mục tiêu: Tích lũy 1,000 Vàng trong Thánh Điện</color>"),
+            (7, "Sức Mạnh Sát Thần", $"<color=#FFE040><b>Might Cấp {mightLvl}/5</b></color>", mightLvl >= 5 ? "<color=#00FF99>[ĐÃ ĐẠT: GOD OF WAR (SÁT THƯƠNG TỐI ĐA)]</color>" : "<color=#8899AA>Nâng cấp Might cấp 5 trong Thánh Điện (+25% Dmg)</color>"),
+            (8, "Hồi Sinh Phượng Hoàng", revivalLvl > 0 ? "<color=#00FF99><b>ĐÃ MỞ KHÓA</b></color>" : "<color=#FF6666><b>CHƯA MỞ KHÓA</b></color>", revivalLvl > 0 ? "<color=#00FF99>Tự động hồi sinh với 50% máu khi gục ngã</color>" : "<color=#8899AA>Mở khóa trong Thánh Điện để nhận 1 mạng hồi sinh</color>"),
+            (9, "Đại Chiến Hỏa Long", "<color=#FF5544><b>PYROCLAST</b></color>", "<color=#FFAA44>Sống sót đến phút 15:00 để triệu hồi và tiêu diệt Hỏa Long!</color>")
+        };
 
-        GameObject textGO = new GameObject("CodexText", typeof(RectTransform), typeof(TextMeshProUGUI));
-        textGO.transform.SetParent(win.transform, false);
-        RectTransform trt = textGO.GetComponent<RectTransform>();
-        trt.anchorMin = trt.anchorMax = trt.pivot = new Vector2(0.5f, 0.5f);
-        trt.sizeDelta = new Vector2(860f, 440f);
-        trt.anchoredPosition = new Vector2(0f, 15f);
-        TextMeshProUGUI tmp = textGO.GetComponent<TextMeshProUGUI>();
-        tmp.text = codexText + featsText;
-        tmp.fontSize = 17.5f;
-        tmp.lineSpacing = 8f;
-        tmp.color = Color.white;
-        tmp.alignment = TextAlignmentOptions.TopLeft;
+        for (int i = 0; i < feats.Length; i++)
+        {
+            CreateCodexCard(win.transform, new Vector2(232f, cardYs[i]), feats[i].iconIdx, feats[i].title, feats[i].status, feats[i].desc);
+        }
 
-        CreateModalCloseButton(win.transform, new Vector2(0f, -270f), "✦  CLOSE  ✦");
+        CreateModalCloseButton(win.transform, new Vector2(0f, -288f), "CLOSE (ĐÓNG)");
 
         currentModal = overlay;
+    }
+
+    private void CreateCodexCard(Transform parent, Vector2 pos, int iconIndex, string title, string formulaOrBadge, string desc)
+    {
+        GameObject card = new GameObject("Card_" + title, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        card.transform.SetParent(parent, false);
+        RectTransform crt = card.GetComponent<RectTransform>();
+        crt.anchorMin = crt.anchorMax = crt.pivot = new Vector2(0.5f, 0.5f);
+        crt.anchoredPosition = pos;
+        crt.sizeDelta = new Vector2(445f, 76f);
+
+        Image cimg = card.GetComponent<Image>();
+        cimg.sprite = LevelUpSellectionButton.GetGothicCardSprite(false);
+        cimg.type = Image.Type.Sliced;
+
+        TMP_FontAsset font = GetSmoothFont();
+
+        // 1. Icon slot ở bên trái với icon pixel sắc nét
+        GameObject iconSlot = new GameObject("IconSlot", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        iconSlot.transform.SetParent(card.transform, false);
+        RectTransform irt = iconSlot.GetComponent<RectTransform>();
+        irt.anchorMin = irt.anchorMax = irt.pivot = new Vector2(0f, 0.5f);
+        irt.anchoredPosition = new Vector2(14f, 0f);
+        irt.sizeDelta = new Vector2(48f, 48f);
+        Image isImg = iconSlot.GetComponent<Image>();
+        isImg.sprite = LevelUpSellectionButton.GetGothicIconSlotSprite();
+        isImg.type = Image.Type.Sliced;
+
+        GameObject icoGO = new GameObject("CodexIcon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        icoGO.transform.SetParent(iconSlot.transform, false);
+        RectTransform icoRt = icoGO.GetComponent<RectTransform>();
+        icoRt.anchorMin = Vector2.zero;
+        icoRt.anchorMax = Vector2.one;
+        icoRt.offsetMin = new Vector2(6f, 6f);
+        icoRt.offsetMax = new Vector2(-6f, -6f);
+        Image icoImg = icoGO.GetComponent<Image>();
+        icoImg.sprite = GetCodexIconSprite(iconIndex);
+        icoImg.preserveAspect = true;
+
+        // 2. Content bên phải icon: 2 dòng sắc nét độc lập, tuyệt đối không đè nhau
+        GameObject contentGO = new GameObject("Content", typeof(RectTransform));
+        contentGO.transform.SetParent(card.transform, false);
+        RectTransform cntRt = contentGO.GetComponent<RectTransform>();
+        cntRt.anchorMin = Vector2.zero;
+        cntRt.anchorMax = Vector2.one;
+        cntRt.offsetMin = new Vector2(70f, 6f);
+        cntRt.offsetMax = new Vector2(-14f, -6f);
+
+        // Hàng trên: Title + Formula/Badge (height 22px)
+        GameObject topGO = new GameObject("TopRow", typeof(RectTransform), typeof(TextMeshProUGUI));
+        topGO.transform.SetParent(contentGO.transform, false);
+        RectTransform trt = topGO.GetComponent<RectTransform>();
+        trt.anchorMin = new Vector2(0f, 1f);
+        trt.anchorMax = new Vector2(1f, 1f);
+        trt.pivot = new Vector2(0f, 1f);
+        trt.anchoredPosition = new Vector2(0f, 0f);
+        trt.sizeDelta = new Vector2(0f, 22f);
+        TextMeshProUGUI ttmp = topGO.GetComponent<TextMeshProUGUI>();
+        if (font != null) { ttmp.font = font; if (font.material != null) ttmp.fontSharedMaterial = font.material; }
+        ttmp.fontSize = 13.5f;
+        ttmp.fontStyle = FontStyles.Bold;
+        ttmp.color = new Color(1f, 0.90f, 0.55f);
+        ttmp.alignment = TextAlignmentOptions.MidlineLeft;
+        ttmp.text = $"<b>{title}</b>  <color=#888888>|</color>  {formulaOrBadge}";
+
+        // Hàng dưới: Description (height 36px, zero overlap)
+        GameObject btmGO = new GameObject("BottomRow", typeof(RectTransform), typeof(TextMeshProUGUI));
+        btmGO.transform.SetParent(contentGO.transform, false);
+        RectTransform brt = btmGO.GetComponent<RectTransform>();
+        brt.anchorMin = new Vector2(0f, 0f);
+        brt.anchorMax = new Vector2(1f, 0f);
+        brt.pivot = new Vector2(0f, 0f);
+        brt.anchoredPosition = new Vector2(0f, 0f);
+        brt.sizeDelta = new Vector2(0f, 36f);
+        TextMeshProUGUI btmp = btmGO.GetComponent<TextMeshProUGUI>();
+        if (font != null) { btmp.font = font; if (font.material != null) btmp.fontSharedMaterial = font.material; }
+        btmp.fontSize = 12f;
+        btmp.lineSpacing = 1.5f;
+        btmp.color = new Color(0.85f, 0.88f, 0.94f, 0.95f);
+        btmp.alignment = TextAlignmentOptions.TopLeft;
+        btmp.textWrappingMode = TextWrappingModes.Normal;
+        btmp.text = desc;
     }
 
     /// <summary>
