@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -56,6 +56,7 @@ public class UIController : MonoBehaviour
     private float targetExpValue = 0f;
     private int currentDisplayLevel = 1;
     private TMP_Text stageSubtitleText;
+    private Image windowGlowHaloImage;
 
     // Start is called before the first frame update
     void Start()
@@ -90,10 +91,45 @@ public class UIController : MonoBehaviour
             if (panelImg != null)
             {
                 panelImg.sprite = null;
-                panelImg.color = new Color(0.02f, 0.02f, 0.05f, 0.85f); // Dim the game behind the window
+                panelImg.color = new Color(0.02f, 0.01f, 0.04f, 0.88f); // Dim the game behind the window with mystical tint
             }
 
-            // Gold-framed window behind everything
+            // 0. Thác Kim Cương Kinh Nghiệm đổ cuồn cuộn phía sau khung Level Up (Vampire Survivors Waterfall)
+            Transform waterfallT = levelUpPanel.transform.Find("ExpGemWaterfall");
+            if (waterfallT == null)
+            {
+                GameObject wf = new GameObject("ExpGemWaterfall", typeof(RectTransform));
+                wf.transform.SetParent(levelUpPanel.transform, false);
+                waterfallT = wf.transform;
+                RectTransform wfrt = wf.GetComponent<RectTransform>();
+                wfrt.anchorMin = Vector2.zero;
+                wfrt.anchorMax = Vector2.one;
+                wfrt.offsetMin = Vector2.zero;
+                wfrt.offsetMax = Vector2.zero;
+                wf.AddComponent<ExpGemWaterfallOverlay>();
+            }
+            waterfallT.SetSiblingIndex(0);
+
+            // 1. Arcane Mystical Pulsing Aura Halo behind window
+            Transform haloT = levelUpPanel.transform.Find("WindowGlowHalo");
+            if (haloT == null)
+            {
+                GameObject h = new GameObject("WindowGlowHalo", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                h.transform.SetParent(levelUpPanel.transform, false);
+                haloT = h.transform;
+            }
+            haloT.SetSiblingIndex(1);
+            RectTransform haloRt = (RectTransform)haloT;
+            haloRt.anchorMin = haloRt.anchorMax = haloRt.pivot = new Vector2(0.5f, 0.5f);
+            haloRt.anchoredPosition = Vector2.zero;
+            haloRt.sizeDelta = new Vector2(1080f, 960f);
+            windowGlowHaloImage = haloT.GetComponent<Image>();
+            windowGlowHaloImage.sprite = GetMysticHaloSprite();
+            windowGlowHaloImage.type = Image.Type.Simple;
+            windowGlowHaloImage.color = new Color(0.65f, 0.20f, 0.95f, 0.35f);
+            windowGlowHaloImage.raycastTarget = false;
+
+            // 2. Ornate Gothic Royal Window Frame Promax
             Transform windowT = levelUpPanel.transform.Find("Level Up Window");
             if (windowT == null)
             {
@@ -101,13 +137,13 @@ public class UIController : MonoBehaviour
                 w.transform.SetParent(levelUpPanel.transform, false);
                 windowT = w.transform;
             }
-            windowT.SetAsFirstSibling();
+            windowT.SetSiblingIndex(2);
             RectTransform windowRt = (RectTransform)windowT;
             windowRt.anchorMin = windowRt.anchorMax = windowRt.pivot = new Vector2(0.5f, 0.5f);
             windowRt.anchoredPosition = Vector2.zero;
-            windowRt.sizeDelta = new Vector2(940f, 820f);
+            windowRt.sizeDelta = new Vector2(960f, 840f);
             Image windowImg = windowT.GetComponent<Image>();
-            windowImg.sprite = GetGothicWindowSprite();
+            windowImg.sprite = GetMysticAscensionWindowSprite();
             windowImg.type = Image.Type.Sliced;
             windowImg.color = Color.white;
 
@@ -116,26 +152,27 @@ public class UIController : MonoBehaviour
             {
                 if (t.name == "Upgrade Text")
                 {
-                    t.text = "✦  M Y S T I C   A S C E N S I O N  ✦";
-                    t.fontSize = 50;
+                    t.text = "❖ ─── ✦  M Y S T I C   A S C E N S I O N  ✦ ─── ❖";
+                    t.fontSize = 42;
                     t.fontStyle = FontStyles.Bold;
                     t.enableAutoSizing = false;
-                    t.characterSpacing = 4f;
+                    t.characterSpacing = 3f;
                     t.textWrappingMode = TextWrappingModes.NoWrap;
                     t.alignment = TextAlignmentOptions.Center;
                     t.color = new Color(1f, 0.88f, 0.32f);
                     t.rectTransform.anchorMin = t.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-                    t.rectTransform.sizeDelta = new Vector2(880f, 70f);
-                    t.rectTransform.anchoredPosition = new Vector2(0f, 342f);
+                    t.rectTransform.sizeDelta = new Vector2(900f, 65f);
+                    t.rectTransform.anchoredPosition = new Vector2(0f, 348f);
                 }
                 else if (t.transform.parent != null && t.transform.parent.name == "Skip Level Up")
                 {
-                    t.text = "⚔  BANISH (SKIP)  ⚔";
-                    t.fontSize = 26;
+                    t.text = "⚔  B A N I S H  ( S K I P )  ⚔";
+                    t.fontSize = 24;
                     t.fontStyle = FontStyles.Bold;
                     t.enableAutoSizing = false;
-                    t.color = new Color(1f, 0.94f, 0.90f);
+                    t.color = new Color(1f, 0.94f, 0.85f);
                     t.alignment = TextAlignmentOptions.Center;
+                    t.characterSpacing = 2f;
                 }
             }
 
@@ -145,15 +182,15 @@ public class UIController : MonoBehaviour
             if (subT == null) subGO.transform.SetParent(levelUpPanel.transform, false);
             RectTransform subRT = subGO.GetComponent<RectTransform>();
             subRT.anchorMin = subRT.anchorMax = subRT.pivot = new Vector2(0.5f, 0.5f);
-            subRT.sizeDelta = new Vector2(740f, 32f);
-            subRT.anchoredPosition = new Vector2(0f, 286f);
+            subRT.sizeDelta = new Vector2(780f, 32f);
+            subRT.anchoredPosition = new Vector2(0f, 298f);
             TextMeshProUGUI subTMP = subGO.GetComponent<TextMeshProUGUI>();
             if (retroFont != null) subTMP.font = retroFont;
-            subTMP.text = "✦  CHOOSE YOUR SACRED BLESSING  ✦";
-            subTMP.fontSize = 22f;
+            subTMP.text = "✧  CHOOSE YOUR SACRED BLESSING  ✧";
+            subTMP.fontSize = 20f;
             subTMP.alignment = TextAlignmentOptions.Center;
-            subTMP.color = new Color(0.92f, 0.84f, 0.60f, 0.95f);
-            subTMP.characterSpacing = 3f;
+            subTMP.color = new Color(0.85f, 0.92f, 1f, 0.95f);
+            subTMP.characterSpacing = 4f;
             subTMP.raycastTarget = false;
 
             // Gothic Blood Crimson Skip button at the bottom of the window
@@ -162,8 +199,8 @@ public class UIController : MonoBehaviour
             {
                 RectTransform skipRt = (RectTransform)skip;
                 skipRt.anchorMin = skipRt.anchorMax = skipRt.pivot = new Vector2(0.5f, 0.5f);
-                skipRt.sizeDelta = new Vector2(300f, 62f);
-                skipRt.anchoredPosition = new Vector2(0f, -342f);
+                skipRt.sizeDelta = new Vector2(340f, 62f);
+                skipRt.anchoredPosition = new Vector2(0f, -348f);
                 Image skipImg = skip.GetComponent<Image>();
                 if (skipImg != null)
                 {
@@ -186,7 +223,7 @@ public class UIController : MonoBehaviour
             for (int i = 0; i < levelUpButtons.Length && i < 3; i++)
             {
                 if (levelUpButtons[i] != null)
-                    levelUpButtons[i].SetLayout(new Vector2(840f, 162f), new Vector2(0f, 155f - i * 175f));
+                    levelUpButtons[i].SetLayout(new Vector2(860f, 165f), new Vector2(0f, 160f - i * 176f));
             }
         }
     }
@@ -1024,8 +1061,8 @@ public class UIController : MonoBehaviour
             else if (PlayerUltimateController.instance.IsUltimateReady)
             {
                 float pulse = Mathf.PingPong(Time.unscaledTime * 4f, 1f);
-                string glowCol = ColorUtility.ToHtmlStringRGB(Color.Lerp(new Color(1f, 0.85f, 0.1f), new Color(1f, 0.4f, 0.1f), pulse));
-                ultStatusText.text = $"<color=#{glowCol}><b>★ [E / CLICK] {ultName}: READY! ★</b></color>";
+                string glowCol = ColorUtility.ToHtmlStringRGB(Color.Lerp(new Color(1f, 0.85f, 0.2f), new Color(1f, 1f, 0.7f), pulse));
+                ultStatusText.text = $"<color=#{glowCol}><b>>> [E / CLICK] {ultName}: READY! <<</b></color>";
                 if (ultWidgetBg != null) ultWidgetBg.color = Color.Lerp(new Color(0.35f, 0.25f, 0.05f, 0.9f), new Color(0.55f, 0.4f, 0.1f, 0.95f), pulse);
             }
             else
@@ -1059,6 +1096,13 @@ public class UIController : MonoBehaviour
         {
             lastPassiveHash = passHash;
             UpdatePassiveSlots();
+        }
+
+        // Hiệu ứng ánh sáng ma mị thở nhẹ cho khung Level Up
+        if (levelUpPanel != null && levelUpPanel.activeSelf && windowGlowHaloImage != null)
+        {
+            float pulse = Mathf.Sin(Time.unscaledTime * 2.5f) * 0.5f + 0.5f;
+            windowGlowHaloImage.color = new Color(0.65f, 0.20f, 0.95f, Mathf.Lerp(0.24f, 0.42f, pulse));
         }
     }
 
@@ -1199,332 +1243,386 @@ public class UIController : MonoBehaviour
     {
         if (pauseScreen == null) return;
 
-        // 1. Dark gothic vignette backdrop
-        Image bgImg = pauseScreen.GetComponent<Image>();
-        if (bgImg != null)
+        try
         {
-            bgImg.sprite = null;
-            bgImg.color = new Color(0.02f, 0.02f, 0.05f, 0.88f);
-            bgImg.raycastTarget = true;
-        }
+            TMP_FontAsset sFont = MainMenu.GetSmoothFont() ?? retroFont;
 
-        // 2. Gold-framed Pause Window
-        Transform winT = pauseScreen.transform.Find("Window");
-        if (winT == null)
-        {
-            GameObject w = new GameObject("Window", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            w.transform.SetParent(pauseScreen.transform, false);
-            winT = w.transform;
-        }
-        RectTransform winRT = (RectTransform)winT;
-        winRT.anchorMin = winRT.anchorMax = winRT.pivot = new Vector2(0.5f, 0.5f);
-        winRT.anchoredPosition = Vector2.zero;
-        winRT.sizeDelta = new Vector2(860f, 740f);
-
-        Image winImg = winT.GetComponent<Image>();
-        if (winImg != null)
-        {
-            winImg.sprite = GetGothicWindowSprite();
-            winImg.type = Image.Type.Sliced;
-            winImg.color = Color.white;
-        }
-
-        // 3. Title: "❖   ✦   P A U S E D   ✦   ❖"
-        Transform titleT = winT.Find("Title");
-        GameObject titleGO = titleT != null ? titleT.gameObject : new GameObject("Title", typeof(RectTransform), typeof(TextMeshProUGUI));
-        if (titleT == null) titleGO.transform.SetParent(winT, false);
-        RectTransform tRT = titleGO.GetComponent<RectTransform>();
-        tRT.anchorMin = tRT.anchorMax = tRT.pivot = new Vector2(0.5f, 0.5f);
-        tRT.anchoredPosition = new Vector2(0f, 324f);
-        tRT.sizeDelta = new Vector2(750f, 65f);
-
-        TextMeshProUGUI tTMP = titleGO.GetComponent<TextMeshProUGUI>();
-        if (retroFont != null) tTMP.font = retroFont;
-        tTMP.text = "❖   ✦   P A U S E D   ✦   ❖";
-        tTMP.fontSize = 62f;
-        tTMP.fontStyle = FontStyles.Bold;
-        tTMP.characterSpacing = 6f;
-        tTMP.alignment = TextAlignmentOptions.Center;
-        tTMP.color = new Color(1f, 0.88f, 0.25f);
-
-        // Subtitle under pause title
-        Transform subT = winT.Find("PauseSubtitle");
-        GameObject subGO = subT != null ? subT.gameObject : new GameObject("PauseSubtitle", typeof(RectTransform), typeof(TextMeshProUGUI));
-        if (subT == null) subGO.transform.SetParent(winT, false);
-        RectTransform subRT = subGO.GetComponent<RectTransform>();
-        subRT.anchorMin = subRT.anchorMax = subRT.pivot = new Vector2(0.5f, 0.5f);
-        subRT.anchoredPosition = new Vector2(0f, 275f);
-        subRT.sizeDelta = new Vector2(650f, 28f);
-        TextMeshProUGUI subTMP = subGO.GetComponent<TextMeshProUGUI>();
-        if (retroFont != null) subTMP.font = retroFont;
-        subTMP.text = "✦  THE NIGHT HOLDS ITS BREATH  ✦";
-        subTMP.fontSize = 22f;
-        subTMP.alignment = TextAlignmentOptions.Center;
-        subTMP.color = new Color(0.92f, 0.82f, 0.55f, 0.95f);
-        subTMP.characterSpacing = 3f;
-
-        // Hide legacy flat divider if present
-        Transform divT = winT.Find("Divider");
-        if (divT != null) divT.gameObject.SetActive(false);
-
-        // 4. Equipment Grid Container (Weapons & Passives)
-        Transform equipT = winT.Find("PauseEquipmentGrid");
-        GameObject equipGO = equipT != null ? equipT.gameObject : new GameObject("PauseEquipmentGrid", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        if (equipT == null) equipGO.transform.SetParent(winT, false);
-        RectTransform eqRT = equipGO.GetComponent<RectTransform>();
-        eqRT.anchorMin = eqRT.anchorMax = eqRT.pivot = new Vector2(0.5f, 0.5f);
-        eqRT.anchoredPosition = new Vector2(0f, 130f);
-        eqRT.sizeDelta = new Vector2(790f, 240f);
-
-        Image eqImg = equipGO.GetComponent<Image>();
-        eqImg.sprite = Resources.Load<Sprite>("UI/UI_SubPanel_Gold");
-        eqImg.type = Image.Type.Sliced;
-        eqImg.color = new Color(0.08f, 0.07f, 0.12f, 0.95f);
-
-        // 4A. Weapons Row inside Equipment Grid
-        Transform wHeaderT = equipGO.transform.Find("WeaponsHeader");
-        GameObject wHeaderGO = wHeaderT != null ? wHeaderT.gameObject : new GameObject("WeaponsHeader", typeof(RectTransform), typeof(TextMeshProUGUI));
-        if (wHeaderT == null) wHeaderGO.transform.SetParent(equipGO.transform, false);
-        RectTransform whRT = wHeaderGO.GetComponent<RectTransform>();
-        whRT.anchorMin = whRT.anchorMax = whRT.pivot = new Vector2(0.5f, 0.5f);
-        whRT.anchoredPosition = new Vector2(0f, 85f);
-        whRT.sizeDelta = new Vector2(750f, 30f);
-        TextMeshProUGUI whTMP = wHeaderGO.GetComponent<TextMeshProUGUI>();
-        if (retroFont != null) whTMP.font = retroFont;
-        whTMP.fontSize = 24f;
-        whTMP.alignment = TextAlignmentOptions.Center;
-        whTMP.color = new Color(1f, 0.85f, 0.3f);
-        whTMP.text = "✦  EQUIPPED WEAPONS  ✦";
-
-        // Query active weapons
-        List<Weapon> activeWeapons = new List<Weapon>();
-        if (PlayerController.instance != null)
-        {
-            if (PlayerController.instance.assignedWeapons != null) activeWeapons.AddRange(PlayerController.instance.assignedWeapons);
-            if (PlayerController.instance.fullyLevelledWeapons != null) activeWeapons.AddRange(PlayerController.instance.fullyLevelledWeapons);
-        }
-
-        Sprite slotFrame = Resources.Load<Sprite>("UI/VS_HUD_Slot");
-        float slotW = 54f;
-        float slotSpacing = 16f;
-        float startX = -((6 * slotW + 5 * slotSpacing) * 0.5f) + (slotW * 0.5f);
-
-        for (int i = 0; i < 6; i++)
-        {
-            string sName = "P_WeaponSlot_" + i;
-            Transform sChild = equipGO.transform.Find(sName);
-            GameObject sGO = sChild != null ? sChild.gameObject : new GameObject(sName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            if (sChild == null) sGO.transform.SetParent(equipGO.transform, false);
-            RectTransform sRT = sGO.GetComponent<RectTransform>();
-            sRT.anchorMin = sRT.anchorMax = sRT.pivot = new Vector2(0.5f, 0.5f);
-            sRT.anchoredPosition = new Vector2(startX + i * (slotW + slotSpacing), 32f);
-            sRT.sizeDelta = new Vector2(slotW, slotW);
-
-            Image sImg = sGO.GetComponent<Image>();
-            sImg.sprite = slotFrame;
-            sImg.type = Image.Type.Sliced;
-            sImg.color = Color.white;
-
-            // Icon
-            Transform iconT = sGO.transform.Find("Icon");
-            GameObject iconGO = iconT != null ? iconT.gameObject : new GameObject("Icon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            if (iconT == null) iconGO.transform.SetParent(sGO.transform, false);
-            RectTransform icRT = iconGO.GetComponent<RectTransform>();
-            icRT.anchorMin = Vector2.zero;
-            icRT.anchorMax = Vector2.one;
-            icRT.offsetMin = new Vector2(6f, 6f);
-            icRT.offsetMax = new Vector2(-6f, -6f);
-            Image icImg = iconGO.GetComponent<Image>();
-            icImg.preserveAspect = true;
-
-            // Level Label
-            Transform lvlT = sGO.transform.Find("Level");
-            GameObject lvlGO = lvlT != null ? lvlT.gameObject : new GameObject("Level", typeof(RectTransform), typeof(TextMeshProUGUI));
-            if (lvlT == null) lvlGO.transform.SetParent(sGO.transform, false);
-            RectTransform lRT = lvlGO.GetComponent<RectTransform>();
-            lRT.anchorMin = new Vector2(0f, 0f);
-            lRT.anchorMax = new Vector2(1f, 0f);
-            lRT.pivot = new Vector2(0.5f, 1f);
-            lRT.anchoredPosition = new Vector2(0f, -4f);
-            lRT.sizeDelta = new Vector2(60f, 20f);
-            TextMeshProUGUI lTMP = lvlGO.GetComponent<TextMeshProUGUI>();
-            if (retroFont != null) lTMP.font = retroFont;
-            lTMP.fontSize = 17f;
-            lTMP.alignment = TextAlignmentOptions.Center;
-
-            if (i < activeWeapons.Count && activeWeapons[i] != null && activeWeapons[i].icon != null)
+            // 1. Dark gothic vignette backdrop
+            Image bgImg = pauseScreen.GetComponent<Image>();
+            if (bgImg != null)
             {
-                icImg.sprite = activeWeapons[i].icon;
-                icImg.enabled = true;
-                icImg.color = Color.white;
-
-                int lvl = activeWeapons[i].weaponLevel + 1;
-                bool isMax = activeWeapons[i].stats != null && lvl >= activeWeapons[i].stats.Count;
-                lTMP.text = isMax ? "<color=#FF4444>MAX</color>" : $"<color=#FFE040>LV {lvl}</color>";
-                lTMP.enabled = true;
+                bgImg.sprite = null;
+                bgImg.color = new Color(0.02f, 0.02f, 0.05f, 0.92f);
+                bgImg.raycastTarget = true;
             }
-            else
+
+            // 2. Gold-framed Pause Window
+            Transform winT = pauseScreen.transform.Find("Window");
+            if (winT == null)
             {
-                icImg.enabled = false;
-                lTMP.enabled = false;
+                GameObject w = new GameObject("Window", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                w.transform.SetParent(pauseScreen.transform, false);
+                winT = w.transform;
             }
+            RectTransform winRT = (RectTransform)winT;
+            winRT.anchorMin = winRT.anchorMax = winRT.pivot = new Vector2(0.5f, 0.5f);
+            winRT.anchoredPosition = Vector2.zero;
+            winRT.sizeDelta = new Vector2(900f, 720f);
+
+            Image winImg = winT.GetComponent<Image>();
+            if (winImg != null)
+            {
+                winImg.sprite = GetGothicWindowSprite();
+                winImg.type = Image.Type.Sliced;
+                winImg.color = Color.white;
+            }
+
+            // 3. Title: "P A U S E D"
+            Transform titleT = winT.Find("Title");
+            GameObject titleGO = titleT != null ? titleT.gameObject : new GameObject("Title", typeof(RectTransform));
+            if (titleT == null) titleGO.transform.SetParent(winT, false);
+            RectTransform tRT = titleGO.GetComponent<RectTransform>();
+            tRT.anchorMin = tRT.anchorMax = tRT.pivot = new Vector2(0.5f, 0.5f);
+            tRT.anchoredPosition = new Vector2(0f, 308f);
+            tRT.sizeDelta = new Vector2(800f, 55f);
+
+            // Hide any legacy child shadows/texts
+            for (int i = 0; i < titleGO.transform.childCount; i++)
+            {
+                titleGO.transform.GetChild(i).gameObject.SetActive(false);
+            }
+
+            TextMeshProUGUI tTMP = titleGO.GetComponent<TextMeshProUGUI>();
+            if (tTMP == null) tTMP = titleGO.AddComponent<TextMeshProUGUI>();
+            if (sFont != null) { tTMP.font = sFont; if (sFont.material != null) tTMP.fontSharedMaterial = sFont.material; }
+            tTMP.text = "P A U S E D";
+            tTMP.fontSize = 46f;
+            tTMP.fontStyle = FontStyles.Bold;
+            tTMP.characterSpacing = 8f;
+            tTMP.alignment = TextAlignmentOptions.Center;
+            tTMP.color = new Color(1f, 0.88f, 0.25f);
+
+            // Subtitle under pause title
+            Transform subT = winT.Find("PauseSubtitle");
+            GameObject subGO = subT != null ? subT.gameObject : new GameObject("PauseSubtitle", typeof(RectTransform));
+            if (subT == null) subGO.transform.SetParent(winT, false);
+            RectTransform subRT = subGO.GetComponent<RectTransform>();
+            subRT.anchorMin = subRT.anchorMax = subRT.pivot = new Vector2(0.5f, 0.5f);
+            subRT.anchoredPosition = new Vector2(0f, 268f);
+            subRT.sizeDelta = new Vector2(800f, 24f);
+            TextMeshProUGUI subTMP = subGO.GetComponent<TextMeshProUGUI>();
+            if (subTMP == null) subTMP = subGO.AddComponent<TextMeshProUGUI>();
+            if (sFont != null) { subTMP.font = sFont; if (sFont.material != null) subTMP.fontSharedMaterial = sFont.material; }
+            subTMP.text = "THE NIGHT HOLDS ITS BREATH  |  TRẬN ĐẤU TẠM DỪNG";
+            subTMP.fontSize = 15f;
+            subTMP.fontStyle = FontStyles.Bold;
+            subTMP.alignment = TextAlignmentOptions.Center;
+            subTMP.color = new Color(0.92f, 0.82f, 0.55f, 0.95f);
+            subTMP.characterSpacing = 3f;
+
+            // Divider Line under subtitle
+            Transform divT = winT.Find("PauseDividerLine");
+            GameObject divGO = divT != null ? divT.gameObject : new GameObject("PauseDividerLine", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            if (divT == null) divGO.transform.SetParent(winT, false);
+            RectTransform divRT = divGO.GetComponent<RectTransform>();
+            divRT.anchorMin = divRT.anchorMax = divRT.pivot = new Vector2(0.5f, 0.5f);
+            divRT.anchoredPosition = new Vector2(0f, 248f);
+            divRT.sizeDelta = new Vector2(820f, 2f);
+            Image divImg = divGO.GetComponent<Image>();
+            divImg.color = new Color(0.85f, 0.70f, 0.25f, 0.5f);
+            divImg.raycastTarget = false;
+
+            // Hide legacy flat divider if present
+            Transform oldDivT = winT.Find("Divider");
+            if (oldDivT != null) oldDivT.gameObject.SetActive(false);
+
+            // 4. Equipment Grid Container (Weapons & Passives)
+            Transform equipT = winT.Find("PauseEquipmentGrid");
+            GameObject equipGO = equipT != null ? equipT.gameObject : new GameObject("PauseEquipmentGrid", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            if (equipT == null) equipGO.transform.SetParent(winT, false);
+            RectTransform eqRT = equipGO.GetComponent<RectTransform>();
+            eqRT.anchorMin = eqRT.anchorMax = eqRT.pivot = new Vector2(0.5f, 0.5f);
+            eqRT.anchoredPosition = new Vector2(0f, 110f);
+            eqRT.sizeDelta = new Vector2(820f, 235f);
+
+            Image eqImg = equipGO.GetComponent<Image>();
+            eqImg.sprite = Resources.Load<Sprite>("UI/UI_SubPanel_Gold");
+            eqImg.type = Image.Type.Sliced;
+            eqImg.color = new Color(0.07f, 0.06f, 0.11f, 0.95f);
+
+            // 4A. Weapons Row inside Equipment Grid
+            Transform wHeaderT = equipGO.transform.Find("WeaponsHeader");
+            GameObject wHeaderGO = wHeaderT != null ? wHeaderT.gameObject : new GameObject("WeaponsHeader", typeof(RectTransform));
+            if (wHeaderT == null) wHeaderGO.transform.SetParent(equipGO.transform, false);
+            RectTransform whRT = wHeaderGO.GetComponent<RectTransform>();
+            whRT.anchorMin = whRT.anchorMax = whRT.pivot = new Vector2(0.5f, 0.5f);
+            whRT.anchoredPosition = new Vector2(0f, 85f);
+            whRT.sizeDelta = new Vector2(780f, 28f);
+            TextMeshProUGUI whTMP = wHeaderGO.GetComponent<TextMeshProUGUI>();
+            if (whTMP == null) whTMP = wHeaderGO.AddComponent<TextMeshProUGUI>();
+            if (sFont != null) { whTMP.font = sFont; if (sFont.material != null) whTMP.fontSharedMaterial = sFont.material; }
+            whTMP.fontSize = 16f;
+            whTMP.fontStyle = FontStyles.Bold;
+            whTMP.alignment = TextAlignmentOptions.Center;
+            whTMP.color = new Color(1f, 0.88f, 0.35f);
+            whTMP.text = "EQUIPPED WEAPONS (VŨ KHÍ TRANG BỊ)";
+
+            // Query active weapons
+            List<Weapon> activeWeapons = new List<Weapon>();
+            if (PlayerController.instance != null)
+            {
+                if (PlayerController.instance.assignedWeapons != null) activeWeapons.AddRange(PlayerController.instance.assignedWeapons);
+                if (PlayerController.instance.fullyLevelledWeapons != null) activeWeapons.AddRange(PlayerController.instance.fullyLevelledWeapons);
+            }
+
+            Sprite slotFrame = Resources.Load<Sprite>("UI/VS_HUD_Slot");
+            float slotW = 54f;
+            float slotSpacing = 16f;
+            float startX = -((6 * slotW + 5 * slotSpacing) * 0.5f) + (slotW * 0.5f);
+
+            for (int i = 0; i < 6; i++)
+            {
+                string sName = "P_WeaponSlot_" + i;
+                Transform sChild = equipGO.transform.Find(sName);
+                GameObject sGO = sChild != null ? sChild.gameObject : new GameObject(sName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                if (sChild == null) sGO.transform.SetParent(equipGO.transform, false);
+                RectTransform sRT = sGO.GetComponent<RectTransform>();
+                sRT.anchorMin = sRT.anchorMax = sRT.pivot = new Vector2(0.5f, 0.5f);
+                sRT.anchoredPosition = new Vector2(startX + i * (slotW + slotSpacing), 30f);
+                sRT.sizeDelta = new Vector2(slotW, slotW);
+
+                Image sImg = sGO.GetComponent<Image>();
+                sImg.sprite = slotFrame;
+                sImg.type = Image.Type.Sliced;
+                sImg.color = Color.white;
+
+                // Icon
+                Transform iconT = sGO.transform.Find("Icon");
+                GameObject iconGO = iconT != null ? iconT.gameObject : new GameObject("Icon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                if (iconT == null) iconGO.transform.SetParent(sGO.transform, false);
+                RectTransform icRT = iconGO.GetComponent<RectTransform>();
+                icRT.anchorMin = Vector2.zero;
+                icRT.anchorMax = Vector2.one;
+                icRT.offsetMin = new Vector2(6f, 6f);
+                icRT.offsetMax = new Vector2(-6f, -6f);
+                Image icImg = iconGO.GetComponent<Image>();
+                icImg.preserveAspect = true;
+
+                // Level Label
+                Transform lvlT = sGO.transform.Find("Level");
+                GameObject lvlGO = lvlT != null ? lvlT.gameObject : new GameObject("Level", typeof(RectTransform));
+                if (lvlT == null) lvlGO.transform.SetParent(sGO.transform, false);
+                RectTransform lRT = lvlGO.GetComponent<RectTransform>();
+                lRT.anchorMin = new Vector2(0f, 0f);
+                lRT.anchorMax = new Vector2(1f, 0f);
+                lRT.pivot = new Vector2(0.5f, 1f);
+                lRT.anchoredPosition = new Vector2(0f, -4f);
+                lRT.sizeDelta = new Vector2(60f, 20f);
+                TextMeshProUGUI lTMP = lvlGO.GetComponent<TextMeshProUGUI>();
+                if (lTMP == null) lTMP = lvlGO.AddComponent<TextMeshProUGUI>();
+                if (sFont != null) { lTMP.font = sFont; if (sFont.material != null) lTMP.fontSharedMaterial = sFont.material; }
+                lTMP.fontSize = 13f;
+                lTMP.fontStyle = FontStyles.Bold;
+                lTMP.alignment = TextAlignmentOptions.Center;
+
+                if (i < activeWeapons.Count && activeWeapons[i] != null && activeWeapons[i].icon != null)
+                {
+                    icImg.sprite = activeWeapons[i].icon;
+                    icImg.enabled = true;
+                    icImg.color = Color.white;
+
+                    int lvl = activeWeapons[i].weaponLevel + 1;
+                    bool isMax = activeWeapons[i].stats != null && lvl >= activeWeapons[i].stats.Count;
+                    lTMP.text = isMax ? "<color=#FF5555>MAX</color>" : $"<color=#FFE040>CẤP {lvl}</color>";
+                    lTMP.enabled = true;
+                }
+                else
+                {
+                    icImg.enabled = false;
+                    lTMP.enabled = false;
+                }
+            }
+
+            // 4B. Passives Row inside Equipment Grid
+            Transform pHeaderT = equipGO.transform.Find("PassivesHeader");
+            GameObject pHeaderGO = pHeaderT != null ? pHeaderT.gameObject : new GameObject("PassivesHeader", typeof(RectTransform));
+            if (pHeaderT == null) pHeaderGO.transform.SetParent(equipGO.transform, false);
+            RectTransform phRT = pHeaderGO.GetComponent<RectTransform>();
+            phRT.anchorMin = phRT.anchorMax = phRT.pivot = new Vector2(0.5f, 0.5f);
+            phRT.anchoredPosition = new Vector2(0f, -38f);
+            phRT.sizeDelta = new Vector2(780f, 28f);
+            TextMeshProUGUI phTMP = pHeaderGO.GetComponent<TextMeshProUGUI>();
+            if (phTMP == null) phTMP = pHeaderGO.AddComponent<TextMeshProUGUI>();
+            if (sFont != null) { phTMP.font = sFont; if (sFont.material != null) phTMP.fontSharedMaterial = sFont.material; }
+            phTMP.fontSize = 16f;
+            phTMP.fontStyle = FontStyles.Bold;
+            phTMP.alignment = TextAlignmentOptions.Center;
+            phTMP.color = new Color(0.45f, 1f, 0.75f);
+            phTMP.text = "PASSIVE ACCESSORIES (TRANG BỊ BỔ TRỢ)";
+
+            List<PassiveSlotData> activePassives = GetActivePassives();
+
+            for (int i = 0; i < 6; i++)
+            {
+                string sName = "P_PassiveSlot_" + i;
+                Transform sChild = equipGO.transform.Find(sName);
+                GameObject sGO = sChild != null ? sChild.gameObject : new GameObject(sName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                if (sChild == null) sGO.transform.SetParent(equipGO.transform, false);
+                RectTransform sRT = sGO.GetComponent<RectTransform>();
+                sRT.anchorMin = sRT.anchorMax = sRT.pivot = new Vector2(0.5f, 0.5f);
+                sRT.anchoredPosition = new Vector2(startX + i * (slotW + slotSpacing), -90f);
+                sRT.sizeDelta = new Vector2(slotW, slotW);
+
+                Image sImg = sGO.GetComponent<Image>();
+                sImg.sprite = slotFrame;
+                sImg.type = Image.Type.Sliced;
+                sImg.color = Color.white;
+
+                // Icon
+                Transform iconT = sGO.transform.Find("Icon");
+                GameObject iconGO = iconT != null ? iconT.gameObject : new GameObject("Icon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                if (iconT == null) iconGO.transform.SetParent(sGO.transform, false);
+                RectTransform icRT = iconGO.GetComponent<RectTransform>();
+                icRT.anchorMin = Vector2.zero;
+                icRT.anchorMax = Vector2.one;
+                icRT.offsetMin = new Vector2(6f, 6f);
+                icRT.offsetMax = new Vector2(-6f, -6f);
+                Image icImg = iconGO.GetComponent<Image>();
+                icImg.preserveAspect = true;
+
+                // Level Label
+                Transform lvlT = sGO.transform.Find("Level");
+                GameObject lvlGO = lvlT != null ? lvlT.gameObject : new GameObject("Level", typeof(RectTransform));
+                if (lvlT == null) lvlGO.transform.SetParent(sGO.transform, false);
+                RectTransform lRT = lvlGO.GetComponent<RectTransform>();
+                lRT.anchorMin = new Vector2(0f, 0f);
+                lRT.anchorMax = new Vector2(1f, 0f);
+                lRT.pivot = new Vector2(0.5f, 1f);
+                lRT.anchoredPosition = new Vector2(0f, -4f);
+                lRT.sizeDelta = new Vector2(60f, 20f);
+                TextMeshProUGUI lTMP = lvlGO.GetComponent<TextMeshProUGUI>();
+                if (lTMP == null) lTMP = lvlGO.AddComponent<TextMeshProUGUI>();
+                if (sFont != null) { lTMP.font = sFont; if (sFont.material != null) lTMP.fontSharedMaterial = sFont.material; }
+                lTMP.fontSize = 13f;
+                lTMP.fontStyle = FontStyles.Bold;
+                lTMP.alignment = TextAlignmentOptions.Center;
+
+                if (i < activePassives.Count && activePassives[i].icon != null)
+                {
+                    icImg.sprite = activePassives[i].icon;
+                    icImg.enabled = true;
+                    icImg.color = Color.white;
+
+                    bool isMax = activePassives[i].level >= activePassives[i].maxLevel;
+                    lTMP.text = isMax ? "<color=#FF5555>MAX</color>" : $"<color=#66FFAA>CẤP {activePassives[i].level}</color>";
+                    lTMP.enabled = true;
+                }
+                else
+                {
+                    icImg.enabled = false;
+                    lTMP.enabled = false;
+                }
+            }
+
+            // 5. Player Stats Summary Panel
+            Transform statsT = winT.Find("PauseStatsPanel");
+            GameObject statsGO = statsT != null ? statsT.gameObject : new GameObject("PauseStatsPanel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            if (statsT == null) statsGO.transform.SetParent(winT, false);
+            RectTransform stRT = statsGO.GetComponent<RectTransform>();
+            stRT.anchorMin = stRT.anchorMax = stRT.pivot = new Vector2(0.5f, 0.5f);
+            stRT.anchoredPosition = new Vector2(0f, -48f);
+            stRT.sizeDelta = new Vector2(820f, 54f);
+
+            Image stImg = statsGO.GetComponent<Image>();
+            stImg.sprite = Resources.Load<Sprite>("UI/UI_SubPanel_Gold");
+            stImg.type = Image.Type.Sliced;
+            stImg.color = new Color(0.06f, 0.05f, 0.10f, 0.95f);
+
+            Transform statsTextT = statsGO.transform.Find("StatsText");
+            GameObject statsTextGO = statsTextT != null ? statsTextT.gameObject : new GameObject("StatsText", typeof(RectTransform));
+            if (statsTextT == null) statsTextGO.transform.SetParent(statsGO.transform, false);
+            RectTransform sttRT = statsTextGO.GetComponent<RectTransform>();
+            sttRT.anchorMin = Vector2.zero;
+            sttRT.anchorMax = Vector2.one;
+            sttRT.offsetMin = new Vector2(18f, 4f);
+            sttRT.offsetMax = new Vector2(-18f, -4f);
+            TextMeshProUGUI sttTMP = statsTextGO.GetComponent<TextMeshProUGUI>();
+            if (sttTMP == null) sttTMP = statsTextGO.AddComponent<TextMeshProUGUI>();
+            if (sFont != null) { sttTMP.font = sFont; if (sFont.material != null) sttTMP.fontSharedMaterial = sFont.material; }
+            sttTMP.fontSize = 15f;
+            sttTMP.fontStyle = FontStyles.Bold;
+            sttTMP.alignment = TextAlignmentOptions.Midline;
+
+            float moveSpd = PlayerController.instance != null ? PlayerController.instance.moveSpeed : 5f;
+            float maxHp = PlayerHealthController.instance != null ? PlayerHealthController.instance.maxHealth : 100f;
+            float curHp = PlayerHealthController.instance != null ? PlayerHealthController.instance.currentHealth : 100f;
+            int coins = CoinController.instance != null ? CoinController.instance.currentCoins : 0;
+            int curLvl = ExperienceLevelController.instance != null ? ExperienceLevelController.instance.currentLevel : 1;
+
+            sttTMP.text = $"<color=#FFD700>STAGE LV {curLvl}</color>    |    <color=#FF6666>HP {(int)curHp}/{(int)maxHp}</color>    |    <color=#00FFAA>SPEED {moveSpd:0.0}</color>    |    <color=#FF5566>KILLS {killCount}</color>    |    <color=#FFE040>GOLD {coins}</color>";
+
+            // 6. Action Buttons Layout with Royal Gothic 9-Slice Styling
+            Sprite btnEmerald = MainMenu.CreateRoyalGothicButton(
+                new Color(0.04f, 0.18f, 0.09f),
+                new Color(0.10f, 0.36f, 0.18f),
+                new Color(0.88f, 0.74f, 0.25f),
+                new Color(1.0f, 0.96f, 0.55f),
+                new Color(0.20f, 0.98f, 0.45f)
+            );
+
+            Sprite btnSapphire = MainMenu.CreateRoyalGothicButton(
+                new Color(0.04f, 0.12f, 0.25f),
+                new Color(0.09f, 0.24f, 0.45f),
+                new Color(0.85f, 0.72f, 0.22f),
+                new Color(0.98f, 0.92f, 0.50f),
+                new Color(0.25f, 0.75f, 1f)
+            );
+
+            Sprite btnAmber = MainMenu.CreateRoyalGothicButton(
+                new Color(0.25f, 0.15f, 0.04f),
+                new Color(0.45f, 0.28f, 0.08f),
+                new Color(0.95f, 0.80f, 0.25f),
+                new Color(1.0f, 0.96f, 0.58f),
+                new Color(1f, 0.85f, 0.2f)
+            );
+
+            Sprite btnCrimson = MainMenu.CreateRoyalGothicButton(
+                new Color(0.22f, 0.05f, 0.07f),
+                new Color(0.44f, 0.10f, 0.14f),
+                new Color(0.82f, 0.62f, 0.20f),
+                new Color(0.98f, 0.84f, 0.42f),
+                new Color(0.95f, 0.22f, 0.22f)
+            );
+
+            // Row 1: Primary in-game actions (Resume & Save/Exit)
+            SetupPauseButton(winT, "Resume", "RESUME (TIẾP TỤC)", new Vector2(-205f, -125f), new Vector2(390f, 60f), btnEmerald, new Color(0.92f, 1f, 0.94f), 20f, PauseUnpause);
+            SetupPauseButton(winT, "Save And Exit", "SAVE & EXIT (LƯU & THOÁT)", new Vector2(205f, -125f), new Vector2(390f, 60f), btnSapphire, new Color(0.92f, 0.96f, 1f), 20f, SaveAndExit);
+
+            // Row 2: Secondary game state actions (Restart, Main Menu, Quit)
+            SetupPauseButton(winT, "Restart", "RESTART (CHƠI LẠI)", new Vector2(-275f, -205f), new Vector2(260f, 52f), btnAmber, new Color(1f, 0.95f, 0.85f), 17f, Restart);
+            SetupPauseButton(winT, "Main Menu", "MAIN MENU", new Vector2(0f, -205f), new Vector2(260f, 52f), btnCrimson, new Color(1f, 0.88f, 0.88f), 17f, GoToMainMenu);
+            SetupPauseButton(winT, "Quit Game", "QUIT GAME", new Vector2(275f, -205f), new Vector2(260f, 52f), btnCrimson, new Color(1f, 0.88f, 0.88f), 17f, QuitGame);
         }
-
-        // 4B. Passives Row inside Equipment Grid
-        Transform pHeaderT = equipGO.transform.Find("PassivesHeader");
-        GameObject pHeaderGO = pHeaderT != null ? pHeaderT.gameObject : new GameObject("PassivesHeader", typeof(RectTransform), typeof(TextMeshProUGUI));
-        if (pHeaderT == null) pHeaderGO.transform.SetParent(equipGO.transform, false);
-        RectTransform phRT = pHeaderGO.GetComponent<RectTransform>();
-        phRT.anchorMin = phRT.anchorMax = phRT.pivot = new Vector2(0.5f, 0.5f);
-        phRT.anchoredPosition = new Vector2(0f, -38f);
-        phRT.sizeDelta = new Vector2(750f, 30f);
-        TextMeshProUGUI phTMP = pHeaderGO.GetComponent<TextMeshProUGUI>();
-        if (retroFont != null) phTMP.font = retroFont;
-        phTMP.fontSize = 24f;
-        phTMP.alignment = TextAlignmentOptions.Center;
-        phTMP.color = new Color(0.4f, 1f, 0.7f);
-        phTMP.text = "✦  PASSIVE ACCESSORIES  ✦";
-
-        List<PassiveSlotData> activePassives = GetActivePassives();
-
-        for (int i = 0; i < 6; i++)
+        catch (System.Exception ex)
         {
-            string sName = "P_PassiveSlot_" + i;
-            Transform sChild = equipGO.transform.Find(sName);
-            GameObject sGO = sChild != null ? sChild.gameObject : new GameObject(sName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            if (sChild == null) sGO.transform.SetParent(equipGO.transform, false);
-            RectTransform sRT = sGO.GetComponent<RectTransform>();
-            sRT.anchorMin = sRT.anchorMax = sRT.pivot = new Vector2(0.5f, 0.5f);
-            sRT.anchoredPosition = new Vector2(startX + i * (slotW + slotSpacing), -90f);
-            sRT.sizeDelta = new Vector2(slotW, slotW);
-
-            Image sImg = sGO.GetComponent<Image>();
-            sImg.sprite = slotFrame;
-            sImg.type = Image.Type.Sliced;
-            sImg.color = Color.white;
-
-            // Icon
-            Transform iconT = sGO.transform.Find("Icon");
-            GameObject iconGO = iconT != null ? iconT.gameObject : new GameObject("Icon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            if (iconT == null) iconGO.transform.SetParent(sGO.transform, false);
-            RectTransform icRT = iconGO.GetComponent<RectTransform>();
-            icRT.anchorMin = Vector2.zero;
-            icRT.anchorMax = Vector2.one;
-            icRT.offsetMin = new Vector2(6f, 6f);
-            icRT.offsetMax = new Vector2(-6f, -6f);
-            Image icImg = iconGO.GetComponent<Image>();
-            icImg.preserveAspect = true;
-
-            // Level Label
-            Transform lvlT = sGO.transform.Find("Level");
-            GameObject lvlGO = lvlT != null ? lvlT.gameObject : new GameObject("Level", typeof(RectTransform), typeof(TextMeshProUGUI));
-            if (lvlT == null) lvlGO.transform.SetParent(sGO.transform, false);
-            RectTransform lRT = lvlGO.GetComponent<RectTransform>();
-            lRT.anchorMin = new Vector2(0f, 0f);
-            lRT.anchorMax = new Vector2(1f, 0f);
-            lRT.pivot = new Vector2(0.5f, 1f);
-            lRT.anchoredPosition = new Vector2(0f, -4f);
-            lRT.sizeDelta = new Vector2(60f, 20f);
-            TextMeshProUGUI lTMP = lvlGO.GetComponent<TextMeshProUGUI>();
-            if (retroFont != null) lTMP.font = retroFont;
-            lTMP.fontSize = 17f;
-            lTMP.alignment = TextAlignmentOptions.Center;
-
-            if (i < activePassives.Count && activePassives[i].icon != null)
-            {
-                icImg.sprite = activePassives[i].icon;
-                icImg.enabled = true;
-                icImg.color = Color.white;
-
-                bool isMax = activePassives[i].level >= activePassives[i].maxLevel;
-                lTMP.text = isMax ? "<color=#FF4444>MAX</color>" : $"<color=#66FFAA>LV {activePassives[i].level}</color>";
-                lTMP.enabled = true;
-            }
-            else
-            {
-                icImg.enabled = false;
-                lTMP.enabled = false;
-            }
+            Debug.LogError($"[UIController] FormatAndRefreshPauseScreen error: {ex}");
         }
-
-        // 5. Player Stats Summary Panel
-        Transform statsT = winT.Find("PauseStatsPanel");
-        GameObject statsGO = statsT != null ? statsT.gameObject : new GameObject("PauseStatsPanel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        if (statsT == null) statsGO.transform.SetParent(winT, false);
-        RectTransform stRT = statsGO.GetComponent<RectTransform>();
-        stRT.anchorMin = stRT.anchorMax = stRT.pivot = new Vector2(0.5f, 0.5f);
-        stRT.anchoredPosition = new Vector2(0f, -42f);
-        stRT.sizeDelta = new Vector2(790f, 75f);
-
-        Image stImg = statsGO.GetComponent<Image>();
-        stImg.sprite = Resources.Load<Sprite>("UI/UI_SubPanel_Gold");
-        stImg.type = Image.Type.Sliced;
-        stImg.color = new Color(0.06f, 0.05f, 0.10f, 0.95f);
-
-        Transform statsTextT = statsGO.transform.Find("StatsText");
-        GameObject statsTextGO = statsTextT != null ? statsTextT.gameObject : new GameObject("StatsText", typeof(RectTransform), typeof(TextMeshProUGUI));
-        if (statsTextT == null) statsTextGO.transform.SetParent(statsGO.transform, false);
-        RectTransform sttRT = statsTextGO.GetComponent<RectTransform>();
-        sttRT.anchorMin = Vector2.zero;
-        sttRT.anchorMax = Vector2.one;
-        sttRT.offsetMin = new Vector2(18f, 6f);
-        sttRT.offsetMax = new Vector2(-18f, -6f);
-        TextMeshProUGUI sttTMP = statsTextGO.GetComponent<TextMeshProUGUI>();
-        if (retroFont != null) sttTMP.font = retroFont;
-        sttTMP.fontSize = 20f;
-        sttTMP.alignment = TextAlignmentOptions.Midline;
-
-        float moveSpd = PlayerController.instance != null ? PlayerController.instance.moveSpeed : 5f;
-        float maxHp = PlayerHealthController.instance != null ? PlayerHealthController.instance.maxHealth : 100f;
-        float curHp = PlayerHealthController.instance != null ? PlayerHealthController.instance.currentHealth : 100f;
-        int coins = CoinController.instance != null ? CoinController.instance.currentCoins : 0;
-        int curLvl = ExperienceLevelController.instance != null ? ExperienceLevelController.instance.currentLevel : 1;
-
-        sttTMP.text = $"<color=#FFD700>STAGE LV: {curLvl}</color>    |    <color=#FF6666>HP: {(int)curHp}/{(int)maxHp}</color>    |    <color=#00FFAA>SPEED: {moveSpd:0.0}</color>    |    <color=#FF5566>KILLS: {killCount}</color>    |    <color=#FFE040>GOLD: {coins}</color>";
-
-        // 6. Action Buttons Layout with Royal Gothic 9-Slice Styling
-        Sprite btnEmerald = MainMenu.CreateRoyalGothicButton(
-            new Color(0.04f, 0.18f, 0.09f),
-            new Color(0.10f, 0.36f, 0.18f),
-            new Color(0.88f, 0.74f, 0.25f),
-            new Color(1.0f, 0.96f, 0.55f),
-            new Color(0.20f, 0.98f, 0.45f)
-        );
-
-        Sprite btnSapphire = MainMenu.CreateRoyalGothicButton(
-            new Color(0.04f, 0.12f, 0.25f),
-            new Color(0.09f, 0.24f, 0.45f),
-            new Color(0.85f, 0.72f, 0.22f),
-            new Color(0.98f, 0.92f, 0.50f),
-            new Color(0.25f, 0.75f, 1f)
-        );
-
-        Sprite btnAmber = MainMenu.CreateRoyalGothicButton(
-            new Color(0.25f, 0.15f, 0.04f),
-            new Color(0.45f, 0.28f, 0.08f),
-            new Color(0.95f, 0.80f, 0.25f),
-            new Color(1.0f, 0.96f, 0.58f),
-            new Color(1f, 0.85f, 0.2f)
-        );
-
-        Sprite btnCrimson = MainMenu.CreateRoyalGothicButton(
-            new Color(0.22f, 0.05f, 0.07f),
-            new Color(0.44f, 0.10f, 0.14f),
-            new Color(0.82f, 0.62f, 0.20f),
-            new Color(0.98f, 0.84f, 0.42f),
-            new Color(0.95f, 0.22f, 0.22f)
-        );
-
-        SetupPauseButton(winT, "Resume", "✦  RESUME  ✦", new Vector2(-195f, -135f), new Vector2(365f, 60f), btnEmerald, new Color(0.92f, 1f, 0.94f), 32f, PauseUnpause);
-        SetupPauseButton(winT, "Save And Exit", "✦  SAVE & EXIT  ✦", new Vector2(195f, -135f), new Vector2(365f, 60f), btnSapphire, new Color(0.92f, 0.96f, 1f), 32f, SaveAndExit);
-        SetupPauseButton(winT, "Restart", "✦  RESTART  ✦", new Vector2(-260f, -218f), new Vector2(235f, 56f), btnAmber, new Color(1f, 0.95f, 0.85f), 28f, Restart);
-        SetupPauseButton(winT, "Main Menu", "✦  MAIN MENU  ✦", new Vector2(0f, -218f), new Vector2(235f, 56f), btnCrimson, new Color(1f, 0.88f, 0.88f), 28f, GoToMainMenu);
-        SetupPauseButton(winT, "Quit Game", "✦  QUIT  ✦", new Vector2(260f, -218f), new Vector2(235f, 56f), btnCrimson, new Color(1f, 0.88f, 0.88f), 28f, QuitGame);
     }
 
     private void SetupPauseButton(Transform win, string btnName, string label, Vector2 pos, Vector2 size, Sprite sprite, Color textCol, float fontSize, UnityEngine.Events.UnityAction onClickAction)
     {
         Transform bT = win.Find(btnName);
+        if (bT == null && btnName == "Quit Game") bT = win.Find("Quit");
+        if (bT == null && btnName == "Quit") bT = win.Find("Quit Game");
+        if (bT == null && btnName == "Save And Exit") bT = win.Find("Save & Exit");
+
+        // Hide any duplicate Quit button if both exist
+        if (btnName == "Quit Game")
+        {
+            Transform oldQuit = win.Find("Quit");
+            if (oldQuit != null && oldQuit != bT) oldQuit.gameObject.SetActive(false);
+        }
+
         GameObject bGO;
         if (bT == null)
         {
@@ -1534,6 +1632,7 @@ public class UIController : MonoBehaviour
         else
         {
             bGO = bT.gameObject;
+            bGO.SetActive(true);
         }
 
         RectTransform rt = bGO.GetComponent<RectTransform>();
@@ -1550,8 +1649,11 @@ public class UIController : MonoBehaviour
         }
 
         Button btn = bGO.GetComponent<Button>();
-        btn.onClick.RemoveAllListeners();
-        btn.onClick.AddListener(onClickAction);
+        if (btn != null)
+        {
+            btn.onClick.RemoveAllListeners();
+            btn.onClick.AddListener(onClickAction);
+        }
 
         if (bGO.GetComponent<GothicMenuButtonEffects>() == null)
         {
@@ -1578,12 +1680,14 @@ public class UIController : MonoBehaviour
         trt.offsetMax = Vector2.zero;
 
         TextMeshProUGUI tmp = tGO.GetComponent<TextMeshProUGUI>();
-        if (retroFont != null) tmp.font = retroFont;
+        if (tmp == null) tmp = tGO.AddComponent<TextMeshProUGUI>();
+        TMP_FontAsset sFont = MainMenu.GetSmoothFont() ?? retroFont;
+        if (sFont != null) { tmp.font = sFont; if (sFont.material != null) tmp.fontSharedMaterial = sFont.material; }
         tmp.text = label;
         tmp.fontSize = fontSize;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = textCol;
-        tmp.characterSpacing = 3f;
+        tmp.characterSpacing = 2.5f;
         tmp.fontStyle = FontStyles.Bold;
     }
 
@@ -1745,57 +1849,116 @@ public class UIController : MonoBehaviour
         warningBannerRoot.SetActive(false);
     }
 
-    private static Sprite gothicWindowSprite;
-    public static Sprite GetGothicWindowSprite()
+    private static Sprite mysticHaloSprite;
+    public static Sprite GetMysticHaloSprite()
     {
-        if (gothicWindowSprite != null) return gothicWindowSprite;
+        if (mysticHaloSprite != null) return mysticHaloSprite;
 
-        int size = 96;
+        int size = 128;
+        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Bilinear;
+        Color[] p = new Color[size * size];
+
+        float center = (size - 1) * 0.5f;
+        float maxR = center;
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dist = Vector2.Distance(new Vector2(x, y), new Vector2(center, center));
+                float t = Mathf.Clamp01(dist / maxR);
+                float alpha = Mathf.Pow(1f - t, 2.2f);
+                Color c = Color.Lerp(new Color(0.85f, 0.45f, 1f, 1f), new Color(0.40f, 0.15f, 0.95f, 1f), t);
+                c.a = alpha;
+                p[y * size + x] = c;
+            }
+        }
+
+        tex.SetPixels(p);
+        tex.Apply();
+        mysticHaloSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        return mysticHaloSprite;
+    }
+
+    private static Sprite mysticAscensionWindowSprite;
+    public static Sprite GetMysticAscensionWindowSprite()
+    {
+        if (mysticAscensionWindowSprite != null) return mysticAscensionWindowSprite;
+
+        int size = 192;
         Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
         tex.filterMode = FilterMode.Point;
         Color[] p = new Color[size * size];
 
-        Color darkIron = new Color(0.06f, 0.05f, 0.08f, 1f);
-        Color borderGold = new Color(0.85f, 0.68f, 0.22f, 1f);
-        Color shadowBronze = new Color(0.28f, 0.18f, 0.06f, 1f);
-        Color highlightGold = new Color(1f, 0.94f, 0.65f, 1f);
-        Color innerDark = new Color(0.06f, 0.05f, 0.09f, 0.96f);
-        Color innerLight = new Color(0.10f, 0.08f, 0.15f, 0.96f);
-        Color jewelRuby = new Color(0.92f, 0.15f, 0.25f, 1f);
-        Color jewelCore = new Color(1f, 0.85f, 0.85f, 1f);
+        Color darkIron = new Color(0.04f, 0.03f, 0.06f, 1f);
+        Color borderGoldHighlight = new Color(1f, 0.92f, 0.55f, 1f);
+        Color borderGoldMid = new Color(0.85f, 0.68f, 0.22f, 1f);
+        Color borderGoldShadow = new Color(0.35f, 0.22f, 0.07f, 1f);
+
+        Color runeGroove = new Color(0.18f, 0.10f, 0.30f, 1f);
+        Color runeGlow = new Color(0.75f, 0.35f, 0.95f, 0.95f);
+
+        Color innerRibHighlight = new Color(0.95f, 0.85f, 0.40f, 1f);
+        Color innerRibShadow = new Color(0.40f, 0.25f, 0.08f, 1f);
+
+        Color innerBgDark = new Color(0.04f, 0.03f, 0.07f, 0.98f);
+        Color innerBgLight = new Color(0.09f, 0.06f, 0.15f, 0.98f);
+
+        Color jewelCore = new Color(1f, 0.95f, 0.95f, 1f);
+        Color jewelRuby = new Color(0.95f, 0.15f, 0.28f, 1f);
+        Color jewelAmethyst = new Color(0.70f, 0.20f, 0.95f, 1f);
 
         for (int y = 0; y < size; y++)
         {
             float tY = (float)y / (size - 1);
-            Color currentInner = Color.Lerp(innerDark, innerLight, tY);
+            Color currentInner = Color.Lerp(innerBgDark, innerBgLight, tY);
 
             for (int x = 0; x < size; x++)
             {
-                if (x == 0 || x == size - 1 || y == 0 || y == size - 1)
+                int edgeX = Mathf.Min(x, size - 1 - x);
+                int edgeY = Mathf.Min(y, size - 1 - y);
+                int minEdge = Mathf.Min(edgeX, edgeY);
+
+                if (minEdge <= 1)
                 {
                     p[y * size + x] = darkIron;
                 }
-                else if (x <= 4 || x >= size - 5 || y <= 4 || y >= size - 5)
+                else if (minEdge <= 7)
                 {
-                    bool isCornerGem = (x >= 2 && x <= 6 && y >= 2 && y <= 6) ||
-                                       (x >= size - 7 && x <= size - 3 && y >= 2 && y <= 6) ||
-                                       (x >= 2 && x <= 6 && y >= size - 7 && y <= size - 3) ||
-                                       (x >= size - 7 && x <= size - 3 && y >= size - 7 && y <= size - 3);
+                    bool isCorner = (edgeX <= 26 && edgeY <= 26);
+                    if (isCorner)
+                    {
+                        float gemDist = Vector2.Distance(new Vector2(edgeX, edgeY), new Vector2(16, 16));
+                        if (gemDist <= 6.5f)
+                        {
+                            if (gemDist <= 2f)
+                                p[y * size + x] = jewelCore;
+                            else if (gemDist <= 4.5f)
+                                p[y * size + x] = (edgeX + edgeY) % 2 == 0 ? jewelRuby : jewelAmethyst;
+                            else
+                                p[y * size + x] = borderGoldHighlight;
+                            continue;
+                        }
+                    }
 
-                    if (isCornerGem)
-                    {
-                        bool isCenter = (x == 4 || x == size - 5) && (y == 4 || y == size - 5);
-                        p[y * size + x] = isCenter ? jewelCore : jewelRuby;
-                    }
-                    else
-                    {
-                        bool isTopOrLeft = (x <= 2 || y >= size - 3);
-                        p[y * size + x] = isTopOrLeft ? highlightGold : shadowBronze;
-                    }
+                    bool isTopOrLeft = (x <= 4 || y >= size - 5);
+                    p[y * size + x] = isTopOrLeft ? borderGoldHighlight : borderGoldShadow;
                 }
-                else if (x == 7 || x == size - 8 || y == 7 || y == size - 8)
+                else if (minEdge >= 9 && minEdge <= 13)
                 {
-                    p[y * size + x] = borderGold * 0.75f;
+                    bool isRunePulse = ((x * 7 + y * 13) % 17 == 0);
+                    p[y * size + x] = isRunePulse ? runeGlow : runeGroove;
+                }
+                else if (minEdge >= 15 && minEdge <= 19)
+                {
+                    bool isTopOrLeft = (x <= 17 || y >= size - 18);
+                    p[y * size + x] = isTopOrLeft ? innerRibHighlight : innerRibShadow;
+                }
+                else if (minEdge <= 24)
+                {
+                    float tShadow = (minEdge - 20) / 4f;
+                    p[y * size + x] = Color.Lerp(darkIron, currentInner, tShadow);
                 }
                 else
                 {
@@ -1806,8 +1969,14 @@ public class UIController : MonoBehaviour
 
         tex.SetPixels(p);
         tex.Apply();
-        gothicWindowSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(24, 24, 24, 24));
-        return gothicWindowSprite;
+        mysticAscensionWindowSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(40, 40, 40, 40));
+        return mysticAscensionWindowSprite;
+    }
+
+    private static Sprite gothicWindowSprite;
+    public static Sprite GetGothicWindowSprite()
+    {
+        return GetMysticAscensionWindowSprite();
     }
 
     private static Sprite gothicBanishButtonSprite;
@@ -1815,18 +1984,19 @@ public class UIController : MonoBehaviour
     {
         if (gothicBanishButtonSprite != null) return gothicBanishButtonSprite;
 
-        int w = 64;
-        int h = 32;
+        int w = 96;
+        int h = 48;
         Texture2D tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
         tex.filterMode = FilterMode.Point;
         Color[] p = new Color[w * h];
 
-        Color darkIron = new Color(0.12f, 0.08f, 0.10f, 1f);
-        Color borderGold = new Color(0.85f, 0.68f, 0.22f, 1f);
-        Color shadowBronze = new Color(0.32f, 0.18f, 0.06f, 1f);
-        Color highlightGold = new Color(1f, 0.92f, 0.60f, 1f);
-        Color crimsonDark = new Color(0.38f, 0.06f, 0.10f, 1f);
+        Color darkIron = new Color(0.08f, 0.05f, 0.08f, 1f);
+        Color borderGold = new Color(0.92f, 0.75f, 0.28f, 1f);
+        Color shadowBronze = new Color(0.35f, 0.20f, 0.06f, 1f);
+        Color highlightGold = new Color(1f, 0.95f, 0.65f, 1f);
+        Color crimsonDark = new Color(0.32f, 0.05f, 0.08f, 1f);
         Color crimsonLight = new Color(0.68f, 0.12f, 0.18f, 1f);
+        Color crimsonGleam = new Color(0.95f, 0.35f, 0.45f, 1f);
 
         for (int y = 0; y < h; y++)
         {
@@ -1835,25 +2005,33 @@ public class UIController : MonoBehaviour
 
             for (int x = 0; x < w; x++)
             {
-                if (x == 0 || x == w - 1 || y == 0 || y == h - 1)
+                int edgeX = Mathf.Min(x, w - 1 - x);
+                int edgeY = Mathf.Min(y, h - 1 - y);
+                int minEdge = Mathf.Min(edgeX, edgeY);
+
+                if (minEdge == 0)
                 {
                     p[y * w + x] = darkIron;
                 }
-                else if (x <= 3 || x >= w - 4 || y <= 3 || y >= h - 4)
+                else if (minEdge <= 3)
                 {
                     bool isTopOrLeft = (x <= 2 || y >= h - 3);
                     p[y * w + x] = isTopOrLeft ? highlightGold : shadowBronze;
                 }
+                else if (minEdge == 5)
+                {
+                    p[y * w + x] = borderGold * 0.75f;
+                }
                 else
                 {
-                    p[y * w + x] = currentInner;
+                    p[y * w + x] = (y == h - 6) ? crimsonGleam : currentInner;
                 }
             }
         }
 
         tex.SetPixels(p);
         tex.Apply();
-        gothicBanishButtonSprite = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(12, 12, 12, 12));
+        gothicBanishButtonSprite = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(16, 16, 16, 16));
         return gothicBanishButtonSprite;
     }
 

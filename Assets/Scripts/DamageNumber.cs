@@ -54,10 +54,11 @@ public class DamageNumber : MonoBehaviour
 
         if (damageText != null)
         {
-            // Apply retro pixel font if available from UIController
-            if (UIController.instance != null && UIController.instance.retroFont != null)
+            TMP_FontAsset sFont = MainMenu.GetSmoothFont() ?? (UIController.instance != null ? UIController.instance.retroFont : null);
+            if (sFont != null)
             {
-                damageText.font = UIController.instance.retroFont;
+                damageText.font = sFont;
+                if (sFont.material != null) damageText.fontSharedMaterial = sFont.material;
             }
 
             damageText.fontStyle = FontStyles.Bold;
@@ -152,7 +153,7 @@ public class DamageNumber : MonoBehaviour
             if (isCrit)
             {
                 int val = Mathf.RoundToInt(totalDamage);
-                damageText.text = $"💥 <color=#FF2244><b>CRIT!</b></color> <color=#FFE033><b>{val}</b></color>";
+                damageText.text = $"<color=#FF2244><b>CRIT!</b></color> <size=125%><color=#FFE033><b>{val}</b></color></size>";
                 PunchScale(punchScaleMultiplier * 1.85f);
             }
             else
@@ -160,15 +161,15 @@ public class DamageNumber : MonoBehaviour
                 int val = Mathf.RoundToInt(totalDamage);
                 if (val >= 100)
                 {
-                    damageText.text = $"<color=#FF7B00><b>{val}</b></color>";
+                    damageText.text = $"<color=#FF4422><b>{val}</b></color>";
                 }
                 else if (val >= 40)
                 {
-                    damageText.text = $"<color=#FFD166><b>{val}</b></color>";
+                    damageText.text = $"<color=#FFAA22><b>{val}</b></color>";
                 }
                 else
                 {
-                    damageText.text = $"<color=#FFFFFF><b>{val}</b></color>";
+                    damageText.text = $"<color=#E0EEFF><b>{val}</b></color>";
                 }
 
                 PunchScale(punchScaleMultiplier);
@@ -202,17 +203,21 @@ public class DamageNumber : MonoBehaviour
         {
             damageText.alpha = 1f;
             int val = Mathf.RoundToInt(totalDamage);
-            if (val >= 100)
+            if (isCritical)
             {
-                damageText.text = $"<color=#FF7B00><b>{val}</b></color>";
+                damageText.text = $"<color=#FF2244><b>CRIT!</b></color> <size=125%><color=#FFE033><b>{val}</b></color></size>";
+            }
+            else if (val >= 100)
+            {
+                damageText.text = $"<color=#FF4422><b>{val}</b></color>";
             }
             else if (val >= 40)
             {
-                damageText.text = $"<color=#FFD166><b>{val}</b></color>";
+                damageText.text = $"<color=#FFAA22><b>{val}</b></color>";
             }
             else
             {
-                damageText.text = $"<color=#FFFFFF><b>{val}</b></color>";
+                damageText.text = $"<color=#E0EEFF><b>{val}</b></color>";
             }
         }
 
